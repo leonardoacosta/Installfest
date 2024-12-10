@@ -8,50 +8,38 @@ sudo xcode-select --install
 (echo; echo 'eval "$(/opt/homebrew/bin/brew shellenv)"') >> /Users/leonardoacosta/.zprofile
 
 # Install homebrew taps
-brew tap oven-sh/bun
+# brew tap oven-sh/bun
 
 # Install personal homebrew packages
 brew install \
-  bun \
-  gitkraken \
-  gh \
-  go \
+  azure-cli \
+  dotnet \
   iterm2 \
-  minikube \
   node \
   nvm \
   pnpm \
-  yarn \
-  zsh 
+  zsh
 
 brew install --cask \
   adobe-creative-cloud \
-  azure-data-studio \
   beekeeper-studio \
-  dbngin \
+  bruno \
   discord \
-  dotnet \
   fantastical \
-  font-meslo-lg-nerd-font \
+  gitkraken \
   google-chrome \
-  insomnia \
-  lens \
-  microsoft-edge \
-  microsoft-teams \
-  mongodb-compass \
   notion \
-  notion-calendar \
   raycast \
-  signal \
-  slack \
   spotify \
   steam \
   superhuman \
   telegram \
-  visual-studio-code
+  visual-studio-code \
+  windows-app
 
-# K8S
-curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/darwin/arm64/kubectl"
+# Set zsh as the default shell
+# source ~/.zshrc
+# chsh -s /opt/homebrew/bin/zsh
 
 # Install oh-my-zsh
 # ? [Refrence](https://github.com/ohmyzsh/ohmyzsh)
@@ -77,10 +65,6 @@ sed -i '' 's/plugins=(git)/plugins=(git zsh-syntax-highlighting zsh-autosuggesti
 #     alias la="colorls -al"
 # fi
 # ```
-
-# Set zsh as the default shell
-source ~/.zshrc
-chsh -s /opt/homebrew/bin/zsh
 
 # Configure powerlevel10k
 p10k configure
