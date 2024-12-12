@@ -18,6 +18,7 @@ brew install \
   node \
   nvm \
   pnpm \
+  watchman \
   zsh
 
 brew install --cask \
