@@ -1,0 +1,61 @@
+# tap "homebrew/bundle"
+# tap "homebrew/cask"
+# tap "homebrew/core"
+
+# Microsoft Azure CLI
+brew "azure-cli"
+# .NET runtime
+brew "dotnet"
+# Fast, highly customisable system info script
+brew "neofetch"
+# Node.js
+brew "node"
+# nvm
+brew "nvm"
+# pnpm
+brew "pnpm"
+# starship
+brew "starship"
+# zsh-autosuggestions
+brew "zsh-autosuggestions"
+# zsh-syntax-highlighting
+brew "zsh-syntax-highlighting"
+
+# Adobe Creative Cloud
+cask "adobe-creative-cloud"
+# Beekeeper Studio
+cask "beekeeper-studio"
+# Bruno
+cask "bruno"
+# Cursor
+cask "cursor"
+# Discord
+cask "discord"
+# Fantastical
+cask "fantastical"
+# Font-Geist-Mono-Nerd-Font
+cask "font-geist-mono-nerd-font"
+# Gitkraken
+cask "gitkraken"
+# Google Chrome
+cask "google-chrome"
+# Notion
+cask "notion"
+# Obsidian
+cask "obsidian"
+# Raycast
+cask "raycast"
+# Spotify
+cask "spotify"
+# Steam
+cask "steam"
+# Superhuman
+cask "superhuman"
+# Telegram
+cask "telegram"
+# Visual Studio Code
+cask "visual-studio-code"
+# WezTerm
+cask "wezterm"
+# Windows App
+cask "windows-app"
