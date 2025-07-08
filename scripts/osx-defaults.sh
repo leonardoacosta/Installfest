@@ -16,7 +16,7 @@ apply_osx_system_defaults() {
     defaults write -g ApplePressAndHoldEnabled -bool false
 
     # Enable three finger drag
-    defaults write com.apple.AppleMultitouchTrackpad TrackpadThreeFingerDrag -bool true
+    defaults write com.apple.AppleMultitouchTrackpad TrackpadThreeFingerDrag -bool false
 
     # # Disable prompting to use new exteral drives as Time Machine volume
     defaults write com.apple.TimeMachine DoNotOfferNewDisksForBackup -bool true
@@ -65,7 +65,7 @@ apply_osx_system_defaults() {
 
     # Set Dock autohide
     defaults write com.apple.dock autohide -bool true
-    defaults write com.apple.dock largesize -float 128
+    defaults write com.apple.dock largesize -float 68
     defaults write com.apple.dock "minimize-to-application" -bool true
     defaults write com.apple.dock tilesize -float 32
 
