@@ -1,7 +1,6 @@
 # tap "homebrew/bundle"
 # tap "homebrew/cask"
 # tap "homebrew/core"
-
 # Microsoft Azure CLI
 brew "azure-cli"
 # .NET runtime
@@ -20,6 +19,9 @@ brew "starship"
 brew "zsh-autosuggestions"
 # zsh-syntax-highlighting
 brew "zsh-syntax-highlighting"
+
+# stripe
+brew "stripe/stripe-cli/stripe"
 
 # Adobe Creative Cloud
 cask "adobe-creative-cloud"
