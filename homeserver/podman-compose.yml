@@ -93,8 +93,8 @@ services:
       - OLLAMA_BASE_URL=http://ollama:11434
     volumes:
       - ollama_webui_data:/app/backend/data
-    depends_on:
-      - ollama
+    # depends_on removed - causes podman-compose to hang
+    # Start ollama first manually if needed
     networks:
       homelab:
         ipv4_address: 172.20.0.12
@@ -173,84 +173,85 @@ services:
       homelab:
         ipv4_address: 172.20.0.45
 
-  # # ============= Media Stack Services =============
+  # ============= Media Stack Services =============
+  # Uncomment services below if you have VPN configured in .env
 
   # Gluetun - VPN Client for Media Services
-  gluetun:
-    image: docker.io/qmcgaw/gluetun:latest
-    container_name: gluetun
-    cap_add:
-      - NET_ADMIN
-    devices:
-      - /dev/net/tun:/dev/net/tun
-    networks:
-      media:
-        ipv4_address: 172.21.0.2
-    ports:
-      - "${FIREWALL_VPN_INPUT_PORTS:-51820}:${FIREWALL_VPN_INPUT_PORTS:-51820}"
-      - "8080:8080" # qBittorrent
-      - "9696:9696" # Prowlarr
-      - "6789:6789" # NZBGet
-    volumes:
-      - ./gluetun:/gluetun
-    environment:
-      - VPN_SERVICE_PROVIDER=${VPN_PROVIDER:-custom}
-      - VPN_TYPE=${VPN_TYPE:-wireguard}
-      - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}
-      - WIREGUARD_ADDRESS=${WIREGUARD_ADDRESS}
-      - WIREGUARD_PUBLIC_KEY=${WIREGUARD_PUBLIC_KEY}
-      - VPN_ENDPOINT_IP=${VPN_ENDPOINT_IP}
-      - VPN_ENDPOINT_PORT=${VPN_ENDPOINT_PORT:-51820}
-      - TZ=${TZ:-America/New_York}
-      - FIREWALL_VPN_INPUT_PORTS=${FIREWALL_VPN_INPUT_PORTS}
-      - FIREWALL_OUTBOUND_SUBNETS=172.21.0.0/16,172.20.0.0/16
-    healthcheck:
-      test: ping -c 1 www.google.com || exit 1
-      interval: 20s
-      timeout: 10s
-      retries: 5
-    restart: unless-stopped
+  # gluetun:
+  #   image: docker.io/qmcgaw/gluetun:latest
+  #   container_name: gluetun
+  #   cap_add:
+  #     - NET_ADMIN
+  #   devices:
+  #     - /dev/net/tun:/dev/net/tun
+  #   networks:
+  #     media:
+  #       ipv4_address: 172.21.0.2
+  #   ports:
+  #     - "${FIREWALL_VPN_INPUT_PORTS:-51820}:${FIREWALL_VPN_INPUT_PORTS:-51820}"
+  #     - "8080:8080" # qBittorrent
+  #     - "9696:9696" # Prowlarr
+  #     - "6789:6789" # NZBGet
+  #   volumes:
+  #     - ./gluetun:/gluetun
+  #   environment:
+  #     - VPN_SERVICE_PROVIDER=${VPN_PROVIDER:-custom}
+  #     - VPN_TYPE=${VPN_TYPE:-wireguard}
+  #     - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}
+  #     - WIREGUARD_ADDRESS=${WIREGUARD_ADDRESS}
+  #     - WIREGUARD_PUBLIC_KEY=${WIREGUARD_PUBLIC_KEY}
+  #     - VPN_ENDPOINT_IP=${VPN_ENDPOINT_IP}
+  #     - VPN_ENDPOINT_PORT=${VPN_ENDPOINT_PORT:-51820}
+  #     - TZ=${TZ:-America/New_York}
+  #     - FIREWALL_VPN_INPUT_PORTS=${FIREWALL_VPN_INPUT_PORTS}
+  #     - FIREWALL_OUTBOUND_SUBNETS=172.21.0.0/16,172.20.0.0/16
+  #   healthcheck:
+  #     test: ping -c 1 www.google.com || exit 1
+  #     interval: 20s
+  #     timeout: 10s
+  #     retries: 5
+  #   restart: unless-stopped
 
   # qBittorrent - Torrent Client
-  qbittorrent:
-    image: lscr.io/linuxserver/qbittorrent:latest
-    container_name: qbittorrent
-    restart: unless-stopped
-    environment:
-      - PUID=${PUID:-1000}
-      - PGID=${PGID:-1000}
-      - TZ=${TZ:-America/New_York}
-      - WEBUI_PORT=8080
-      - TORRENTING_PORT=${FIREWALL_VPN_INPUT_PORTS:-51820}
-    volumes:
-      - ./qbittorrent:/config
-      - ${DOWNLOADS_PATH:-/data/downloads}:/downloads
-    depends_on:
-      gluetun:
-        condition: service_healthy
-        restart: true
-    network_mode: service:gluetun
+  # qbittorrent:
+  #   image: lscr.io/linuxserver/qbittorrent:latest
+  #   container_name: qbittorrent
+  #   restart: unless-stopped
+  #   environment:
+  #     - PUID=${PUID:-1000}
+  #     - PGID=${PGID:-1000}
+  #     - TZ=${TZ:-America/New_York}
+  #     - WEBUI_PORT=8080
+  #     - TORRENTING_PORT=${FIREWALL_VPN_INPUT_PORTS:-51820}
+  #   volumes:
+  #     - ./qbittorrent:/config
+  #     - ${DOWNLOADS_PATH:-/data/downloads}:/downloads
+  #   depends_on:
+  #     gluetun:
+  #       condition: service_healthy
+  #       restart: true
+  #   network_mode: service:gluetun
 
   # Prowlarr - Indexer Manager
-  prowlarr:
-    image: lscr.io/linuxserver/prowlarr:latest
-    container_name: prowlarr
-    environment:
-      - PUID=${PUID:-1000}
-      - PGID=${PGID:-1000}
-      - TZ=${TZ:-America/New_York}
-    volumes:
-      - ./prowlarr:/config
-    restart: unless-stopped
-    depends_on:
-      gluetun:
-        condition: service_healthy
-        restart: true
-    network_mode: service:gluetun
+  # prowlarr:
+  #   image: lscr.io/linuxserver/prowlarr:latest
+  #   container_name: prowlarr
+  #   environment:
+  #     - PUID=${PUID:-1000}
+  #     - PGID=${PGID:-1000}
+  #     - TZ=${TZ:-America/New_York}
+  #   volumes:
+  #     - ./prowlarr:/config
+  #   restart: unless-stopped
+  #   depends_on:
+  #     gluetun:
+  #       condition: service_healthy
+  #       restart: true
+  #   network_mode: service:gluetun
 
   # Radarr - Movie Manager
   radarr:
-    image: lscr.io/linuxserver/radarr:latest
+    image: docker.io/linuxserver/radarr:latest
     container_name: radarr
     restart: unless-stopped
     environment:
@@ -269,7 +270,7 @@ services:
 
   # Sonarr - TV Show Manager
   sonarr:
-    image: lscr.io/linuxserver/sonarr:latest
+    image: docker.io/linuxserver/sonarr:latest
     container_name: sonarr
     restart: unless-stopped
     environment:
@@ -288,7 +289,7 @@ services:
 
   # Lidarr - Music Manager
   lidarr:
-    image: lscr.io/linuxserver/lidarr:latest
+    image: docker.io/linuxserver/lidarr:latest
     container_name: lidarr
     restart: unless-stopped
     environment:
@@ -307,7 +308,7 @@ services:
 
   # Bazarr - Subtitle Manager
   bazarr:
-    image: lscr.io/linuxserver/bazarr:latest
+    image: docker.io/linuxserver/bazarr:latest
     container_name: bazarr
     restart: unless-stopped
     environment:
@@ -359,22 +360,22 @@ services:
         ipv4_address: 172.21.0.91
 
   # NZBGet - Usenet Client
-  nzbget:
-  image: lscr.io/linuxserver/nzbget:latest
-  container_name: nzbget
-  environment:
-    - PUID=${PUID:-1000}
-    - PGID=${PGID:-1000}
-    - TZ=${TZ:-America/New_York}
-  volumes:
-    - ./nzbget:/config
-    - ${DOWNLOADS_PATH:-/data/downloads}:/downloads
-  depends_on:
-    gluetun:
-      condition: service_healthy
-      restart: true
-  restart: unless-stopped
-  network_mode: service:gluetun
+  # nzbget:
+  #   image: lscr.io/linuxserver/nzbget:latest
+  #   container_name: nzbget
+  #   environment:
+  #     - PUID=${PUID:-1000}
+  #     - PGID=${PGID:-1000}
+  #     - TZ=${TZ:-America/New_York}
+  #   volumes:
+  #     - ./nzbget:/config
+  #     - ${DOWNLOADS_PATH:-/data/downloads}:/downloads
+  #   depends_on:
+  #     gluetun:
+  #       condition: service_healthy
+  #       restart: true
+  #   restart: unless-stopped
+  #   network_mode: service:gluetun
 
 volumes:
   ollama_data:

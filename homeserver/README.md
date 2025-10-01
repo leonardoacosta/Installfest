@@ -1,20 +1,38 @@
 # Homeserver Podman/Docker Stack
 
-A comprehensive homelab setup featuring smart home, media management, ad-blocking, local AI, and secure networking services.
+A comprehensive homelab setup featuring smart home, media management, ad-blocking, local AI, and secure networking services - optimized for Arch Linux with rootless Podman.
 
-## 🚀 Services Included
+**⚠️ Deployment Target: Arch Linux Server with Podman**
+This stack uses rootless Podman and is designed for Arch Linux servers. Deploy to your Arch Linux machine using SSH or direct access.
+
+## 🚀 Quick Start
+
+```bash
+# One command setup
+./homeserver.sh
+```
+
+Choose option `1) Setup Wizard` and follow the prompts!
+
+**Or use command line mode:**
+```bash
+./homeserver.sh setup    # First time setup
+./homeserver.sh restart  # Clean restart (fixes port conflicts)
+./homeserver.sh status   # Show service status
+./homeserver.sh logs     # View logs
+```
+
+## 📋 Services Included
 
 ### Core Services
-
-- **Home Assistant** - Smart home automation hub
-- **AdGuard Home** - Network-wide ad blocker and DNS server
-- **Ollama + WebUI** - Local LLM server with web interface
-- **Jellyfin** - Media streaming server
+- **Home Assistant** - Smart home automation hub (http://localhost:8123)
+- **AdGuard Home** - Network-wide ad blocker (http://localhost:3080)
+- **Ollama + WebUI** - Local LLM server (http://localhost:8081)
+- **Jellyfin** - Media streaming server (http://localhost:8096)
 - **Tailscale** - Mesh VPN for secure remote access
-- **Samba** - Network attached storage (NAS)
+- **Samba** - Network attached storage (smb://localhost:1445)
 
 ### Media Stack (\*arr Services)
-
 - **Radarr** - Movie collection manager
 - **Sonarr** - TV show collection manager
 - **Lidarr** - Music collection manager
@@ -26,402 +44,177 @@ A comprehensive homelab setup featuring smart home, media management, ad-blockin
 - **Gluetun** - VPN client container
 - **Flaresolverr** - Cloudflare bypass for indexers
 
-## 📋 Prerequisites
+## 🎯 Common Tasks
 
-1. **Install Podman or Docker**:
+| Task | Command |
+|------|---------|
+| **First time setup** | `./homeserver.sh setup` |
+| **Fix port conflicts** | `./homeserver.sh restart` |
+| **Start services** | `./homeserver.sh start` |
+| **Stop services** | `./homeserver.sh stop` |
+| **View status** | `./homeserver.sh status` |
+| **View logs** | `./homeserver.sh logs` |
+| **Troubleshoot** | `./homeserver.sh` then choose option 7 |
 
-   ```bash
-   # Arch Linux with Podman
-   sudo pacman -S podman podman-compose
-   # Enable podman socket (for rootless containers)
-   systemctl --user enable --now podman.socket
+## 📦 Installation (Arch Linux)
 
-   # Arch Linux with Docker
-   sudo pacman -S docker docker-compose
-   sudo systemctl enable --now docker
-   sudo usermod -aG docker $USER
-   # Log out and back in for group changes to take effect
-
-   # macOS with Podman
-   brew install podman podman-compose
-   podman machine init --cpus=4 --memory=8192 --disk-size=100
-   podman machine start
-
-   # macOS with Docker
-   brew install docker docker-compose
-   ```
-
-2. **System Requirements**:
-   - Minimum 8GB RAM (16GB+ recommended)
-   - 100GB+ free disk space
-   - x64 or ARM64 processor
-   - For Arch Linux: kernel 4.18+ (for cgroup v2 support)
-
-## 🛠️ Quick Start
-
-### 1. Clone and Setup
+The wizard can install everything for you:
 
 ```bash
-# Navigate to homeserver directory
-cd homeserver/
+./homeserver.sh install
+```
 
-# For Arch Linux: Run the automated installer (optional)
-./install-arch.sh
+**Or manual installation:**
+```bash
+# Install Podman (rootless)
+sudo pacman -S podman podman-compose
 
-# Copy environment template
+# Configure rootless containers
+echo 'kernel.unprivileged_userns_clone=1' | sudo tee /etc/sysctl.d/99-rootless.conf
+sudo sysctl --system
+sudo loginctl enable-linger $USER
+
+# Run setup
+./homeserver.sh setup
+```
+
+## ⚙️ Configuration
+
+The wizard creates `.env` for you, but you can also copy from template:
+
+```bash
 cp env.example .env
-
-# IMPORTANT: Edit .env and update:
-# - All passwords
-# - VPN credentials
-# - Tailscale auth key
-# - File paths
 nano .env
 ```
 
-### 2. Create Required Directories
+**Important:** Change all passwords! Look for:
+- `CHANGE_THIS_PASSWORD`
+- `changeme`
+- `password123`
+
+## 🌐 Service URLs (Rootless Podman)
+
+**Note:** Some ports are remapped for rootless Podman (can't use privileged ports <1024):
+
+| Service | URL | Notes |
+|---------|-----|-------|
+| Home Assistant | http://localhost:8123 | Standard port |
+| AdGuard Setup | http://localhost:3000 | First-time setup |
+| **AdGuard Web** | **http://localhost:3080** | ⚠️ Port 80→3080 |
+| **AdGuard DNS** | **Port 5353** | ⚠️ Port 53→5353 |
+| Jellyfin | http://localhost:8096 | Standard port |
+| Ollama WebUI | http://localhost:8081 | Standard port |
+| **Samba** | **smb://localhost:1445** | ⚠️ Port 445→1445 |
+
+## 🔧 Port Forwarding (Optional)
+
+To use standard DNS port 53:
 
 ```bash
-# Create service config directories
-mkdir -p homeassistant adguardhome/work adguardhome/conf
-mkdir -p jellyfin/config jellyfin/cache tailscale/state
-mkdir -p radarr sonarr lidarr bazarr prowlarr
-mkdir -p qbittorrent nzbget jellyseerr gluetun
-
-# Create media directories (adjust paths as needed)
-sudo mkdir -p /data/media/{movies,tv,music}
-sudo mkdir -p /data/downloads/{complete,incomplete}
-sudo chown -R $USER:$USER /data
-
-# Set proper permissions
-chmod 755 /data/media
-chmod 755 /data/downloads
-
-# For Arch Linux: Enable user namespaces for rootless containers (if using Podman)
-echo 'kernel.unprivileged_userns_clone=1' | sudo tee /etc/sysctl.d/99-rootless.conf
-sudo sysctl --system
+sudo iptables -t nat -A PREROUTING -p udp --dport 53 -j REDIRECT --to-port 5353
+sudo iptables -t nat -A PREROUTING -p tcp --dport 53 -j REDIRECT --to-port 5353
 ```
 
-### 3. VPN Setup (Required for Torrenting)
+## 🐛 Troubleshooting
 
-Choose one option:
-
-**Option A: Use existing VPN service**
-Edit `.env` with your VPN provider details:
-
+### Port Conflicts
 ```bash
-VPN_PROVIDER=mullvad  # or airvpn, nordvpn, etc.
-VPN_TYPE=wireguard
-# Add your VPN credentials
+./homeserver.sh restart  # Automatic fix
 ```
 
-**Option B: Skip VPN** (Not recommended for torrenting)
-Comment out the `gluetun` service and remove `network_mode: service:gluetun` from torrent services.
-
-### 4. Start Services
-
+### DBUS Session Warning
 ```bash
-# Start all services
-podman-compose up -d
-
-# Or start specific services first
-podman-compose up -d adguardhome jellyfin
-podman-compose up -d radarr sonarr prowlarr
-
-# Check status
-podman-compose ps
-
-# View logs
-podman-compose logs -f [service_name]
+export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+# Or just ignore - Podman works fine without it
 ```
 
-## 🌐 Accessing Services
+### Permissions Issues
+```bash
+./homeserver.sh  # Choose option 7, then option 5
+```
 
-After starting, services are available at:
+### View Detailed Logs
+```bash
+./homeserver.sh logs SERVICE_NAME
+# Example: ./homeserver.sh logs adguardhome
+```
 
-| Service        | URL                                                  | Default Credentials |
-| -------------- | ---------------------------------------------------- | ------------------- |
-| Home Assistant | http://localhost:8123                                | Set on first login  |
-| AdGuard Home   | http://localhost:3000 (setup)<br>http://localhost:80 | Set during setup    |
-| Ollama WebUI   | http://localhost:8081                                | No auth by default  |
-| Jellyfin       | http://localhost:8096                                | Set on first login  |
-| Radarr         | http://localhost:7878                                | No auth by default  |
-| Sonarr         | http://localhost:8989                                | No auth by default  |
-| Lidarr         | http://localhost:8686                                | No auth by default  |
-| Bazarr         | http://localhost:6767                                | No auth by default  |
-| Prowlarr       | http://localhost:9696                                | No auth by default  |
-| qBittorrent    | http://localhost:8080                                | admin/adminadmin    |
-| NZBGet         | http://localhost:6789                                | nzbget/tegbzn6789   |
-| Jellyseerr     | http://localhost:5055                                | Set on first login  |
-| Samba/NAS      | smb://localhost                                      | Set in .env         |
+## 📚 Documentation
 
-## 🔧 Initial Configuration
+- **ARCH_LINUX_SETUP.md** - Complete Arch Linux guide
+- **QUICK_START.md** - Fast reference commands
+- **PORT_CONFLICTS.md** - Fixing "address already in use"
+- **DBUS_FIX.md** - Session bus warnings
+- **TROUBLESHOOTING.md** - Common issues
+- **START_HERE.md** - Simple getting started
 
-### Home Assistant
+## 🎛️ Interactive Menu
 
-1. Access http://localhost:8123
-2. Create admin account
-3. Configure your location and units
-4. Start adding integrations and devices
-
-### AdGuard Home
-
-1. Access http://localhost:3000 for initial setup
-2. Set admin credentials
-3. Configure upstream DNS servers (recommend Cloudflare: 1.1.1.1)
-4. Update your router's DNS to point to your server's IP
-
-### Jellyfin
-
-1. Access http://localhost:8096
-2. Follow setup wizard
-3. Add media libraries pointing to `/media`
-4. Configure users and access
-
-### Media Stack Setup
-
-1. **Prowlarr**: Add indexers (torrent/usenet sites)
-2. **Radarr/Sonarr**:
-   - Add Prowlarr as indexer
-   - Configure download client (qBittorrent/NZBGet)
-   - Set media paths
-3. **Jellyseerr**: Connect to Jellyfin and Radarr/Sonarr
-4. **qBittorrent**: Set download paths in settings
-
-### Tailscale
-
-1. Get auth key from https://login.tailscale.com/admin/settings/keys
-2. Add to `.env` file
-3. Restart container: `podman-compose restart tailscale`
-4. Access your services remotely via Tailscale IPs
-
-### Ollama
+Run without arguments for interactive mode:
 
 ```bash
-# Pull models
-podman exec -it ollama ollama pull llama3
-podman exec -it ollama ollama pull codellama
+./homeserver.sh
+```
 
-# Test via CLI
-podman exec -it ollama ollama run llama3
+Menu options:
+1. Setup Wizard - First time setup
+2. Clean Restart - Fix port conflicts
+3. Start All Services
+4. Stop All Services
+5. Show Status
+6. View Logs
+7. Troubleshooting
+8. Cleanup
+9. Update Images
+10. Install (Arch Linux)
+
+## 🔒 Security
+
+1. **Change ALL default passwords** in `.env`
+2. **Enable authentication** on \*arr services
+3. **Use HTTPS** with reverse proxy (optional)
+4. **Configure firewall** for exposed services
+5. **Regular updates**: `./homeserver.sh` → option 9
+
+## 🔄 Updates
+
+```bash
+./homeserver.sh  # Choose option 9
+# Or: podman-compose pull && podman-compose up -d
 ```
 
 ## 📁 Directory Structure
 
 ```
 homeserver/
-├── podman-compose.yml      # Main compose file
-├── .env                    # Environment variables (create from env.example)
-├── env.example            # Template for environment variables
-├── homeassistant/         # Home Assistant config
-├── adguardhome/          # AdGuard config and data
-├── jellyfin/             # Jellyfin config and cache
-├── radarr/               # Radarr config
-├── sonarr/               # Sonarr config
-├── prowlarr/             # Prowlarr config
-├── qbittorrent/          # qBittorrent config
+├── homeserver.sh          # Main management wizard
+├── podman-compose.yml     # Service definitions
+├── .env                   # Configuration (create from env.example)
+├── env.example           # Configuration template
+├── homeassistant/        # Home Assistant config
+├── adguardhome/          # AdGuard config
+├── jellyfin/             # Jellyfin config
 └── ...                   # Other service configs
 
-/data/                    # Media and downloads (configurable)
-├── media/
-│   ├── movies/
-│   ├── tv/
-│   └── music/
-└── downloads/
-    ├── complete/
-    └── incomplete/
+/data/                    # Media and downloads
+├── media/{movies,tv,music}
+└── downloads/{complete,incomplete}
 ```
 
-## 🔒 Security Recommendations
+## 💡 Tips
 
-1. **Change ALL default passwords** in `.env` file
-2. **Enable authentication** on all \*arr services:
-   - Settings → General → Authentication
-3. **Use HTTPS** with reverse proxy (Traefik/Caddy)
-4. **Firewall rules**: Only expose necessary ports
-
-   ```bash
-   # Arch Linux with ufw (if installed)
-   sudo ufw allow 8096/tcp  # Jellyfin
-   sudo ufw allow 8123/tcp  # Home Assistant
-   sudo ufw allow 53/udp    # AdGuard DNS
-   sudo ufw reload
-
-   # Or with firewalld (if installed)
-   sudo firewall-cmd --zone=public --add-port=8096/tcp --permanent
-   sudo firewall-cmd --zone=public --add-port=8123/tcp --permanent
-   sudo firewall-cmd --zone=public --add-port=53/udp --permanent
-   sudo firewall-cmd --reload
-   ```
-
-5. **Regular updates**: `podman-compose pull && podman-compose up -d`
-6. **Backup configurations** regularly
-
-## 🔄 Common Operations
-
-### Arch Linux: Run as Systemd Service (Optional)
-
-```bash
-# Copy the systemd service file
-cp homeserver.service ~/.config/systemd/user/
-
-# Edit the service file to match your paths
-nano ~/.config/systemd/user/homeserver.service
-
-# Reload systemd and enable the service
-systemctl --user daemon-reload
-systemctl --user enable homeserver.service
-systemctl --user start homeserver.service
-
-# Check status
-systemctl --user status homeserver.service
-
-# View logs
-journalctl --user -u homeserver.service -f
-```
-
-### Update All Services
-
-```bash
-podman-compose pull
-podman-compose up -d
-```
-
-### Backup Configuration
-
-```bash
-tar -czf homeserver-backup-$(date +%Y%m%d).tar.gz \
-  --exclude='*/cache' --exclude='*/logs' \
-  homeassistant/ adguardhome/ jellyfin/ radarr/ sonarr/
-```
-
-### View Logs
-
-```bash
-# All services
-podman-compose logs -f
-
-# Specific service
-podman-compose logs -f jellyfin
-
-# Last 100 lines
-podman-compose logs --tail=100 radarr
-```
-
-### Restart Services
-
-```bash
-# All services
-podman-compose restart
-
-# Specific service
-podman-compose restart jellyfin
-```
-
-## 🐛 Troubleshooting
-
-### Permission Issues
-
-```bash
-# Fix ownership
-sudo chown -R $USER:$USER ./
-sudo chown -R 1000:1000 /data
-
-# Fix permissions
-chmod -R 755 /data/media
-
-# Arch Linux: Fix podman rootless permissions
-podman unshare chown -R 1000:1000 /data
-```
-
-### VPN Not Connecting
-
-1. Check Gluetun logs: `podman-compose logs gluetun`
-2. Verify VPN credentials in `.env`
-3. Try different VPN server/endpoint
-4. Check firewall rules
-
-### Services Can't Communicate
-
-1. Verify network configuration
-2. Check if services are on same network
-3. Use container names for internal communication
-4. Check firewall/iptables rules
-
-### Port Already in Use
-
-```bash
-# Find process using port
-sudo lsof -i :PORT_NUMBER  # If lsof is installed
-sudo ss -tulpn | grep :PORT_NUMBER  # Alternative for Arch
-
-# Change port in podman-compose.yml
-# Example: "8097:8096" to use port 8097 externally
-```
-
-### Podman-Specific Issues
-
-#### Arch Linux
-
-```bash
-# Enable lingering for user services
-sudo loginctl enable-linger $USER
-
-# Check podman socket status
-systemctl --user status podman.socket
-
-# Restart podman socket
-systemctl --user restart podman.socket
-
-# View podman info
-podman info
-
-# If SELinux is enabled, add :z flag to volumes
-# Example: - ./data:/data:z
-
-# For rootless containers, check subuid/subgid
-grep $USER /etc/subuid /etc/subgid
-```
-
-#### macOS
-
-```bash
-# Restart podman machine
-podman machine stop
-podman machine start
-
-# Increase resources
-podman machine set --cpus=4 --memory=8192
-
-# Reset podman machine (warning: destroys containers)
-podman machine rm
-podman machine init --cpus=4 --memory=8192
-podman machine start
-```
-
-## 📚 Additional Resources
-
-- [Home Assistant Docs](https://www.home-assistant.io/docs/)
-- [Jellyfin Docs](https://jellyfin.org/docs/)
-- [Servarr Wiki](https://wiki.servarr.com/)
-- [Gluetun Wiki](https://github.com/qdm12/gluetun/wiki)
-- [AdGuard Home Wiki](https://github.com/AdguardTeam/AdGuardHome/wiki)
-- [Ollama Documentation](https://github.com/ollama/ollama/blob/main/docs/README.md)
-- [Arch Wiki - Podman](https://wiki.archlinux.org/title/Podman)
-- [Arch Wiki - Docker](https://wiki.archlinux.org/title/Docker)
+- **First time?** Use the Setup Wizard (`./homeserver.sh setup`)
+- **Port conflicts?** Use Clean Restart (`./homeserver.sh restart`)
+- **Need help?** Check the interactive Troubleshooting menu
+- **Want automation?** Set up as systemd service (see ARCH_LINUX_SETUP.md)
 
 ## 🤝 Support
 
-For issues specific to:
+For issues:
+1. Check **TROUBLESHOOTING.md**
+2. Run: `./homeserver.sh` → option 7 (Troubleshooting)
+3. View logs: `./homeserver.sh logs SERVICE_NAME`
 
-- This setup: Check the configuration files and logs
-- Individual services: Consult their official documentation
-- Podman/Docker: Check their respective documentation
+## 📝 License
 
-## 📝 Notes
-
-- Media files should be organized: `/media/movies/MovieName (Year)/` and `/media/tv/ShowName/`
-- The VPN container (Gluetun) protects torrent/usenet traffic only
-- Tailscale provides secure remote access to all services
-- Regular backups of configuration directories are recommended
-- Monitor disk space, especially `/data/downloads`
+See individual service licenses.

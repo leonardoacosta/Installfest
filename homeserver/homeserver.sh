@@ -55,11 +55,11 @@ detect_os() {
 # ============= Container Runtime Detection =============
 check_container_runtime() {
     if command -v podman &> /dev/null; then
-        COMPOSE_CMD="podman-compose"
+        COMPOSE_CMD="podman-compose -f podman-compose.yml"
         RUNTIME="podman"
         print_success "Podman detected"
     elif command -v docker &> /dev/null; then
-        COMPOSE_CMD="docker-compose"
+        COMPOSE_CMD="docker-compose -f podman-compose.yml"
         RUNTIME="docker"
         print_success "Docker detected"
     else
@@ -257,7 +257,7 @@ clean_restart() {
     sleep 3
 
     print_warning "Starting services..."
-    $COMPOSE_CMD up -d
+    $COMPOSE_CMD up -d --remove-orphans
 
     print_success "Clean restart complete!"
 
