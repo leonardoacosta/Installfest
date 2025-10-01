@@ -1,0 +1,382 @@
+version: "3.8"
+
+networks:
+  homelab:
+    name: homelab
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+  media:
+    name: media
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
+
+services:
+  # Home Assistant - Smart Home Hub
+  homeassistant:
+    image: docker.io/homeassistant/home-assistant:stable
+    container_name: homeassistant
+    restart: unless-stopped
+    privileged: true
+    environment:
+      - TZ=${TZ:-America/New_York}
+    volumes:
+      - ./homeassistant:/config
+      - /etc/localtime:/etc/localtime:ro
+      - /run/podman/podman.sock:/var/run/docker.sock:ro # For docker integrations
+    network_mode: host # Required for device discovery
+    devices:
+      - /dev/ttyUSB0:/dev/ttyUSB0 # Optional: for Zigbee/Z-Wave dongles
+
+  # AdGuard Home - DNS Ad Blocker
+  adguardhome:
+    image: docker.io/adguard/adguardhome:latest
+    container_name: adguardhome
+    restart: unless-stopped
+    ports:
+      - "53:53/tcp" # DNS
+      - "53:53/udp" # DNS
+      - "67:67/udp" # DHCP Server
+      - "68:68/udp" # DHCP Client
+      - "80:80/tcp" # Web interface
+      - "443:443/tcp" # HTTPS web interface
+      - "3000:3000/tcp" # Initial setup
+      - "853:853/tcp" # DNS-over-TLS
+      - "784:784/udp" # DNS-over-QUIC
+      - "853:853/udp" # DNS-over-QUIC
+      - "8853:8853/udp" # DNS-over-QUIC
+      - "5443:5443/tcp" # DNSCrypt
+      - "5443:5443/udp" # DNSCrypt
+    volumes:
+      - ./adguardhome/work:/opt/adguardhome/work
+      - ./adguardhome/conf:/opt/adguardhome/conf
+    networks:
+      homelab:
+        ipv4_address: 172.20.0.53
+
+  # Ollama - Local LLM Server
+  ollama:
+    image: docker.io/ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+      - OLLAMA_ORIGINS=*
+    networks:
+      homelab:
+        ipv4_address: 172.20.0.11
+    # Uncomment for GPU support (NVIDIA)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  # Ollama WebUI - Interface for Ollama
+  ollama-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: ollama-webui
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+    volumes:
+      - ollama_webui_data:/app/backend/data
+    depends_on:
+      - ollama
+    networks:
+      homelab:
+        ipv4_address: 172.20.0.12
+
+  # Jellyfin - Media Server
+  jellyfin:
+    image: docker.io/jellyfin/jellyfin:latest
+    container_name: jellyfin
+    restart: unless-stopped
+    user: "${PUID:-1000}:${PGID:-1000}"
+    environment:
+      - TZ=${TZ:-America/New_York}
+    volumes:
+      - ./jellyfin/config:/config
+      - ./jellyfin/cache:/cache
+      - ${MEDIA_PATH:-/data/media}:/media:ro
+      - ${MEDIA_PATH2:-/data/media2}:/media2:ro # Optional second media path
+    ports:
+      - "8096:8096" # Web interface
+      - "8920:8920" # HTTPS web interface (optional)
+      - "7359:7359/udp" # Client discovery
+      - "1900:1900/udp" # DLNA
+    networks:
+      homelab:
+        ipv4_address: 172.20.0.96
+      media:
+        ipv4_address: 172.21.0.96
+    # Uncomment for hardware acceleration (Intel QuickSync)
+    # devices:
+    #   - /dev/dri:/dev/dri
+
+  # Tailscale - Mesh VPN
+  tailscale:
+    image: docker.io/tailscale/tailscale:latest
+    container_name: tailscale
+    restart: unless-stopped
+    hostname: homeserver-tailscale
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY} # Get from https://login.tailscale.com/admin/settings/keys
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_USERSPACE=false
+      - TS_ROUTES=${TS_ROUTES:-172.20.0.0/16,172.21.0.0/16}
+    volumes:
+      - ./tailscale/state:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    networks:
+      homelab:
+        ipv4_address: 172.20.0.100
+      media:
+        ipv4_address: 172.21.0.100
+
+  # Samba - Network Attached Storage
+  samba:
+    image: docker.io/dperson/samba:latest
+    container_name: samba
+    restart: unless-stopped
+    ports:
+      - "445:445"
+      - "139:139"
+    environment:
+      - TZ=${TZ:-America/New_York}
+      - USERID=${PUID:-1000}
+      - GROUPID=${PGID:-1000}
+      - SHARE1=${SAMBA_SHARE1:-Media;/media;yes;no;yes;all;none}
+      - SHARE2=${SAMBA_SHARE2:-Backup;/backup;yes;no;no;all;none}
+      - USER1=${SAMBA_USER:-user;password123} # CHANGE PASSWORD!
+      - RECYCLE=false
+    volumes:
+      - ${NAS_PATH:-/data}:/media
+      - ${BACKUP_PATH:-/backup}:/backup
+    networks:
+      homelab:
+        ipv4_address: 172.20.0.45
+
+  # ============= Media Stack Services =============
+
+  # Gluetun - VPN Client for Media Services
+  gluetun:
+    image: docker.io/qmcgaw/gluetun:latest
+    container_name: gluetun
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    networks:
+      media:
+        ipv4_address: 172.21.0.2
+    ports:
+      - "${FIREWALL_VPN_INPUT_PORTS:-51820}:${FIREWALL_VPN_INPUT_PORTS:-51820}"
+      - "8080:8080" # qBittorrent
+      - "9696:9696" # Prowlarr
+      - "6789:6789" # NZBGet
+    volumes:
+      - ./gluetun:/gluetun
+    environment:
+      - VPN_SERVICE_PROVIDER=${VPN_PROVIDER:-custom}
+      - VPN_TYPE=${VPN_TYPE:-wireguard}
+      - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}
+      - WIREGUARD_ADDRESS=${WIREGUARD_ADDRESS}
+      - WIREGUARD_PUBLIC_KEY=${WIREGUARD_PUBLIC_KEY}
+      - VPN_ENDPOINT_IP=${VPN_ENDPOINT_IP}
+      - VPN_ENDPOINT_PORT=${VPN_ENDPOINT_PORT:-51820}
+      - TZ=${TZ:-America/New_York}
+      - FIREWALL_VPN_INPUT_PORTS=${FIREWALL_VPN_INPUT_PORTS}
+      - FIREWALL_OUTBOUND_SUBNETS=172.21.0.0/16,172.20.0.0/16
+    healthcheck:
+      test: ping -c 1 www.google.com || exit 1
+      interval: 20s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
+  # qBittorrent - Torrent Client
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TZ:-America/New_York}
+      - WEBUI_PORT=8080
+      - TORRENTING_PORT=${FIREWALL_VPN_INPUT_PORTS:-51820}
+    volumes:
+      - ./qbittorrent:/config
+      - ${DOWNLOADS_PATH:-/data/downloads}:/downloads
+    depends_on:
+      gluetun:
+        condition: service_healthy
+        restart: true
+    network_mode: service:gluetun
+
+  # Prowlarr - Indexer Manager
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TZ:-America/New_York}
+    volumes:
+      - ./prowlarr:/config
+    restart: unless-stopped
+    depends_on:
+      gluetun:
+        condition: service_healthy
+        restart: true
+    network_mode: service:gluetun
+
+  # Radarr - Movie Manager
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TZ:-America/New_York}
+    volumes:
+      - ./radarr:/config
+      - ${MEDIA_PATH:-/data/media}:/media
+      - ${DOWNLOADS_PATH:-/data/downloads}:/downloads
+    ports:
+      - "7878:7878"
+    networks:
+      media:
+        ipv4_address: 172.21.0.78
+
+  # Sonarr - TV Show Manager
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TZ:-America/New_York}
+    volumes:
+      - ./sonarr:/config
+      - ${MEDIA_PATH:-/data/media}:/media
+      - ${DOWNLOADS_PATH:-/data/downloads}:/downloads
+    ports:
+      - "8989:8989"
+    networks:
+      media:
+        ipv4_address: 172.21.0.89
+
+  # Lidarr - Music Manager
+  lidarr:
+    image: lscr.io/linuxserver/lidarr:latest
+    container_name: lidarr
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TZ:-America/New_York}
+    volumes:
+      - ./lidarr:/config
+      - ${MEDIA_PATH:-/data/media}:/media
+      - ${DOWNLOADS_PATH:-/data/downloads}:/downloads
+    ports:
+      - "8686:8686"
+    networks:
+      media:
+        ipv4_address: 172.21.0.86
+
+  # Bazarr - Subtitle Manager
+  bazarr:
+    image: lscr.io/linuxserver/bazarr:latest
+    container_name: bazarr
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TZ:-America/New_York}
+    volumes:
+      - ./bazarr:/config
+      - ${MEDIA_PATH:-/data/media}:/media
+    ports:
+      - "6767:6767"
+    networks:
+      media:
+        ipv4_address: 172.21.0.67
+
+  # Jellyseerr - Media Request Management
+  jellyseerr:
+    image: docker.io/fallenbagel/jellyseerr:latest
+    container_name: jellyseerr
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TZ:-America/New_York}
+    volumes:
+      - ./jellyseerr:/app/config
+    ports:
+      - "5055:5055"
+    networks:
+      homelab:
+        ipv4_address: 172.20.0.55
+      media:
+        ipv4_address: 172.21.0.55
+
+  # Flaresolverr - Cloudflare Bypass for Prowlarr
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    restart: unless-stopped
+    environment:
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - LOG_HTML=${LOG_HTML:-false}
+      - CAPTCHA_SOLVER=${CAPTCHA_SOLVER:-none}
+      - TZ=${TZ:-America/New_York}
+    ports:
+      - "8191:8191"
+    networks:
+      media:
+        ipv4_address: 172.21.0.91
+
+  # NZBGet - Usenet Client
+  nzbget:
+    image: lscr.io/linuxserver/nzbget:latest
+    container_name: nzbget
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TZ:-America/New_York}
+    volumes:
+      - ./nzbget:/config
+      - ${DOWNLOADS_PATH:-/data/downloads}:/downloads
+    depends_on:
+      gluetun:
+        condition: service_healthy
+        restart: true
+    restart: unless-stopped
+    network_mode: service:gluetun
+
+volumes:
+  ollama_data:
+    driver: local
+  ollama_webui_data:
+    driver: local
