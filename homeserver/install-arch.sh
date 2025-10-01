@@ -55,16 +55,28 @@ case $runtime_choice in
         sudo pacman -S --noconfirm podman podman-compose buildah skopeo
         sudo pacman -S --noconfirm fuse-overlayfs slirp4netns
         
-        print_info "Enabling Podman socket for user..."
-        systemctl --user enable --now podman.socket
-        
         print_info "Configuring rootless containers..."
         # Enable user namespaces
         echo 'kernel.unprivileged_userns_clone=1' | sudo tee /etc/sysctl.d/99-rootless.conf
         sudo sysctl --system
-        
-        # Enable lingering for user services
+
+        # Enable lingering for user services (allows services to run without login)
         sudo loginctl enable-linger $USER
+
+        # Set up XDG_RUNTIME_DIR if not already set
+        if [ -z "$XDG_RUNTIME_DIR" ]; then
+            export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+        fi
+
+        # Enable Podman socket for user
+        print_info "Enabling Podman socket for user..."
+        if systemctl --user enable --now podman.socket 2>/dev/null; then
+            print_success "Podman socket enabled"
+        else
+            print_warning "Could not enable podman socket via systemctl --user"
+            print_info "This is normal if you're running via SSH without a login session"
+            print_info "The socket will be available after you log in normally"
+        fi
         
         print_success "Podman installed and configured"
         ;;
@@ -87,10 +99,17 @@ case $runtime_choice in
         # Install Podman
         sudo pacman -S --noconfirm podman podman-compose buildah skopeo
         sudo pacman -S --noconfirm fuse-overlayfs slirp4netns
-        systemctl --user enable --now podman.socket
         echo 'kernel.unprivileged_userns_clone=1' | sudo tee /etc/sysctl.d/99-rootless.conf
         sudo sysctl --system
         sudo loginctl enable-linger $USER
+
+        # Set up XDG_RUNTIME_DIR if not set
+        if [ -z "$XDG_RUNTIME_DIR" ]; then
+            export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+        fi
+
+        # Try to enable socket, don't fail if it errors
+        systemctl --user enable --now podman.socket 2>/dev/null || true
         
         # Install Docker
         sudo pacman -S --noconfirm docker docker-compose
@@ -138,6 +157,17 @@ fi
 
 print_success "Media directories created"
 
+# Create service config directories
+print_info "Creating service configuration directories..."
+mkdir -p homeassistant
+mkdir -p adguardhome/work adguardhome/conf
+mkdir -p jellyfin/config jellyfin/cache
+mkdir -p tailscale/state
+mkdir -p radarr sonarr lidarr bazarr prowlarr
+mkdir -p qbittorrent nzbget jellyseerr gluetun
+
+print_success "Service configuration directories created"
+
 # Configure firewall (if ufw is installed)
 if command -v ufw &> /dev/null; then
     print_info "Configuring firewall..."
@@ -158,6 +188,42 @@ if [ ! -f .env ]; then
         print_info "Creating .env file from template..."
         cp env.example .env
         print_warning "Please edit .env and update all passwords and settings"
+    else
+        print_warning "No env.example found, creating minimal .env file..."
+        cat > .env <<EOF
+# Timezone
+TZ=America/New_York
+
+# User/Group IDs
+PUID=1000
+PGID=1000
+
+# Paths
+MEDIA_PATH=/data/media
+DOWNLOADS_PATH=/data/downloads
+NAS_PATH=/data
+BACKUP_PATH=/backup
+
+# Samba Configuration
+SAMBA_SHARE1="Media;/media;yes;no;yes;all;none"
+SAMBA_SHARE2="Backup;/backup;yes;no;no;all;none"
+SAMBA_USER="user;password123"
+
+# Tailscale (Get from https://login.tailscale.com/admin/settings/keys)
+TS_AUTHKEY=
+
+# VPN Configuration (if using media stack)
+VPN_PROVIDER=custom
+VPN_TYPE=wireguard
+WIREGUARD_PRIVATE_KEY=
+WIREGUARD_ADDRESS=
+WIREGUARD_PUBLIC_KEY=
+VPN_ENDPOINT_IP=
+VPN_ENDPOINT_PORT=51820
+FIREWALL_VPN_INPUT_PORTS=51820
+EOF
+        print_success "Created .env file with defaults"
+        print_warning "IMPORTANT: Edit .env and configure your settings!"
     fi
 fi
 

@@ -140,13 +140,18 @@ check_runtime_daemon() {
                 print_success "Podman machine is running"
             fi
         elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+            # Set XDG_RUNTIME_DIR if not set (needed for systemctl --user)
+            if [ -z "$XDG_RUNTIME_DIR" ]; then
+                export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+            fi
+
             # Linux podman socket check
-            if ! systemctl --user is-active --quiet podman.socket; then
-                print_warning "Podman socket is not active. Starting it..."
-                systemctl --user start podman.socket
-                print_success "Podman socket started"
-            else
+            if systemctl --user is-active --quiet podman.socket 2>/dev/null; then
                 print_success "Podman socket is active"
+            else
+                print_warning "Podman socket check failed (this is OK for rootless Podman)"
+                print_info "Podman will work without the socket service"
+                # Don't try to start it, might not have session bus
             fi
         fi
     elif [ "$RUNTIME" = "docker" ]; then
@@ -203,23 +208,57 @@ setup_directories() {
     done
     
     # Create .env if it doesn't exist
-    if [ ! -f .env ]; then
-        if [ -f env.example ]; then
+    if [ ! -f "$SCRIPT_DIR/.env" ]; then
+        if [ -f "$SCRIPT_DIR/env.example" ]; then
             print_warning "No .env file found. Creating from template..."
-            cp env.example .env
+            cp "$SCRIPT_DIR/env.example" "$SCRIPT_DIR/.env"
             print_warning "IMPORTANT: Edit .env and update all passwords and paths!"
             read -p "Press Enter to continue after editing .env..."
         else
-            print_error "No env.example file found!"
-            exit 1
+            print_warning "No env.example found, creating minimal .env file..."
+            cat > "$SCRIPT_DIR/.env" <<'EOF'
+# Timezone
+TZ=America/New_York
+
+# User/Group IDs
+PUID=1000
+PGID=1000
+
+# Paths
+MEDIA_PATH=/data/media
+DOWNLOADS_PATH=/data/downloads
+NAS_PATH=/data
+BACKUP_PATH=/backup
+
+# Samba Configuration
+SAMBA_SHARE1="Media;/media;yes;no;yes;all;none"
+SAMBA_SHARE2="Backup;/backup;yes;no;no;all;none"
+SAMBA_USER="user;password123"
+
+# Tailscale (Get from https://login.tailscale.com/admin/settings/keys)
+TS_AUTHKEY=
+
+# VPN Configuration (if using media stack)
+VPN_PROVIDER=custom
+VPN_TYPE=wireguard
+WIREGUARD_PRIVATE_KEY=
+WIREGUARD_ADDRESS=
+WIREGUARD_PUBLIC_KEY=
+VPN_ENDPOINT_IP=
+VPN_ENDPOINT_PORT=51820
+FIREWALL_VPN_INPUT_PORTS=51820
+EOF
+            print_success "Created .env file with defaults"
+            print_warning "IMPORTANT: Edit .env and configure your settings!"
+            read -p "Press Enter to continue after editing .env..."
         fi
     else
         print_success ".env file exists"
     fi
     
     # Check if media directories need to be created
-    if [ -f .env ]; then
-        source .env
+    if [ -f "$SCRIPT_DIR/.env" ]; then
+        source "$SCRIPT_DIR/.env"
         
         # Create media directories if they don't exist
         if [ -n "$MEDIA_PATH" ] && [ ! -d "$MEDIA_PATH" ]; then
@@ -252,12 +291,23 @@ start_services() {
     local services="$1"
     if [ -z "$services" ]; then
         print_warning "Starting all services..."
-        $COMPOSE_CMD up -d
+        $COMPOSE_CMD up -d 2>&1 | tee /tmp/compose-start.log
+
+        # Check for errors in the output
+        if grep -qi "error\|failed" /tmp/compose-start.log; then
+            print_error "Some services failed to start. Check logs above."
+            return 1
+        fi
     else
         print_warning "Starting services: $services"
-        $COMPOSE_CMD up -d $services
+        $COMPOSE_CMD up -d $services 2>&1 | tee /tmp/compose-start.log
+
+        if grep -qi "error\|failed" /tmp/compose-start.log; then
+            print_error "Some services failed to start. Check logs above."
+            return 1
+        fi
     fi
-    print_success "Services started"
+    print_success "Services started (or already running)"
 }
 
 stop_services() {
@@ -321,15 +371,15 @@ show_status() {
     echo ""
     print_info "Checking service health..."
     
-    # Check key services
-    services=("homeassistant:8123" "adguardhome:80" "jellyfin:8096" "radarr:7878" "sonarr:8989")
-    
+    # Check key services by port (avoid hardcoding container names)
+    services=("Home Assistant:8123" "AdGuard:80" "Jellyfin:8096" "Ollama WebUI:8081")
+
     for service in "${services[@]}"; do
         IFS=':' read -r name port <<< "$service"
-        if curl -s -o /dev/null -w "%{http_code}" "http://localhost:$port" | grep -q "200\|401\|302"; then
+        if timeout 2 bash -c "echo > /dev/tcp/localhost/$port" 2>/dev/null; then
             print_success "$name is responding on port $port"
         else
-            print_warning "$name may not be ready on port $port"
+            print_warning "$name may not be ready on port $port (or not started)"
         fi
     done
 }
@@ -367,12 +417,12 @@ setup_wizard() {
     
     # Check .env file
     print_info "Checking environment configuration..."
-    if grep -q "changeme" .env 2>/dev/null; then
+    if [ -f "$SCRIPT_DIR/.env" ] && grep -q "changeme\|password123" "$SCRIPT_DIR/.env" 2>/dev/null; then
         print_error "Default passwords found in .env!"
         print_warning "Please edit .env and change all passwords"
         read -p "Open .env in editor? (y/n): " edit_env
         if [[ $edit_env == "y" ]]; then
-            ${EDITOR:-nano} .env
+            ${EDITOR:-nano} "$SCRIPT_DIR/.env"
         fi
     fi
     

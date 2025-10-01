@@ -18,7 +18,7 @@ networks:
 services:
   # Home Assistant - Smart Home Hub
   homeassistant:
-    image: docker.io/homeassistant/home-assistant:stable
+    image: ghcr.io/home-assistant/home-assistant
     container_name: homeassistant
     restart: unless-stopped
     privileged: true
@@ -27,10 +27,12 @@ services:
     volumes:
       - ./homeassistant:/config
       - /etc/localtime:/etc/localtime:ro
-      - /run/podman/podman.sock:/var/run/docker.sock:ro # For docker integrations
+      # Uncomment if you need Docker integration (requires podman socket at /run/podman/podman.sock)
+      # - /run/podman/podman.sock:/var/run/docker.sock:ro
     network_mode: host # Required for device discovery
-    devices:
-      - /dev/ttyUSB0:/dev/ttyUSB0 # Optional: for Zigbee/Z-Wave dongles
+    # Uncomment if you have USB devices (Zigbee/Z-Wave dongles)
+    # devices:
+    #   - /dev/ttyUSB0:/dev/ttyUSB0
 
   # AdGuard Home - DNS Ad Blocker
   adguardhome:
@@ -38,19 +40,17 @@ services:
     container_name: adguardhome
     restart: unless-stopped
     ports:
-      - "53:53/tcp" # DNS
-      - "53:53/udp" # DNS
-      - "67:67/udp" # DHCP Server
-      - "68:68/udp" # DHCP Client
-      - "80:80/tcp" # Web interface
-      - "443:443/tcp" # HTTPS web interface
+      - "5353:53/tcp" # DNS (mapped to 5353 for rootless)
+      - "5353:53/udp" # DNS (mapped to 5353 for rootless)
+      - "3080:80/tcp" # Web interface (mapped to 3080 for rootless)
+      - "3443:443/tcp" # HTTPS web interface (mapped to 3443 for rootless)
       - "3000:3000/tcp" # Initial setup
-      - "853:853/tcp" # DNS-over-TLS
-      - "784:784/udp" # DNS-over-QUIC
-      - "853:853/udp" # DNS-over-QUIC
-      - "8853:8853/udp" # DNS-over-QUIC
-      - "5443:5443/tcp" # DNSCrypt
-      - "5443:5443/udp" # DNSCrypt
+      - "8853:853/tcp" # DNS-over-TLS
+      - "5784:784/udp" # DNS-over-QUIC
+      - "5853:853/udp" # DNS-over-QUIC
+      - "8854:8853/udp" # DNS-over-QUIC
+      - "5444:5443/tcp" # DNSCrypt
+      - "5445:5443/udp" # DNSCrypt
     volumes:
       - ./adguardhome/work:/opt/adguardhome/work
       - ./adguardhome/conf:/opt/adguardhome/conf
@@ -155,8 +155,8 @@ services:
     container_name: samba
     restart: unless-stopped
     ports:
-      - "445:445"
-      - "139:139"
+      - "1445:445" # Mapped to 1445 for rootless
+      - "1139:139" # Mapped to 1139 for rootless
     environment:
       - TZ=${TZ:-America/New_York}
       - USERID=${PUID:-1000}
@@ -167,12 +167,13 @@ services:
       - RECYCLE=false
     volumes:
       - ${NAS_PATH:-/data}:/media
-      - ${BACKUP_PATH:-/backup}:/backup
+      # Uncomment if you have a backup directory
+      # - ${BACKUP_PATH:-/backup}:/backup
     networks:
       homelab:
         ipv4_address: 172.20.0.45
 
-  # ============= Media Stack Services =============
+  # # ============= Media Stack Services =============
 
   # Gluetun - VPN Client for Media Services
   gluetun:
@@ -359,21 +360,21 @@ services:
 
   # NZBGet - Usenet Client
   nzbget:
-    image: lscr.io/linuxserver/nzbget:latest
-    container_name: nzbget
-    environment:
-      - PUID=${PUID:-1000}
-      - PGID=${PGID:-1000}
-      - TZ=${TZ:-America/New_York}
-    volumes:
-      - ./nzbget:/config
-      - ${DOWNLOADS_PATH:-/data/downloads}:/downloads
-    depends_on:
-      gluetun:
-        condition: service_healthy
-        restart: true
-    restart: unless-stopped
-    network_mode: service:gluetun
+  image: lscr.io/linuxserver/nzbget:latest
+  container_name: nzbget
+  environment:
+    - PUID=${PUID:-1000}
+    - PGID=${PGID:-1000}
+    - TZ=${TZ:-America/New_York}
+  volumes:
+    - ./nzbget:/config
+    - ${DOWNLOADS_PATH:-/data/downloads}:/downloads
+  depends_on:
+    gluetun:
+      condition: service_healthy
+      restart: true
+  restart: unless-stopped
+  network_mode: service:gluetun
 
 volumes:
   ollama_data:

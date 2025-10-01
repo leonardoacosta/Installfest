@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "/Users/leonardoacosta/Personal/Installfest/logs/.13d1e5c4aba1d9677f577898d694810cb25eecb8-audit.json",
+    "files": [
+        {
+            "date": 1759354558745,
+            "name": "/Users/leonardoacosta/Personal/Installfest/logs/mcp-puppeteer-2025-10-01.log",
+            "hash": "f437a46ab96f1f471e94751b6881f665ce10f5b2756abbe302d28777efe20e5b"
+        }
+    ],
+    "hashType": "sha256"
+}

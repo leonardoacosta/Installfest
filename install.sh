@@ -1,11 +1,11 @@
 #!/bin/bash
 
-. scripts/utils.sh
-. scripts/prerequisites.sh
-. scripts/brew-install.sh
-. scripts/osx-defaults.sh
-. scripts/terminal.sh
-. scripts/symlinks.sh
+. mac/scripts/utils.sh
+. mac/scripts/prerequisites.sh
+. mac/scripts/brew-install.sh
+. mac/scripts/osx-defaults.sh
+. mac/scripts/terminal.sh
+. mac/scripts/symlinks.sh
 
 info "Dotfiles installation initialized..."
 read -p "Install apps? [y/n] " install_apps
@@ -27,11 +27,11 @@ info "===================="
 info "Symbolic Links"
 info "===================="
 
-chmod +x ./scripts/symlinks.sh
+chmod +x ./mac/scripts/symlinks.sh
 if [[ "$overwrite_dotfiles" == "y" ]]; then
     warning "Deleting existing dotfiles..."
-    ./scripts/symlinks.sh --delete --include-files
+    ./mac/scripts/symlinks.sh --delete --include-files
 fi
-./scripts/symlinks.sh --create
+./mac/scripts/symlinks.sh --create
 
 success "Dotfiles set up successfully."
