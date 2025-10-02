@@ -138,7 +138,78 @@ install_arch() {
     echo 'vm.max_map_count=262144' | sudo tee /etc/sysctl.d/99-elasticsearch.conf
     sudo sysctl --system
 
+    # Configure DNS for AdGuard Home
+    configure_dns_for_adguard
+
     print_success "Installation complete!"
+}
+
+# ============= DNS Configuration for AdGuard =============
+configure_dns_for_adguard() {
+    print_header "DNS Configuration for AdGuard Home"
+
+    if systemctl is-active --quiet systemd-resolved; then
+        print_warning "systemd-resolved is running and will conflict with AdGuard Home (port 53)"
+        echo ""
+        echo "AdGuard Home needs port 53 for DNS, but systemd-resolved is using it."
+        echo ""
+        read -p "Disable systemd-resolved to allow AdGuard Home to use port 53? (y/n): " disable_resolved
+
+        if [[ $disable_resolved == "y" ]]; then
+            print_info "Disabling systemd-resolved..."
+            sudo systemctl stop systemd-resolved
+            sudo systemctl disable systemd-resolved
+
+            print_info "Configuring static DNS (fallback until AdGuard is running)..."
+            sudo rm -f /etc/resolv.conf
+            sudo tee /etc/resolv.conf > /dev/null <<'EOF'
+# Temporary DNS configuration
+# Will be updated to point to AdGuard Home after setup
+nameserver 1.1.1.1
+nameserver 8.8.8.8
+EOF
+
+            # Prevent NetworkManager from overwriting
+            if systemctl is-active --quiet NetworkManager; then
+                print_info "Configuring NetworkManager to not manage DNS..."
+                sudo mkdir -p /etc/NetworkManager/conf.d
+                sudo tee /etc/NetworkManager/conf.d/dns.conf > /dev/null <<'EOF'
+[main]
+dns=none
+systemd-resolved=false
+EOF
+                sudo systemctl restart NetworkManager 2>/dev/null || true
+            fi
+
+            # Prevent dhcpcd from overwriting
+            if command -v dhcpcd &> /dev/null; then
+                print_info "Configuring dhcpcd to not manage DNS..."
+                if ! grep -q "nohook resolv.conf" /etc/dhcpcd.conf 2>/dev/null; then
+                    echo "nohook resolv.conf" | sudo tee -a /etc/dhcpcd.conf
+                    sudo systemctl restart dhcpcd 2>/dev/null || true
+                fi
+            fi
+
+            # Make resolv.conf immutable
+            sudo chattr +i /etc/resolv.conf 2>/dev/null || true
+
+            print_success "systemd-resolved disabled - AdGuard Home can now use port 53"
+            echo ""
+            print_info "IMPORTANT: After AdGuard Home is running, update /etc/resolv.conf:"
+            print_info "  sudo chattr -i /etc/resolv.conf"
+            print_info "  echo 'nameserver 127.0.0.1' | sudo tee /etc/resolv.conf"
+            print_info "  sudo chattr +i /etc/resolv.conf"
+            echo ""
+        else
+            print_warning "Skipping systemd-resolved configuration"
+            print_info "AdGuard Home may fail to bind to port 53"
+            print_info "You can manually disable it later with:"
+            print_info "  sudo systemctl stop systemd-resolved"
+            print_info "  sudo systemctl disable systemd-resolved"
+        fi
+    else
+        print_success "systemd-resolved is not running - no conflicts expected"
+    fi
 }
 
 # ============= Directory Management =============
