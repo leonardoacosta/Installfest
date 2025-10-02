@@ -29,8 +29,6 @@ services:
     volumes:
       - ./homeassistant:/config
       - /etc/localtime:/etc/localtime:ro
-      # Uncomment if you need Docker integration (requires podman socket at /run/podman/podman.sock)
-      # - /run/podman/podman.sock:/var/run/docker.sock:ro
     network_mode: host # Required for device discovery
     # Uncomment if you have USB devices (Zigbee/Z-Wave dongles)
     # devices:
@@ -141,12 +139,14 @@ services:
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=false
       - TS_ROUTES=${TS_ROUTES:-172.20.0.0/16,172.21.0.0/16}
+      - TS_EXTRA_ARGS=--advertise-exit-node
     volumes:
       - ./tailscale/state:/var/lib/tailscale
       - /dev/net/tun:/dev/net/tun
     cap_add:
       - NET_ADMIN
       - SYS_MODULE
+    network_mode: host
     networks:
       homelab:
         ipv4_address: 172.20.0.100
