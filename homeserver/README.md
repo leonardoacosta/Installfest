@@ -1,9 +1,9 @@
-# Homeserver Podman/Docker Stack
+# Homeserver Docker Stack
 
-A comprehensive homelab setup featuring smart home, media management, ad-blocking, local AI, and secure networking services - optimized for Arch Linux with rootless Podman.
+A comprehensive homelab setup featuring smart home, media management, ad-blocking, local AI, and secure networking services - optimized for Arch Linux with Docker.
 
-**⚠️ Deployment Target: Arch Linux Server with Podman**
-This stack uses rootless Podman and is designed for Arch Linux servers. Deploy to your Arch Linux machine using SSH or direct access.
+**⚠️ Deployment Target: Arch Linux Server with Docker**
+This stack uses Docker and is designed for Arch Linux servers. Deploy to your Arch Linux machine using SSH or direct access.
 
 ## 🚀 Quick Start
 
@@ -26,11 +26,11 @@ Choose option `1) Setup Wizard` and follow the prompts!
 
 ### Core Services
 - **Home Assistant** - Smart home automation hub (http://localhost:8123)
-- **AdGuard Home** - Network-wide ad blocker (http://localhost:3080)
+- **AdGuard Home** - Network-wide ad blocker (http://localhost:80)
 - **Ollama + WebUI** - Local LLM server (http://localhost:8081)
 - **Jellyfin** - Media streaming server (http://localhost:8096)
 - **Tailscale** - Mesh VPN for secure remote access
-- **Samba** - Network attached storage (smb://localhost:1445)
+- **Samba** - Network attached storage (smb://localhost:445)
 
 ### Media Stack (\*arr Services)
 - **Radarr** - Movie collection manager
@@ -66,15 +66,13 @@ The wizard can install everything for you:
 
 **Or manual installation:**
 ```bash
-# Install Podman (rootless)
-sudo pacman -S podman podman-compose
+# Install Docker
+sudo pacman -S docker docker-compose
+sudo systemctl enable --now docker
+sudo usermod -aG docker $USER
 
-# Configure rootless containers
-echo 'kernel.unprivileged_userns_clone=1' | sudo tee /etc/sysctl.d/99-rootless.conf
-sudo sysctl --system
-sudo loginctl enable-linger $USER
-
-# Run setup
+# Log out and back in for group changes
+# Then run setup
 ./homeserver.sh setup
 ```
 

@@ -54,16 +54,16 @@ detect_os() {
 
 # ============= Container Runtime Detection =============
 check_container_runtime() {
-    if command -v podman &> /dev/null; then
-        COMPOSE_CMD="podman-compose -f podman-compose.yml"
-        RUNTIME="podman"
-        print_success "Podman detected"
-    elif command -v docker &> /dev/null; then
-        COMPOSE_CMD="docker-compose -f podman-compose.yml"
+    if command -v docker &> /dev/null; then
+        COMPOSE_CMD="docker compose"
         RUNTIME="docker"
         print_success "Docker detected"
+    elif command -v podman &> /dev/null; then
+        COMPOSE_CMD="podman-compose"
+        RUNTIME="podman"
+        print_success "Podman detected"
     else
-        print_error "Neither Podman nor Docker is installed"
+        print_error "Neither Docker nor Podman is installed"
         return 1
     fi
 }
@@ -91,12 +91,20 @@ install_arch() {
     sudo pacman -Syu --noconfirm
 
     echo "Which container runtime would you like to install?"
-    echo "1) Podman (recommended - rootless containers)"
-    echo "2) Docker"
+    echo "1) Docker (recommended)"
+    echo "2) Podman"
     read -p "Choose (1-2): " runtime_choice
 
     case $runtime_choice in
         1)
+            print_info "Installing Docker..."
+            sudo pacman -S --noconfirm docker docker-buildx docker-compose
+            sudo systemctl enable --now docker
+            sudo usermod -aG docker $USER
+            print_warning "Log out and back in for Docker group changes to take effect"
+            print_success "Docker installed successfully"
+            ;;
+        2)
             print_info "Installing Podman..."
             sudo pacman -S --noconfirm podman podman-compose buildah skopeo fuse-overlayfs slirp4netns
 
@@ -108,14 +116,6 @@ install_arch() {
             setup_environment
             systemctl --user enable --now podman.socket 2>/dev/null || print_info "Podman socket will be available after login"
             print_success "Podman installed"
-            ;;
-        2)
-            print_info "Installing Docker..."
-            sudo pacman -S --noconfirm docker docker-compose
-            sudo systemctl enable --now docker
-            sudo usermod -aG docker $USER
-            print_warning "Log out and back in for Docker group changes"
-            print_success "Docker installed"
             ;;
         *)
             print_error "Invalid choice"

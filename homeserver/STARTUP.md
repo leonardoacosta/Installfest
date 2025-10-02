@@ -6,6 +6,24 @@
 ./homeserver.sh restart
 ```
 
+## Port Conflicts (Address Already in Use)
+
+If you see "bind: address already in use" errors:
+
+```bash
+# Stop all containers
+podman stop -a
+
+# Remove all containers
+podman rm -a
+
+# Clean up networks
+podman network prune -f
+
+# Now restart
+./homeserver.sh restart
+```
+
 ## If Startup Hangs
 
 The `depends_on` conditions can cause podman-compose to wait indefinitely. If this happens:

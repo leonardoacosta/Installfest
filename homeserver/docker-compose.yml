@@ -4,6 +4,7 @@ networks:
   homelab:
     name: homelab
     driver: bridge
+    enable_ipv6: false
     ipam:
       config:
         - subnet: 172.20.0.0/16
@@ -11,6 +12,7 @@ networks:
   media:
     name: media
     driver: bridge
+    enable_ipv6: false
     ipam:
       config:
         - subnet: 172.21.0.0/16
@@ -23,7 +25,7 @@ services:
     restart: unless-stopped
     privileged: true
     environment:
-      - TZ=${TZ:-America/New_York}
+      - TZ=${TZ:-America/Chicago}
     volumes:
       - ./homeassistant:/config
       - /etc/localtime:/etc/localtime:ro
@@ -40,17 +42,17 @@ services:
     container_name: adguardhome
     restart: unless-stopped
     ports:
-      - "5353:53/tcp" # DNS (mapped to 5353 for rootless)
-      - "5353:53/udp" # DNS (mapped to 5353 for rootless)
-      - "3080:80/tcp" # Web interface (mapped to 3080 for rootless)
-      - "3443:443/tcp" # HTTPS web interface (mapped to 3443 for rootless)
+      - "53:53/tcp" # DNS
+      - "53:53/udp" # DNS
+      - "80:80/tcp" # Web interface
+      - "443:443/tcp" # HTTPS web interface
       - "3000:3000/tcp" # Initial setup
-      - "8853:853/tcp" # DNS-over-TLS
-      - "5784:784/udp" # DNS-over-QUIC
-      - "5853:853/udp" # DNS-over-QUIC
-      - "8854:8853/udp" # DNS-over-QUIC
-      - "5444:5443/tcp" # DNSCrypt
-      - "5445:5443/udp" # DNSCrypt
+      - "853:853/tcp" # DNS-over-TLS
+      - "784:784/udp" # DNS-over-QUIC
+      - "853:853/udp" # DNS-over-QUIC
+      - "8853:8853/udp" # DNS-over-QUIC
+      - "5443:5443/tcp" # DNSCrypt
+      - "5443:5443/udp" # DNSCrypt
     volumes:
       - ./adguardhome/work:/opt/adguardhome/work
       - ./adguardhome/conf:/opt/adguardhome/conf
@@ -106,7 +108,7 @@ services:
     restart: unless-stopped
     user: "${PUID:-1000}:${PGID:-1000}"
     environment:
-      - TZ=${TZ:-America/New_York}
+      - TZ=${TZ:-America/Chicago}
     volumes:
       - ./jellyfin/config:/config
       - ./jellyfin/cache:/cache
@@ -155,10 +157,10 @@ services:
     container_name: samba
     restart: unless-stopped
     ports:
-      - "1445:445" # Mapped to 1445 for rootless
-      - "1139:139" # Mapped to 1139 for rootless
+      - "445:445" # SMB
+      - "139:139" # NetBIOS
     environment:
-      - TZ=${TZ:-America/New_York}
+      - TZ=${TZ:-America/Chicago}
       - USERID=${PUID:-1000}
       - GROUPID=${PGID:-1000}
       - SHARE1=${SAMBA_SHARE1:-Media;/media;yes;no;yes;all;none}
@@ -202,7 +204,7 @@ services:
   #     - WIREGUARD_PUBLIC_KEY=${WIREGUARD_PUBLIC_KEY}
   #     - VPN_ENDPOINT_IP=${VPN_ENDPOINT_IP}
   #     - VPN_ENDPOINT_PORT=${VPN_ENDPOINT_PORT:-51820}
-  #     - TZ=${TZ:-America/New_York}
+  #     - TZ=${TZ:-America/Chicago}
   #     - FIREWALL_VPN_INPUT_PORTS=${FIREWALL_VPN_INPUT_PORTS}
   #     - FIREWALL_OUTBOUND_SUBNETS=172.21.0.0/16,172.20.0.0/16
   #   healthcheck:
@@ -220,7 +222,7 @@ services:
   #   environment:
   #     - PUID=${PUID:-1000}
   #     - PGID=${PGID:-1000}
-  #     - TZ=${TZ:-America/New_York}
+  #     - TZ=${TZ:-America/Chicago}
   #     - WEBUI_PORT=8080
   #     - TORRENTING_PORT=${FIREWALL_VPN_INPUT_PORTS:-51820}
   #   volumes:
@@ -239,7 +241,7 @@ services:
   #   environment:
   #     - PUID=${PUID:-1000}
   #     - PGID=${PGID:-1000}
-  #     - TZ=${TZ:-America/New_York}
+  #     - TZ=${TZ:-America/Chicago}
   #   volumes:
   #     - ./prowlarr:/config
   #   restart: unless-stopped

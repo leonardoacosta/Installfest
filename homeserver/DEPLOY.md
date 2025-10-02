@@ -1,6 +1,6 @@
 # Deployment Checklist
 
-**Target: Arch Linux Server with Rootless Podman (not macOS/Docker)**
+**Target: Arch Linux Server with Docker (not macOS)**
 
 ## Pre-Deployment
 
@@ -49,12 +49,12 @@
 ❌ **Commented (require VPN config):**
 - gluetun, qbittorrent, prowlarr, nzbget
 
-### Port Mappings (Rootless Podman)
-- AdGuard DNS: 53 → 5353
-- AdGuard Web: 80 → 3080
-- AdGuard HTTPS: 443 → 3443
-- Samba SMB: 445 → 1445
-- Samba NetBIOS: 139 → 1139
+### Port Mappings (Standard Docker Ports)
+- AdGuard DNS: 53
+- AdGuard Web: 80
+- AdGuard HTTPS: 443
+- Samba SMB: 445
+- Samba NetBIOS: 139
 
 ## Enable VPN Services (Optional)
 
@@ -64,7 +64,7 @@
    # Add VPN credentials (see env.example)
    ```
 
-2. **Uncomment in podman-compose.yml:**
+2. **Uncomment in docker-compose.yml:**
    - gluetun service
    - qbittorrent service
    - prowlarr service
