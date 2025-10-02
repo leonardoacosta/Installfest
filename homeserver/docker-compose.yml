@@ -20,7 +20,7 @@ networks:
 services:
   # Home Assistant - Smart Home Hub
   homeassistant:
-    image: ghcr.io/home-assistant/home-assistant
+    image: ghcr.io/home-assistant/home-assistant:stable
     container_name: homeassistant
     restart: unless-stopped
     privileged: true
@@ -38,9 +38,11 @@ services:
 
   # AdGuard Home - DNS Ad Blocker
   adguardhome:
-    image: docker.io/adguard/adguardhome:latest
+    image: docker.io/adguard/adguardhome:v0.107.52
     container_name: adguardhome
     restart: unless-stopped
+    environment:
+      - TZ=${TZ:-America/Chicago}
     ports:
       - "53:53/tcp" # DNS
       - "53:53/udp" # DNS
@@ -62,7 +64,7 @@ services:
 
   # Ollama - Local LLM Server
   ollama:
-    image: docker.io/ollama/ollama:latest
+    image: docker.io/ollama/ollama:0.5.4
     container_name: ollama
     restart: unless-stopped
     ports:
@@ -103,7 +105,7 @@ services:
 
   # Jellyfin - Media Server
   jellyfin:
-    image: docker.io/jellyfin/jellyfin:latest
+    image: docker.io/jellyfin/jellyfin:10.10.7
     container_name: jellyfin
     restart: unless-stopped
     user: "${PUID:-1000}:${PGID:-1000}"
@@ -130,7 +132,7 @@ services:
 
   # Tailscale - Mesh VPN
   tailscale:
-    image: docker.io/tailscale/tailscale:latest
+    image: docker.io/tailscale/tailscale:stable
     container_name: tailscale
     restart: unless-stopped
     hostname: homeserver-tailscale
@@ -153,19 +155,19 @@ services:
 
   # Samba - Network Attached Storage
   samba:
-    image: docker.io/dperson/samba:latest
+    image: ghcr.io/servercontainers/samba:latest
     container_name: samba
     restart: unless-stopped
     ports:
       - "445:445" # SMB
       - "139:139" # NetBIOS
     environment:
-      - TZ=${TZ:-America/Chicago}
+      - TZ=${TZ:-America/New_York}
       - USERID=${PUID:-1000}
       - GROUPID=${PGID:-1000}
       - SHARE1=${SAMBA_SHARE1:-Media;/media;yes;no;yes;all;none}
       - SHARE2=${SAMBA_SHARE2:-Backup;/backup;yes;no;no;all;none}
-      - USER1=${SAMBA_USER:-user;password123} # CHANGE PASSWORD!
+      - USER1=${SAMBA_USER:-user;SAMBA_PASSWORD} # CHANGE PASSWORD!
       - RECYCLE=false
     volumes:
       - ${NAS_PATH:-/data}:/media
@@ -253,7 +255,7 @@ services:
 
   # Radarr - Movie Manager
   radarr:
-    image: docker.io/linuxserver/radarr:latest
+    image: lscr.io/linuxserver/radarr:latest
     container_name: radarr
     restart: unless-stopped
     environment:
@@ -272,7 +274,7 @@ services:
 
   # Sonarr - TV Show Manager
   sonarr:
-    image: docker.io/linuxserver/sonarr:latest
+    image: lscr.io/linuxserver/sonarr:latest
     container_name: sonarr
     restart: unless-stopped
     environment:
@@ -291,7 +293,7 @@ services:
 
   # Lidarr - Music Manager
   lidarr:
-    image: docker.io/linuxserver/lidarr:latest
+    image: lscr.io/linuxserver/lidarr:latest
     container_name: lidarr
     restart: unless-stopped
     environment:
