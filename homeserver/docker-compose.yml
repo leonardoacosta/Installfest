@@ -147,11 +147,11 @@ services:
       - NET_ADMIN
       - SYS_MODULE
     network_mode: host
-    networks:
-      homelab:
-        ipv4_address: 172.20.0.100
-      media:
-        ipv4_address: 172.21.0.100
+    # networks:
+    #   homelab:
+    #     ipv4_address: 172.20.0.100
+    #   media:
+    #     ipv4_address: 172.21.0.100
 
   # Samba - Network Attached Storage
   samba:
