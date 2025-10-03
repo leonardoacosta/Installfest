@@ -44,7 +44,7 @@ services:
     ports:
       - "53:53/tcp" # DNS
       - "53:53/udp" # DNS
-      - "81:80/tcp" # Web interface over 8080
+      - "82:82/tcp" # Web interface over 8080
       - "443:443/tcp" # HTTPS web interface
       - "3000:3000/tcp" # Initial setup
       - "853:853/tcp" # DNS-over-TLS
