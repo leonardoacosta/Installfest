@@ -11,7 +11,7 @@
 | Service | IP Address | Ports | Access URL |
 |---------|-----------|-------|------------|
 | Home Assistant | Host Network | 8123 | http://HOST_IP:8123 |
-| AdGuard Home | 172.20.0.53 | 53, 81, 443, 3000, 853, 784, 8853, 5443 | http://HOST_IP:81 (web), http://HOST_IP:3000 (setup) |
+| AdGuard Home | 172.20.0.53 | 53, 82, 8443, 3000, 853, 784, 8853, 5443 | http://HOST_IP:82 (web), http://HOST_IP:3000 (setup) |
 | Nginx Proxy Manager | 172.20.0.81, 172.21.0.81 | 80, 81, 443 | http://HOST_IP:81 (admin), http://HOST_IP:80 (proxy) |
 | Tailscale | Host Network | - | - |
 
@@ -59,9 +59,11 @@
 ### External Ports (Host → Container)
 - **53**: DNS (AdGuard Home)
 - **80**: HTTP (Nginx Proxy Manager)
-- **81**: Web UI (AdGuard Home & Nginx Proxy Manager Admin)
+- **81**: Nginx Proxy Manager Admin
+- **82**: AdGuard Home Web UI
 - **139**: NetBIOS (Samba)
-- **443**: HTTPS (AdGuard Home & Nginx Proxy Manager)
+- **443**: HTTPS (Nginx Proxy Manager)
+- **8443**: HTTPS (AdGuard Home)
 - **445**: SMB (Samba)
 - **784**: DNS-over-QUIC (AdGuard Home)
 - **853**: DNS-over-TLS/QUIC (AdGuard Home)
