@@ -134,7 +134,7 @@ services:
     container_name: nginx-proxy-manager
     restart: unless-stopped
     ports:
-      - "81:81" # Admin interface
+      - "82:81" # Admin interface
       - "443:443" # HTTPS
       - "80:80" # HTTP
     environment:
