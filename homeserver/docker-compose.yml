@@ -29,6 +29,7 @@ services:
     volumes:
       - ./homeassistant:/config
       - /etc/localtime:/etc/localtime:ro
+      - ./nginx-proxy-manager/letsencrypt:/etc/letsencrypt:ro # SSL certificates from NPM
     network_mode: host # Required for device discovery
     # Uncomment if you have USB devices (Zigbee/Z-Wave dongles)
     # devices:
