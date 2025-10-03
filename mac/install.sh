@@ -1,11 +1,11 @@
 #!/bin/bash
 
-. mac/scripts/utils.sh
-. mac/scripts/prerequisites.sh
-. mac/scripts/brew-install.sh
-. mac/scripts/osx-defaults.sh
-. mac/scripts/terminal.sh
-. mac/scripts/symlinks.sh
+. scripts/utils.sh
+. scripts/prerequisites.sh
+. scripts/brew-install.sh
+. scripts/osx-defaults.sh
+. scripts/terminal.sh
+. scripts/symlinks.sh
 
 info "Dotfiles installation initialized..."
 read -p "Install apps? [y/n] " install_apps

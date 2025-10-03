@@ -128,6 +128,24 @@ services:
     # devices:
     #   - /dev/dri:/dev/dri
 
+  # Nginx Proxy Manager - Reverse Proxy
+  nginx-proxy-manager:
+    image: docker.io/jc21/nginx-proxy-manager:latest
+    container_name: nginx-proxy-manager
+    restart: unless-stopped
+    ports:
+      - "81:81" # Admin interface
+      - "8443:443" # HTTPS
+      - "8082:80" # HTTP
+    environment:
+      - TZ=${TZ:-America/Chicago}
+    volumes:
+      - ./nginx-proxy-manager/data:/data
+      - ./nginx-proxy-manager/letsencrypt:/etc/letsencrypt
+    networks:
+      homelab:
+        ipv4_address: 172.20.0.81
+
   # Tailscale - Mesh VPN
   tailscale:
     image: docker.io/tailscale/tailscale:stable

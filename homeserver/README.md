@@ -27,6 +27,7 @@ Choose option `1) Setup Wizard` and follow the prompts!
 ### Core Services
 - **Home Assistant** - Smart home automation hub (http://localhost:8123)
 - **AdGuard Home** - Network-wide ad blocker (http://localhost:80)
+- **Nginx Proxy Manager** - Reverse proxy with SSL (http://localhost:81)
 - **Ollama + WebUI** - Local LLM server (http://localhost:8081)
 - **Jellyfin** - Media streaming server (http://localhost:8096)
 - **Tailscale** - Mesh VPN for secure remote access
@@ -90,28 +91,34 @@ nano .env
 - `changeme`
 - `password123`
 
-## 🌐 Service URLs (Rootless Podman)
-
-**Note:** Some ports are remapped for rootless Podman (can't use privileged ports <1024):
+## 🌐 Service URLs
 
 | Service | URL | Notes |
 |---------|-----|-------|
-| Home Assistant | http://localhost:8123 | Standard port |
+| Home Assistant | http://localhost:8123 | Smart home hub |
 | AdGuard Setup | http://localhost:3000 | First-time setup |
-| **AdGuard Web** | **http://localhost:3080** | ⚠️ Port 80→3080 |
-| **AdGuard DNS** | **Port 5353** | ⚠️ Port 53→5353 |
-| Jellyfin | http://localhost:8096 | Standard port |
-| Ollama WebUI | http://localhost:8081 | Standard port |
-| **Samba** | **smb://localhost:1445** | ⚠️ Port 445→1445 |
+| AdGuard Web | http://localhost:80 | DNS admin interface |
+| Nginx Proxy Manager | http://localhost:81 | Reverse proxy admin (admin@example.com / changeme) |
+| Jellyfin | http://localhost:8096 | Media server |
+| Ollama WebUI | http://localhost:8081 | LLM interface |
+| Samba | smb://localhost:445 | Network storage |
+| qBittorrent | http://localhost:8080 | Via VPN |
+| Prowlarr | http://localhost:9696 | Via VPN |
+| Radarr | http://localhost:7878 | Movie manager |
+| Sonarr | http://localhost:8989 | TV manager |
+| Lidarr | http://localhost:8686 | Music manager |
+| Bazarr | http://localhost:6767 | Subtitle manager |
+| Jellyseerr | http://localhost:5055 | Media requests |
 
-## 🔧 Port Forwarding (Optional)
+## 🔧 Reverse Proxy Setup
 
-To use standard DNS port 53:
+Nginx Proxy Manager provides easy SSL/TLS certificates and subdomain routing:
 
-```bash
-sudo iptables -t nat -A PREROUTING -p udp --dport 53 -j REDIRECT --to-port 5353
-sudo iptables -t nat -A PREROUTING -p tcp --dport 53 -j REDIRECT --to-port 5353
-```
+1. Access http://localhost:81
+2. Login with `admin@example.com` / `changeme`
+3. Change password immediately
+4. Add proxy hosts for your services
+5. Request free SSL certificates (Let's Encrypt)
 
 ## 🐛 Troubleshooting
 
@@ -186,12 +193,14 @@ Menu options:
 ```
 homeserver/
 ├── homeserver.sh          # Main management wizard
-├── podman-compose.yml     # Service definitions
+├── docker-compose.yml     # Service definitions
 ├── .env                   # Configuration (create from env.example)
 ├── env.example           # Configuration template
 ├── homeassistant/        # Home Assistant config
 ├── adguardhome/          # AdGuard config
+├── nginx-proxy-manager/  # Nginx Proxy Manager config
 ├── jellyfin/             # Jellyfin config
+├── tailscale/            # Tailscale VPN state
 └── ...                   # Other service configs
 
 /data/                    # Media and downloads
