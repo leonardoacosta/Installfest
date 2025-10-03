@@ -139,6 +139,7 @@ services:
       - "8082:80" # HTTP
     environment:
       - TZ=${TZ:-America/Chicago}
+      - ERROR_LOG_LEVEL=debug
     volumes:
       - ./nginx-proxy-manager/data:/data
       - ./nginx-proxy-manager/letsencrypt:/etc/letsencrypt
