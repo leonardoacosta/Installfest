@@ -143,11 +143,12 @@ services:
     volumes:
       - ./nginx-proxy-manager/data:/data
       - ./nginx-proxy-manager/letsencrypt:/etc/letsencrypt
-    networks:
-      homelab:
-        ipv4_address: 172.20.0.81
-      media:
-        ipv4_address: 172.21.0.81
+    # network_mode: host
+    # networks:
+    #   homelab:
+    #     ipv4_address: 172.20.0.81
+    #   media:
+    #     ipv4_address: 172.21.0.81
 
   # Tailscale - Mesh VPN
   tailscale:
