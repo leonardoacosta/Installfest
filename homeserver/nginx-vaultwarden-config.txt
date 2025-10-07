@@ -1,0 +1,319 @@
+==========================================================================
+NGINX PROXY MANAGER - VAULTWARDEN SSL CONFIGURATION
+==========================================================================
+
+This file contains the Nginx Proxy Manager configuration for Vaultwarden
+with SSL, WebSocket support, and security hardening.
+
+--------------------------------------------------------------------------
+STEP 1: ADD PROXY HOST IN NPM
+--------------------------------------------------------------------------
+
+1. Log into Nginx Proxy Manager: http://YOUR_SERVER_IP:81
+   Default credentials: admin@example.com / changeme
+   (CHANGE THESE IMMEDIATELY!)
+
+2. Click "Proxy Hosts" → "Add Proxy Host"
+
+--------------------------------------------------------------------------
+DETAILS TAB
+--------------------------------------------------------------------------
+
+Domain Names: vault.yourdomain.com
+              (or whatever domain you want to use)
+
+Scheme: http
+
+Forward Hostname/IP: 172.20.0.22
+                     ^ This is Vaultwarden's static IP on homelab network
+
+Forward Port: 80
+
+☑ Cache Assets
+☑ Block Common Exploits
+☑ Websockets Support  ← CRITICAL: Must enable for real-time sync
+
+--------------------------------------------------------------------------
+SSL TAB
+--------------------------------------------------------------------------
+
+SSL Certificate: Request a new SSL Certificate
+                 (or select existing if you have one)
+
+Email Address: your-email@example.com
+               (for Let's Encrypt notifications)
+
+☑ Force SSL
+☑ HTTP/2 Support
+☑ HSTS Enabled
+☑ HSTS Subdomains (if applicable)
+
+Agree to Let's Encrypt Terms
+
+--------------------------------------------------------------------------
+ADVANCED TAB (Optional but Recommended)
+--------------------------------------------------------------------------
+
+Paste the following configuration:
+
+--------------------------------------------------------------------------
+
+# Rate limiting to prevent brute-force attacks on login
+limit_req_zone $binary_remote_addr zone=vaultwarden_limit:10m rate=10r/s;
+limit_req zone=vaultwarden_limit burst=20 nodelay;
+
+# Security headers
+add_header X-Frame-Options "SAMEORIGIN" always;
+add_header X-Content-Type-Options "nosniff" always;
+add_header X-XSS-Protection "1; mode=block" always;
+add_header Referrer-Policy "same-origin" always;
+add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' wss://vault.yourdomain.com; frame-ancestors 'self';" always;
+
+# Remove server signature
+proxy_hide_header X-Powered-By;
+
+# WebSocket support for /notifications/hub
+# This enables real-time sync between devices
+location /notifications/hub {
+    proxy_pass http://172.20.0.22:3012;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+
+# WebSocket support for notifications endpoint
+location /notifications/hub/negotiate {
+    proxy_pass http://172.20.0.22:80;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+
+# Pass real client IP to Vaultwarden
+proxy_set_header X-Real-IP $remote_addr;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Proto $scheme;
+proxy_set_header X-Forwarded-Host $host;
+
+# Increase timeouts for large file uploads (attachments)
+client_max_body_size 525M;
+proxy_read_timeout 300;
+proxy_connect_timeout 300;
+proxy_send_timeout 300;
+
+--------------------------------------------------------------------------
+
+NOTE: Replace "vault.yourdomain.com" in the CSP header with your actual
+domain name.
+
+--------------------------------------------------------------------------
+STEP 2: SAVE AND TEST
+--------------------------------------------------------------------------
+
+Click "Save" to create the proxy host.
+
+NPM will automatically:
+- Request SSL certificate from Let's Encrypt
+- Configure HTTP → HTTPS redirect
+- Enable WebSocket proxying
+
+Test your configuration:
+1. Visit: https://vault.yourdomain.com
+2. Should load with valid SSL certificate
+3. Create account or log in
+4. Open browser console (F12) → Network tab
+5. Should see WebSocket connection to wss://vault.yourdomain.com/notifications/hub
+6. Status should be "101 Switching Protocols" (successful upgrade)
+
+--------------------------------------------------------------------------
+STEP 3: UPDATE VAULTWARDEN DOMAIN
+--------------------------------------------------------------------------
+
+After SSL is working, update Vaultwarden to use the HTTPS domain:
+
+1. Edit: /Users/leonardoacosta/Personal/Installfest/homeserver/.env
+
+2. Change:
+   VAULTWARDEN_DOMAIN=https://vault.yourdomain.com
+
+3. Restart Vaultwarden:
+   cd /Users/leonardoacosta/Personal/Installfest/homeserver
+   docker-compose restart vaultwarden
+
+This ensures email links and client auto-discovery use the correct domain.
+
+--------------------------------------------------------------------------
+TROUBLESHOOTING
+--------------------------------------------------------------------------
+
+Issue: WebSocket not connecting (sync delayed)
+Symptoms:
+- Changes take minutes to appear on other devices
+- Browser console shows WebSocket errors
+
+Solutions:
+1. Verify "Websockets Support" is enabled in NPM Details tab
+2. Verify port 3012 is not blocked by firewall
+3. Check Advanced config includes /notifications/hub location block
+4. Test WebSocket manually:
+   curl -i -N -H "Connection: Upgrade" \
+        -H "Upgrade: websocket" \
+        https://vault.yourdomain.com/notifications/hub
+
+Expected: HTTP 101 Switching Protocols (or 400 Bad Request is okay)
+
+--------------------------------------------------------------------------
+
+Issue: SSL certificate fails to generate
+Error: "Failed to obtain certificate"
+
+Solutions:
+1. Verify domain DNS points to your public IP
+2. Verify port 80 and 443 are forwarded to NPM (172.20.0.81)
+3. Check NPM logs: docker-compose logs nginx-proxy-manager
+4. Try DNS-01 challenge instead of HTTP-01 if behind CGNAT
+
+--------------------------------------------------------------------------
+
+Issue: 502 Bad Gateway
+Solutions:
+1. Verify Vaultwarden is running: docker ps | grep vaultwarden
+2. Verify IP address 172.20.0.22 is correct
+3. Verify port 80 (not 8222) in Forward Port
+4. Check Vaultwarden logs: docker-compose logs vaultwarden
+
+--------------------------------------------------------------------------
+
+Issue: Connection timeout
+Solutions:
+1. Verify NPM and Vaultwarden are on same network (homelab)
+2. Test connectivity from NPM to Vaultwarden:
+   docker exec nginx-proxy-manager curl http://172.20.0.22:80/alive
+   Should return: "Alive"
+
+--------------------------------------------------------------------------
+SECURITY NOTES
+--------------------------------------------------------------------------
+
+1. Admin Panel Access
+   The /admin endpoint is NOT exposed through NPM by default (good).
+   Access admin panel locally only: http://YOUR_SERVER_IP:8222/admin
+
+2. Rate Limiting
+   The configuration includes rate limiting (10 requests/second with burst of 20).
+   This helps prevent brute-force attacks on the login page.
+
+3. HSTS (HTTP Strict Transport Security)
+   Once enabled, browsers will ONLY connect via HTTPS for the next year.
+   Make sure SSL is working before enabling HSTS!
+
+4. Firewall Rules
+   If exposing to internet, consider restricting admin panel:
+   - Only accessible from local network
+   - Or use Tailscale VPN for remote admin access
+
+5. Let's Encrypt Rate Limits
+   - 50 certificates per domain per week
+   - 5 duplicate certificates per week
+   - Don't test repeatedly - use staging environment first
+
+--------------------------------------------------------------------------
+ALTERNATIVE: LOCAL DNS WITH ADGUARD HOME
+--------------------------------------------------------------------------
+
+If not exposing to internet, use local DNS:
+
+1. Log into AdGuard Home: http://YOUR_SERVER_IP:82
+
+2. Go to: Filters → DNS rewrites
+
+3. Add DNS rewrite:
+   Domain: vault.local (or vault.yourdomain.local)
+   IP Address: 172.20.0.81 (Nginx Proxy Manager IP)
+
+4. In NPM, configure with self-signed certificate instead of Let's Encrypt
+
+5. Add self-signed cert to your devices' trust store
+
+This approach works without exposing anything to internet.
+
+--------------------------------------------------------------------------
+CLIENT CONFIGURATION
+--------------------------------------------------------------------------
+
+After SSL is configured, update Bitwarden clients:
+
+Browser Extension:
+1. Click settings icon (before logging in)
+2. Server URL: https://vault.yourdomain.com
+3. Click "Save"
+4. Log in
+
+Mobile Apps:
+1. Tap settings before logging in
+2. Self-hosted → Custom Environment
+3. Server URL: https://vault.yourdomain.com
+4. Save → Log in
+
+Desktop Apps:
+1. Settings → Account → Logout (if logged in)
+2. Before logging in: Settings → Server URL
+3. Enter: https://vault.yourdomain.com
+4. Log in
+
+--------------------------------------------------------------------------
+BACKUP REMINDER
+--------------------------------------------------------------------------
+
+After SSL is configured and working, backup your NPM configuration:
+
+cd /Users/leonardoacosta/Personal/Installfest/homeserver
+tar -czf npm-backup-$(date +%Y%m%d).tar.gz nginx-proxy-manager/
+
+This preserves your proxy hosts and SSL certificates.
+
+--------------------------------------------------------------------------
+MONITORING
+--------------------------------------------------------------------------
+
+Monitor SSL certificate expiration:
+
+NPM auto-renews Let's Encrypt certificates, but monitor anyway:
+
+curl -vI https://vault.yourdomain.com 2>&1 | grep "expire date"
+
+Or use SSL Labs: https://www.ssllabs.com/ssltest/
+
+Aim for A+ rating.
+
+--------------------------------------------------------------------------
+TESTING CHECKLIST
+--------------------------------------------------------------------------
+
+After configuration, verify:
+
+☐ Access web vault via HTTPS with valid certificate
+☐ HTTP redirects to HTTPS automatically
+☐ Admin panel still accessible locally (not via NPM)
+☐ WebSocket connects successfully (check browser console)
+☐ Can create/edit passwords - sync instantly between devices
+☐ Can upload attachments (test file upload)
+☐ Mobile app connects with HTTPS URL
+☐ Browser extension works with HTTPS URL
+☐ Email links use correct HTTPS domain (if SMTP configured)
+☐ Health check endpoint works: https://vault.yourdomain.com/alive
+
+==========================================================================
+END OF CONFIGURATION GUIDE
+==========================================================================
+
+For more information, see:
+- Full setup guide: VAULTWARDEN_SETUP.md
+- NPM documentation: https://nginxproxymanager.com/guide/
+- Vaultwarden wiki: https://github.com/dani-garcia/vaultwarden/wiki
