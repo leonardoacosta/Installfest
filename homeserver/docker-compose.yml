@@ -40,24 +40,10 @@ services:
     restart: unless-stopped
     environment:
       - TZ=${TZ:-America/Chicago}
-    ports:
-      - "53:53/tcp" # DNS
-      - "53:53/udp" # DNS
-      - "82:82/tcp" # Web interface over 8080
-      - "8443:443/tcp" # HTTPS web interface
-      - "3000:3000/tcp" # Initial setup
-      - "853:853/tcp" # DNS-over-TLS
-      - "784:784/udp" # DNS-over-QUIC
-      - "853:853/udp" # DNS-over-QUIC
-      - "8853:8853/udp" # DNS-over-QUIC
-      - "5443:5443/tcp" # DNSCrypt
-      - "5443:5443/udp" # DNSCrypt
     volumes:
       - ./adguardhome/work:/opt/adguardhome/work
       - ./adguardhome/conf:/opt/adguardhome/conf
-    networks:
-      homelab:
-        ipv4_address: 172.20.0.53
+    network_mode: host # Host mode for real client IPs and per-device filtering
 
   # Ollama - Local LLM Server
   ollama:
@@ -94,8 +80,11 @@ services:
       - OLLAMA_BASE_URL=http://ollama:11434
     volumes:
       - ollama_webui_data:/app/backend/data
-    # depends_on removed - causes podman-compose to hang
-    # Start ollama first manually if needed
+
+    depends_on:
+      ollama:
+        condition: service_healthy
+        restart: true
     networks:
       homelab:
         ipv4_address: 172.20.0.12
@@ -197,9 +186,7 @@ services:
       homelab:
         ipv4_address: 172.20.0.45
 
-  # ============= Media Stack Services =============
-  # Uncomment services below if you have VPN configured in .env
-
+  # ************* Media Stack Services *************
   # Gluetun - VPN Client for Media Services
   gluetun:
     image: docker.io/qmcgaw/gluetun:latest
@@ -368,21 +355,20 @@ services:
       media:
         ipv4_address: 172.21.0.55
 
-  # Flaresolverr - Cloudflare Bypass for Prowlarr
-  flaresolverr:
-    image: ghcr.io/flaresolverr/flaresolverr:latest
-    container_name: flaresolverr
+  # Byparr - Cloudflare Bypass for Prowlarr (FlareSolverr replacement)
+  byparr:
+    image: ghcr.io/thephaseless/byparr:latest
+    container_name: byparr
     restart: unless-stopped
+    init: true
     environment:
       - LOG_LEVEL=${LOG_LEVEL:-info}
-      - LOG_HTML=${LOG_HTML:-false}
-      - CAPTCHA_SOLVER=${CAPTCHA_SOLVER:-none}
       - TZ=${TZ:-America/New_York}
-    ports:
-      - "8191:8191"
-    networks:
-      media:
-        ipv4_address: 172.21.0.91
+    depends_on:
+      gluetun:
+        condition: service_healthy
+        restart: true
+    network_mode: service:gluetun
 
   # Vaultwarden - Password Manager (Bitwarden-compatible)
   vaultwarden:
@@ -403,6 +389,7 @@ services:
       - LOG_LEVEL=${VAULTWARDEN_LOG_LEVEL:-info}
       - EXTENDED_LOGGING=true
       - SHOW_PASSWORD_HINT=false
+      - USE_SENDMAIL=${VAULTWARDEN_USE_SENDMAIL:-false}
       - SMTP_HOST=${VAULTWARDEN_SMTP_HOST:-}
       - SMTP_FROM=${VAULTWARDEN_SMTP_FROM:-}
       - SMTP_FROM_NAME=${VAULTWARDEN_SMTP_FROM_NAME:-Vaultwarden}
