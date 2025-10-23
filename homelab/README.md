@@ -1,4 +1,4 @@
-# Homeserver Docker Stack
+# homelab Docker Stack
 
 A comprehensive homelab setup featuring smart home, media management, ad-blocking, local AI, and secure networking services - optimized for Arch Linux with Docker.
 
@@ -9,7 +9,7 @@ This stack uses Docker and is designed for Arch Linux servers. Deploy to your Ar
 
 ```bash
 # One command setup
-./homeserver.sh
+./homelab.sh
 ```
 
 Choose option `1) Setup Wizard` and follow the prompts!
@@ -17,10 +17,10 @@ Choose option `1) Setup Wizard` and follow the prompts!
 **Or use command line mode:**
 
 ```bash
-./homeserver.sh setup    # First time setup
-./homeserver.sh restart  # Clean restart (fixes port conflicts)
-./homeserver.sh status   # Show service status
-./homeserver.sh logs     # View logs
+./homelab.sh setup    # First time setup
+./homelab.sh restart  # Clean restart (fixes port conflicts)
+./homelab.sh status   # Show service status
+./homelab.sh logs     # View logs
 ```
 
 ## 📋 Services Included
@@ -52,22 +52,22 @@ Choose option `1) Setup Wizard` and follow the prompts!
 
 ## 🎯 Common Tasks
 
-| Task                   | Command                                |
-| ---------------------- | -------------------------------------- |
-| **First time setup**   | `./homeserver.sh setup`                |
-| **Fix port conflicts** | `./homeserver.sh restart`              |
-| **Start services**     | `./homeserver.sh start`                |
-| **Stop services**      | `./homeserver.sh stop`                 |
-| **View status**        | `./homeserver.sh status`               |
-| **View logs**          | `./homeserver.sh logs`                 |
-| **Troubleshoot**       | `./homeserver.sh` then choose option 7 |
+| Task                   | Command                             |
+| ---------------------- | ----------------------------------- |
+| **First time setup**   | `./homelab.sh setup`                |
+| **Fix port conflicts** | `./homelab.sh restart`              |
+| **Start services**     | `./homelab.sh start`                |
+| **Stop services**      | `./homelab.sh stop`                 |
+| **View status**        | `./homelab.sh status`               |
+| **View logs**          | `./homelab.sh logs`                 |
+| **Troubleshoot**       | `./homelab.sh` then choose option 7 |
 
 ## 📦 Installation (Arch Linux)
 
 The wizard can install everything for you:
 
 ```bash
-./homeserver.sh install
+./homelab.sh install
 ```
 
 **Or manual installation:**
@@ -80,7 +80,7 @@ sudo usermod -aG docker $USER
 
 # Log out and back in for group changes
 # Then run setup
-./homeserver.sh setup
+./homelab.sh setup
 ```
 
 ## ⚙️ Configuration
@@ -115,17 +115,17 @@ nano .env
 
 ### Media Services (Media Network)
 
-| Service          | URL                   | Internal IP              | Notes                                    |
-| ---------------- | --------------------- | ------------------------ | ---------------------------------------- |
-| **qBittorrent**  | http://10.0.0.51:8080 | 172.21.0.2 (via Gluetun) | VPN-protected, default: admin/adminadmin |
-| **Prowlarr**     | http://10.0.0.51:9696 | 172.21.0.2 (via Gluetun) | VPN-protected indexer manager            |
-| **NZBGet**       | http://10.0.0.51:6789 | 172.21.0.2 (via Gluetun) | VPN-protected usenet client              |
-| **Radarr**       | http://10.0.0.51:7878 | 172.21.0.78              | Movie automation                         |
-| **Sonarr**       | http://10.0.0.51:8989 | 172.21.0.89              | TV show automation                       |
-| **Lidarr**       | http://10.0.0.51:8686 | 172.21.0.86              | Music automation                         |
-| **Bazarr**       | http://10.0.0.51:6767 | 172.21.0.67              | Subtitle automation                      |
-| **Jellyseerr**   | http://10.0.0.51:5055 | 172.20.0.55              | Media request portal                     |
-| **Byparr**       | http://10.0.0.51:8191 | 172.21.0.2 (via Gluetun) | Cloudflare bypass (internal use)         |
+| Service         | URL                   | Internal IP              | Notes                                    |
+| --------------- | --------------------- | ------------------------ | ---------------------------------------- |
+| **qBittorrent** | http://10.0.0.51:8080 | 172.21.0.2 (via Gluetun) | VPN-protected, default: admin/adminadmin |
+| **Prowlarr**    | http://10.0.0.51:9696 | 172.21.0.2 (via Gluetun) | VPN-protected indexer manager            |
+| **NZBGet**      | http://10.0.0.51:6789 | 172.21.0.2 (via Gluetun) | VPN-protected usenet client              |
+| **Radarr**      | http://10.0.0.51:7878 | 172.21.0.78              | Movie automation                         |
+| **Sonarr**      | http://10.0.0.51:8989 | 172.21.0.89              | TV show automation                       |
+| **Lidarr**      | http://10.0.0.51:8686 | 172.21.0.86              | Music automation                         |
+| **Bazarr**      | http://10.0.0.51:6767 | 172.21.0.67              | Subtitle automation                      |
+| **Jellyseerr**  | http://10.0.0.51:5055 | 172.20.0.55              | Media request portal                     |
+| **Byparr**      | http://10.0.0.51:8191 | 172.21.0.2 (via Gluetun) | Cloudflare bypass (internal use)         |
 
 ## 🔧 Reverse Proxy Setup with Nginx Proxy Manager
 
@@ -174,7 +174,7 @@ Forward Port: 7878
 ### Port Conflicts
 
 ```bash
-./homeserver.sh restart  # Automatic fix
+./homelab.sh restart  # Automatic fix
 ```
 
 ### DBUS Session Warning
@@ -187,14 +187,14 @@ export XDG_RUNTIME_DIR="/run/user/$(id -u)"
 ### Permissions Issues
 
 ```bash
-./homeserver.sh  # Choose option 7, then option 5
+./homelab.sh  # Choose option 7, then option 5
 ```
 
 ### View Detailed Logs
 
 ```bash
-./homeserver.sh logs SERVICE_NAME
-# Example: ./homeserver.sh logs adguardhome
+./homelab.sh logs SERVICE_NAME
+# Example: ./homelab.sh logs adguardhome
 ```
 
 ## 🌐 Network Architecture
@@ -323,7 +323,7 @@ This stack uses **two isolated Docker bridge networks** for security and organiz
 Run without arguments for interactive mode:
 
 ```bash
-./homeserver.sh
+./homelab.sh
 ```
 
 Menu options:
@@ -390,8 +390,8 @@ Menu options:
    ```
 
 7. **Regular Maintenance**
-   - **Update images**: `./homeserver.sh` → option 9
-   - **Check logs**: `./homeserver.sh logs gluetun` (verify VPN connection)
+   - **Update images**: `./homelab.sh` → option 9
+   - **Check logs**: `./homelab.sh logs gluetun` (verify VPN connection)
    - **Monitor VPN**: Ensure no IP leaks with `curl ifconfig.me` from qBittorrent container
    - **Backup configs**: Regular backups of service config directories
 
@@ -438,15 +438,15 @@ docker exec qbittorrent curl ifconfig.me
 ## 🔄 Updates
 
 ```bash
-./homeserver.sh  # Choose option 9
+./homelab.sh  # Choose option 9
 # Or: podman-compose pull && podman-compose up -d
 ```
 
 ## 📁 Directory Structure
 
 ```
-homeserver/
-├── homeserver.sh                  # Main management wizard
+homelab/
+├── homelab.sh                  # Main management wizard
 ├── docker-compose.yml             # Service definitions (networks + all containers)
 ├── .env                           # Your configuration (create from env.example)
 ├── env.example                    # Configuration template
@@ -507,8 +507,8 @@ Environment Variables for Paths:
 
 ## 💡 Tips
 
-- **First time?** Use the Setup Wizard (`./homeserver.sh setup`)
-- **Port conflicts?** Use Clean Restart (`./homeserver.sh restart`)
+- **First time?** Use the Setup Wizard (`./homelab.sh setup`)
+- **Port conflicts?** Use Clean Restart (`./homelab.sh restart`)
 - **Need help?** Check the interactive Troubleshooting menu
 - **Want automation?** Set up as systemd service (see ARCH_LINUX_SETUP.md)
 
@@ -517,8 +517,8 @@ Environment Variables for Paths:
 For issues:
 
 1. Check **TROUBLESHOOTING.md**
-2. Run: `./homeserver.sh` → option 7 (Troubleshooting)
-3. View logs: `./homeserver.sh logs SERVICE_NAME`
+2. Run: `./homelab.sh` → option 7 (Troubleshooting)
+3. View logs: `./homelab.sh logs SERVICE_NAME`
 
 ## 📝 License
 

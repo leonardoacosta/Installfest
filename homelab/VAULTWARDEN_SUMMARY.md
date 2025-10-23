@@ -20,16 +20,16 @@ Vaultwarden (Bitwarden-compatible password manager) has been successfully integr
 
 ### Service Specifications
 
-| Property | Value |
-|----------|-------|
-| **Image** | vaultwarden/server:1.32.5 (pinned version) |
-| **Container Name** | vaultwarden |
-| **Network** | homelab (172.20.0.0/16) |
-| **Static IP** | 172.20.0.22 |
-| **Web Port** | 8222 (host) → 80 (container) |
-| **WebSocket Port** | 3012 (host) → 3012 (container) |
-| **Data Volume** | ./vaultwarden:/data |
-| **User** | ${PUID}:${PGID} (non-root) |
+| Property           | Value                                      |
+| ------------------ | ------------------------------------------ |
+| **Image**          | vaultwarden/server:1.32.5 (pinned version) |
+| **Container Name** | vaultwarden                                |
+| **Network**        | homelab (172.20.0.0/16)                    |
+| **Static IP**      | 172.20.0.22                                |
+| **Web Port**       | 8222 (host) → 80 (container)               |
+| **WebSocket Port** | 3012 (host) → 3012 (container)             |
+| **Data Volume**    | ./vaultwarden:/data                        |
+| **User**           | ${PUID}:${PGID} (non-root)                 |
 
 ### Security Features Applied
 
@@ -72,11 +72,12 @@ VAULTWARDEN_SMTP_PASSWORD=
 ### Option 1: Automated Deployment (Recommended)
 
 ```bash
-cd /Users/leonardoacosta/Personal/Installfest/homeserver
+cd /Users/leonardoacosta/Personal/Installfest/homelab
 ./deploy-vaultwarden.sh
 ```
 
 This script will:
+
 - Generate secure admin token automatically
 - Configure domain settings
 - Create data directory with proper permissions
@@ -87,7 +88,7 @@ This script will:
 ### Option 2: Manual Deployment
 
 ```bash
-cd /Users/leonardoacosta/Personal/Installfest/homeserver
+cd /Users/leonardoacosta/Personal/Installfest/homelab
 
 # 1. Generate admin token
 openssl rand -base64 48
@@ -113,12 +114,12 @@ docker ps | grep vaultwarden  # Should show "healthy"
 
 After deployment:
 
-| Endpoint | URL | Purpose |
-|----------|-----|---------|
-| **Web Vault** | http://YOUR_IP:8222 | Main web interface |
-| **Admin Panel** | http://YOUR_IP:8222/admin | Management interface |
-| **Health Check** | http://YOUR_IP:8222/alive | Status endpoint |
-| **WebSocket** | ws://YOUR_IP:3012 | Real-time sync |
+| Endpoint         | URL                       | Purpose              |
+| ---------------- | ------------------------- | -------------------- |
+| **Web Vault**    | http://YOUR_IP:8222       | Main web interface   |
+| **Admin Panel**  | http://YOUR_IP:8222/admin | Management interface |
+| **Health Check** | http://YOUR_IP:8222/alive | Status endpoint      |
+| **WebSocket**    | ws://YOUR_IP:3012         | Real-time sync       |
 
 ## Initial Setup Steps
 
@@ -154,6 +155,7 @@ docker-compose restart vaultwarden
 See **nginx-vaultwarden-config.txt** for complete Nginx Proxy Manager setup.
 
 Quick steps:
+
 1. Log into NPM: http://YOUR_IP:81
 2. Add Proxy Host:
    - Domain: vault.yourdomain.com
@@ -168,6 +170,7 @@ Quick steps:
 Download clients from: https://bitwarden.com/download/
 
 Configure with your server URL:
+
 - Local: `http://YOUR_IP:8222`
 - SSL: `https://vault.yourdomain.com`
 
@@ -184,6 +187,7 @@ Configure with your server URL:
 ### Network Integration
 
 Vaultwarden is on the **homelab** network (172.20.0.0/16) and can communicate with:
+
 - Nginx Proxy Manager (172.20.0.81) - for SSL/reverse proxy
 - AdGuard Home (172.20.0.53) - for DNS resolution
 - All other homelab services
@@ -347,12 +351,12 @@ docker-compose start vaultwarden
 
 ## Documentation Reference
 
-| Document | Purpose |
-|----------|---------|
-| **VAULTWARDEN_SETUP.md** | Complete setup guide with detailed instructions |
-| **nginx-vaultwarden-config.txt** | Nginx Proxy Manager SSL configuration |
-| **VAULTWARDEN_SUMMARY.md** | This quick reference (you are here) |
-| **deploy-vaultwarden.sh** | Automated deployment script |
+| Document                         | Purpose                                         |
+| -------------------------------- | ----------------------------------------------- |
+| **VAULTWARDEN_SETUP.md**         | Complete setup guide with detailed instructions |
+| **nginx-vaultwarden-config.txt** | Nginx Proxy Manager SSL configuration           |
+| **VAULTWARDEN_SUMMARY.md**       | This quick reference (you are here)             |
+| **deploy-vaultwarden.sh**        | Automated deployment script                     |
 
 ## Important URLs
 
@@ -393,26 +397,31 @@ docker-compose start vaultwarden
 ## Critical Security Reminders
 
 🔴 **NEVER LOSE YOUR MASTER PASSWORD**
+
 - It encrypts your vault
 - No password reset possible
 - Write it down, store securely offline
 
 🔴 **BACKUP REGULARLY**
+
 - Database is in ./vaultwarden/db.sqlite3
 - Automated backups recommended
 - Test restores periodically
 
 🔴 **DISABLE SIGNUPS**
+
 - After creating accounts
 - Prevents unauthorized registrations
 - Can still invite users if needed
 
 🔴 **USE STRONG ADMIN TOKEN**
+
 - 48+ character random string
 - Never commit to git
 - Store securely
 
 🔴 **ENABLE 2FA**
+
 - Protects against password theft
 - Use authenticator app
 - YubiKey even better

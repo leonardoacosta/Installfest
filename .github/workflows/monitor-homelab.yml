@@ -1,0 +1,390 @@
+name: Monitor Homelab Health
+
+on:
+  schedule:
+    # Run every 15 minutes
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+    inputs:
+      verbose:
+        description: "Enable verbose output"
+        required: false
+        type: boolean
+        default: false
+
+env:
+  ALERT_THRESHOLD: 3 # Number of consecutive failures before alert
+  CHECK_TIMEOUT: 30 # Timeout for each health check in seconds
+
+jobs:
+  health-check:
+    name: Check Homelab Services
+    runs-on: ubuntu-latest
+
+    outputs:
+      status: ${{ steps.check.outputs.status }}
+      failed_services: ${{ steps.check.outputs.failed_services }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.HOMELAB_SSH_KEY }}" > ~/.ssh/homelab_key
+          chmod 600 ~/.ssh/homelab_key
+          ssh-keyscan -H ${{ secrets.HOMELAB_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      - name: Perform Health Checks
+        id: check
+        env:
+          VERBOSE: ${{ inputs.verbose }}
+        run: |
+          # Create health check script
+          cat > /tmp/health_check.sh << 'HEALTH_CHECK_EOF'
+          #!/bin/bash
+          set -uo pipefail
+
+          DEPLOY_PATH="${HOMELAB_PATH:-/home/$USER/homelab}"
+          VERBOSE="${VERBOSE:-false}"
+          FAILED_SERVICES=""
+          ALL_HEALTHY=true
+
+          # Colors for output
+          RED='\033[0;31m'
+          GREEN='\033[0;32m'
+          YELLOW='\033[1;33m'
+          NC='\033[0m'
+
+          log() {
+              if [ "$VERBOSE" = "true" ]; then
+                  echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')]${NC} $1"
+              fi
+          }
+
+          error() {
+              echo -e "${RED}[$(date +'%Y-%m-%d %H:%M:%S')] ERROR:${NC} $1" >&2
+          }
+
+          warning() {
+              if [ "$VERBOSE" = "true" ]; then
+                  echo -e "${YELLOW}[$(date +'%Y-%m-%d %H:%M:%S')] WARNING:${NC} $1"
+              fi
+          }
+
+          # Navigate to deployment directory
+          cd "$DEPLOY_PATH" 2>/dev/null || {
+              error "Cannot access deployment directory: $DEPLOY_PATH"
+              echo "status=failure" >> /tmp/health_status
+              echo "failed_services=deployment_directory" >> /tmp/health_status
+              exit 1
+          }
+
+          # Check if docker-compose file exists
+          if [ ! -f "docker-compose.yml" ]; then
+              error "docker-compose.yml not found"
+              echo "status=failure" >> /tmp/health_status
+              echo "failed_services=docker_compose_missing" >> /tmp/health_status
+              exit 1
+          }
+
+          log "Checking Docker daemon"
+          if ! docker info &>/dev/null; then
+              error "Docker daemon is not running"
+              echo "status=failure" >> /tmp/health_status
+              echo "failed_services=docker_daemon" >> /tmp/health_status
+              exit 1
+          }
+
+          # Get list of all services
+          SERVICES=$(docker-compose ps --services 2>/dev/null)
+
+          if [ -z "$SERVICES" ]; then
+              warning "No services found"
+              echo "status=warning" >> /tmp/health_status
+              echo "failed_services=no_services" >> /tmp/health_status
+              exit 0
+          fi
+
+          log "Checking services: $(echo $SERVICES | tr '\n' ' ')"
+
+          # Check each service
+          for service in $SERVICES; do
+              log "Checking service: $service"
+
+              # Get container status
+              CONTAINER_ID=$(docker-compose ps -q "$service" 2>/dev/null)
+
+              if [ -z "$CONTAINER_ID" ]; then
+                  error "Service $service has no container"
+                  FAILED_SERVICES="$FAILED_SERVICES $service(no_container)"
+                  ALL_HEALTHY=false
+                  continue
+              fi
+
+              # Check if container is running
+              STATUS=$(docker inspect -f '{{.State.Status}}' "$CONTAINER_ID" 2>/dev/null)
+
+              if [ "$STATUS" != "running" ]; then
+                  error "Service $service is not running (status: $STATUS)"
+                  FAILED_SERVICES="$FAILED_SERVICES $service($STATUS)"
+                  ALL_HEALTHY=false
+                  continue
+              fi
+
+              # Check container health if defined
+              HEALTH_STATUS=$(docker inspect -f '{{.State.Health.Status}}' "$CONTAINER_ID" 2>/dev/null)
+
+              if [ -n "$HEALTH_STATUS" ] && [ "$HEALTH_STATUS" != "null" ]; then
+                  if [ "$HEALTH_STATUS" != "healthy" ]; then
+                      warning "Service $service health: $HEALTH_STATUS"
+                      if [ "$HEALTH_STATUS" = "unhealthy" ]; then
+                          FAILED_SERVICES="$FAILED_SERVICES $service(unhealthy)"
+                          ALL_HEALTHY=false
+                      fi
+                  else
+                      log "Service $service is healthy"
+                  fi
+              else
+                  log "Service $service is running (no healthcheck defined)"
+              fi
+
+              # Check restart count (high restart count indicates issues)
+              RESTART_COUNT=$(docker inspect -f '{{.RestartCount}}' "$CONTAINER_ID" 2>/dev/null)
+              if [ "$RESTART_COUNT" -gt 5 ]; then
+                  warning "Service $service has high restart count: $RESTART_COUNT"
+              fi
+          done
+
+          # Check disk space
+          log "Checking disk space"
+          DISK_USAGE=$(df "$DEPLOY_PATH" | awk 'NR==2 {print int($5)}')
+          if [ "$DISK_USAGE" -gt 90 ]; then
+              error "Disk usage critical: ${DISK_USAGE}%"
+              FAILED_SERVICES="$FAILED_SERVICES disk_space(${DISK_USAGE}%)"
+              ALL_HEALTHY=false
+          elif [ "$DISK_USAGE" -gt 80 ]; then
+              warning "Disk usage high: ${DISK_USAGE}%"
+          fi
+
+          # Check memory usage
+          log "Checking memory usage"
+          MEMORY_USAGE=$(free | awk 'NR==2 {print int($3/$2 * 100)}')
+          if [ "$MEMORY_USAGE" -gt 90 ]; then
+              warning "Memory usage high: ${MEMORY_USAGE}%"
+          fi
+
+          # Write results
+          if [ "$ALL_HEALTHY" = true ]; then
+              echo "status=success" >> /tmp/health_status
+              echo "failed_services=" >> /tmp/health_status
+              [ "$VERBOSE" = "true" ] && echo "All services are healthy!"
+          else
+              echo "status=failure" >> /tmp/health_status
+              echo "failed_services=${FAILED_SERVICES# }" >> /tmp/health_status
+              echo "Failed services:${FAILED_SERVICES}"
+          fi
+          HEALTH_CHECK_EOF
+
+          chmod +x /tmp/health_check.sh
+
+          # Execute health check on remote server
+          ssh -i ~/.ssh/homelab_key -o StrictHostKeyChecking=no \
+            -o ConnectTimeout=${{ env.CHECK_TIMEOUT }} \
+            ${{ secrets.HOMELAB_USER }}@${{ secrets.HOMELAB_HOST }} \
+            'bash -s' < /tmp/health_check.sh
+
+          # Retrieve results
+          ssh -i ~/.ssh/homelab_key -o StrictHostKeyChecking=no \
+            ${{ secrets.HOMELAB_USER }}@${{ secrets.HOMELAB_HOST }} \
+            'cat /tmp/health_status 2>/dev/null || echo "status=failure"' > /tmp/local_health_status
+
+          # Parse results
+          source /tmp/local_health_status || true
+          echo "status=${status:-unknown}" >> $GITHUB_OUTPUT
+          echo "failed_services=${failed_services:-unknown}" >> $GITHUB_OUTPUT
+
+          # Clean up remote files
+          ssh -i ~/.ssh/homelab_key -o StrictHostKeyChecking=no \
+            ${{ secrets.HOMELAB_USER }}@${{ secrets.HOMELAB_HOST }} \
+            'rm -f /tmp/health_status' || true
+
+          # Exit with appropriate code
+          if [ "${status:-unknown}" = "success" ]; then
+            echo "✅ All health checks passed"
+            exit 0
+          elif [ "${status:-unknown}" = "warning" ]; then
+            echo "⚠️ Health checks passed with warnings"
+            exit 0
+          else
+            echo "❌ Health checks failed"
+            exit 1
+          fi
+
+      - name: Store Health Check Results
+        if: always()
+        uses: actions/cache@v3
+        with:
+          path: /tmp/health_history
+          key: health-history-${{ github.run_number }}
+          restore-keys: |
+            health-history-
+
+      - name: Update Health History
+        if: always()
+        run: |
+          mkdir -p /tmp/health_history
+          echo "$(date -Iseconds),${{ steps.check.outputs.status }},${{ steps.check.outputs.failed_services }}" >> /tmp/health_history/history.csv
+
+          # Keep only last 100 entries
+          tail -n 100 /tmp/health_history/history.csv > /tmp/health_history/history.tmp
+          mv /tmp/health_history/history.tmp /tmp/health_history/history.csv
+
+          # Count consecutive failures
+          CONSECUTIVE_FAILURES=$(tail -n ${{ env.ALERT_THRESHOLD }} /tmp/health_history/history.csv | grep -c "failure" || true)
+
+          echo "consecutive_failures=$CONSECUTIVE_FAILURES" >> $GITHUB_ENV
+
+      - name: Send Alert Notification
+        if: failure() && env.consecutive_failures >= env.ALERT_THRESHOLD
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const failed_services = '${{ steps.check.outputs.failed_services }}';
+            const message = `🚨 **Homelab Alert**: Multiple services are failing!\n\nFailed services: ${failed_services}\n\nPlease check your homelab server immediately.`;
+
+            // Create an issue if it doesn't exist
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'homelab-alert,automated',
+              state: 'open'
+            });
+
+            if (issues.data.length === 0) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: '🚨 Homelab Services Health Check Failed',
+                body: message,
+                labels: ['homelab-alert', 'automated', 'critical']
+              });
+            } else {
+              // Add comment to existing issue
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issues.data[0].number,
+                body: message + `\n\n_Alert triggered at ${new Date().toISOString()}_`
+              });
+            }
+
+      - name: Close Alert Issue if Healthy
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Close any open alert issues if services are healthy
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'homelab-alert,automated',
+              state: 'open'
+            });
+
+            for (const issue of issues.data) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: '✅ All services are healthy again. Closing alert.'
+              });
+
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                state: 'closed'
+              });
+            }
+
+      - name: Cleanup
+        if: always()
+        run: |
+          rm -f ~/.ssh/homelab_key
+          rm -f /tmp/health_check.sh
+          rm -f /tmp/local_health_status
+
+  performance-metrics:
+    name: Collect Performance Metrics
+    runs-on: ubuntu-latest
+    needs: health-check
+    if: success() || failure()
+
+    steps:
+      - name: Setup SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.HOMELAB_SSH_KEY }}" > ~/.ssh/homelab_key
+          chmod 600 ~/.ssh/homelab_key
+          ssh-keyscan -H ${{ secrets.HOMELAB_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      - name: Collect Metrics
+        id: metrics
+        run: |
+          # Create metrics collection script
+          cat > /tmp/collect_metrics.sh << 'METRICS_EOF'
+          #!/bin/bash
+
+          DEPLOY_PATH="${HOMELAB_PATH:-/home/$USER/homelab}"
+          cd "$DEPLOY_PATH" 2>/dev/null || exit 1
+
+          echo "=== System Metrics ==="
+          echo "Timestamp: $(date -Iseconds)"
+
+          echo -e "\n--- CPU Usage ---"
+          top -bn1 | head -5
+
+          echo -e "\n--- Memory Usage ---"
+          free -h
+
+          echo -e "\n--- Disk Usage ---"
+          df -h "$DEPLOY_PATH"
+
+          echo -e "\n--- Docker Statistics ---"
+          docker stats --no-stream --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.NetIO}}\t{{.BlockIO}}"
+
+          echo -e "\n--- Container Status ---"
+          docker-compose ps
+
+          echo -e "\n--- Network Connections ---"
+          netstat -tuln | grep LISTEN | head -20
+          METRICS_EOF
+
+          chmod +x /tmp/collect_metrics.sh
+
+          # Execute metrics collection
+          ssh -i ~/.ssh/homelab_key -o StrictHostKeyChecking=no \
+            ${{ secrets.HOMELAB_USER }}@${{ secrets.HOMELAB_HOST }} \
+            'bash -s' < /tmp/collect_metrics.sh > /tmp/metrics.txt 2>&1 || true
+
+          # Store metrics as artifact
+          echo "Metrics collected at $(date -Iseconds)" >> /tmp/metrics_summary.txt
+          cat /tmp/metrics.txt >> /tmp/metrics_summary.txt
+
+      - name: Upload Metrics
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: homelab-metrics-${{ github.run_number }}
+          path: /tmp/metrics_summary.txt
+          retention-days: 7
+
+      - name: Cleanup
+        if: always()
+        run: |
+          rm -f ~/.ssh/homelab_key
+          rm -f /tmp/collect_metrics.sh
+          rm -f /tmp/metrics.txt
+          rm -f /tmp/metrics_summary.txt

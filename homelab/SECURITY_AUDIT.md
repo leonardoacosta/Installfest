@@ -642,7 +642,7 @@ Implement automated backup script (see full script in hardened configuration):
 ```bash
 #!/bin/bash
 # Backup script
-BACKUP_DIR="/backup/homeserver"
+BACKUP_DIR="/backup/homelab"
 DATE=$(date +%Y%m%d_%H%M%S)
 
 # Backup configurations
@@ -671,7 +671,7 @@ find "$BACKUP_DIR" -type f -mtime +30 -delete
 
 ```bash
 # Daily backup at 3 AM
-0 3 * * * cd /path/to/homeserver && ./scripts/backup.sh
+0 3 * * * cd /path/to/homelab && ./scripts/backup.sh
 ```
 
 **Priority:** HIGH
@@ -985,7 +985,7 @@ ps auxf
 
 ```bash
 # Restore from known-good backup
-tar -xzf /backup/homeserver/backup_YYYYMMDD.tar.gz
+tar -xzf /backup/homelab/backup_YYYYMMDD.tar.gz
 
 # Rotate ALL credentials
 ./scripts/setup-secrets.sh

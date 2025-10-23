@@ -137,13 +137,13 @@ STEP 3: UPDATE VAULTWARDEN DOMAIN
 
 After SSL is working, update Vaultwarden to use the HTTPS domain:
 
-1. Edit: /Users/leonardoacosta/Personal/Installfest/homeserver/.env
+1. Edit: /Users/leonardoacosta/Personal/Installfest/homelab/.env
 
 2. Change:
    VAULTWARDEN_DOMAIN=https://vault.yourdomain.com
 
 3. Restart Vaultwarden:
-   cd /Users/leonardoacosta/Personal/Installfest/homeserver
+   cd /Users/leonardoacosta/Personal/Installfest/homelab
    docker-compose restart vaultwarden
 
 This ensures email links and client auto-discovery use the correct domain.
@@ -273,7 +273,7 @@ BACKUP REMINDER
 
 After SSL is configured and working, backup your NPM configuration:
 
-cd /Users/leonardoacosta/Personal/Installfest/homeserver
+cd /Users/leonardoacosta/Personal/Installfest/homelab
 tar -czf npm-backup-$(date +%Y%m%d).tar.gz nginx-proxy-manager/
 
 This preserves your proxy hosts and SSL certificates.

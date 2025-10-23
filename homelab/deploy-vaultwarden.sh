@@ -6,9 +6,9 @@
 
 set -e  # Exit on error
 
-HOMESERVER_DIR="/Users/leonardoacosta/Personal/Installfest/homeserver"
-ENV_FILE="$HOMESERVER_DIR/.env"
-DATA_DIR="$HOMESERVER_DIR/vaultwarden"
+homelab_DIR="/Users/leonardoacosta/Personal/Installfest/homelab"
+ENV_FILE="$homelab_DIR/.env"
+DATA_DIR="$homelab_DIR/vaultwarden"
 
 # Colors for output
 RED='\033[0;31m'
@@ -23,12 +23,12 @@ echo -e "${BLUE}==========================================${NC}"
 echo ""
 
 # Check if running from correct directory
-if [ ! -f "$HOMESERVER_DIR/docker-compose.yml" ]; then
-    echo -e "${RED}Error: docker-compose.yml not found in $HOMESERVER_DIR${NC}"
+if [ ! -f "$homelab_DIR/docker-compose.yml" ]; then
+    echo -e "${RED}Error: docker-compose.yml not found in $homelab_DIR${NC}"
     exit 1
 fi
 
-cd "$HOMESERVER_DIR"
+cd "$homelab_DIR"
 
 # Step 1: Check if admin token is configured
 echo -e "${YELLOW}[1/6] Checking admin token configuration...${NC}"
@@ -196,7 +196,7 @@ echo "  5. Install Bitwarden clients (browser extension, mobile app)"
 echo ""
 
 echo -e "${BLUE}Documentation:${NC}"
-echo "  Full setup guide: $HOMESERVER_DIR/VAULTWARDEN_SETUP.md"
+echo "  Full setup guide: $homelab_DIR/VAULTWARDEN_SETUP.md"
 echo ""
 
 echo -e "${BLUE}Useful Commands:${NC}"

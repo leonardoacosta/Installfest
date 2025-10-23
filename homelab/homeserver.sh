@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Homeserver Management Wizard
-# Complete setup, management, and troubleshooting for Podman/Docker homeserver stack
+# homelab Management Wizard
+# Complete setup, management, and troubleshooting for Podman/Docker homelab stack
 # Designed for Arch Linux with rootless Podman
 
 set -e
@@ -544,7 +544,7 @@ setup_wizard() {
 # ============= Main Menu =============
 main_menu() {
     clear
-    print_header "Homeserver Management"
+    print_header "homelab Management"
     echo -e "${CYAN}Detected: $OS${NC}"
     echo ""
     echo "1)  Setup Wizard (First Time Setup)"

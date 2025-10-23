@@ -1,5 +1,5 @@
 [Unit]
-Description=Homeserver Podman Stack
+Description=homelab Podman Stack
 After=network-online.target podman.socket
 Wants=network-online.target
 RequiresMountsFor=%t/containers
@@ -7,7 +7,7 @@ RequiresMountsFor=%t/containers
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-WorkingDirectory=/home/%u/homeserver
+WorkingDirectory=/home/%u/homelab
 Environment="PATH=/usr/local/bin:/usr/bin:/bin"
 
 # Start services

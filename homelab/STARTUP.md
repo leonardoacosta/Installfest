@@ -3,7 +3,7 @@
 ## Quick Start
 
 ```bash
-./homeserver.sh restart
+./homelab.sh restart
 ```
 
 ## Port Conflicts (Address Already in Use)
@@ -21,7 +21,7 @@ podman rm -a
 podman network prune -f
 
 # Now restart
-./homeserver.sh restart
+./homelab.sh restart
 ```
 
 ## If Startup Hangs
@@ -29,6 +29,7 @@ podman network prune -f
 The `depends_on` conditions can cause podman-compose to wait indefinitely. If this happens:
 
 ### Option 1: Start Core Services First
+
 ```bash
 # Stop everything
 podman-compose -f podman-compose.yml down
@@ -44,7 +45,9 @@ podman-compose -f podman-compose.yml up -d jellyseerr flaresolverr
 ```
 
 ### Option 2: Remove depends_on
+
 Edit `podman-compose.yml` and comment out the `depends_on` section:
+
 ```yaml
 # ollama-webui:
 #   ...
@@ -53,11 +56,13 @@ Edit `podman-compose.yml` and comment out the `depends_on` section:
 ```
 
 Then start normally:
+
 ```bash
-./homeserver.sh restart
+./homelab.sh restart
 ```
 
 ### Option 3: Start Without Waiting
+
 ```bash
 podman-compose -f podman-compose.yml up -d --no-deps
 ```
@@ -65,7 +70,7 @@ podman-compose -f podman-compose.yml up -d --no-deps
 ## Check Status
 
 ```bash
-./homeserver.sh status
+./homelab.sh status
 # Or directly:
 podman ps -a
 ```
@@ -73,7 +78,7 @@ podman ps -a
 ## View Logs
 
 ```bash
-./homeserver.sh logs
+./homelab.sh logs
 # Or specific service:
-./homeserver.sh logs ollama
+./homelab.sh logs ollama
 ```

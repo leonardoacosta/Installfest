@@ -7,6 +7,7 @@ Vaultwarden has been added to your Docker homelab stack as a secure, self-hosted
 ## Configuration Details
 
 ### Network Configuration
+
 - **Network**: homelab (172.20.0.0/16)
 - **Static IP**: 172.20.0.22
 - **Web Interface Port**: 8222 (HTTP)
@@ -27,7 +28,8 @@ Based on your SECURITY_AUDIT.md recommendations, Vaultwarden includes:
 5. **Proper Timezone**: Inherited from TZ environment variable
 
 ### Volume Mapping
-- Host: `./vaultwarden/` (in homeserver directory)
+
+- Host: `./vaultwarden/` (in homelab directory)
 - Container: `/data`
 - Contains: SQLite database, attachments, icons, config
 
@@ -38,7 +40,7 @@ Based on your SECURITY_AUDIT.md recommendations, Vaultwarden includes:
 Before starting Vaultwarden, generate a secure admin token:
 
 ```bash
-cd /Users/leonardoacosta/Personal/Installfest/homeserver
+cd /Users/leonardoacosta/Personal/Installfest/homelab
 
 # Generate a secure random token
 openssl rand -base64 48
@@ -64,7 +66,7 @@ If using locally only, you can leave it as `https://vault.local` or use your loc
 ### Step 3: Start Vaultwarden
 
 ```bash
-cd /Users/leonardoacosta/Personal/Installfest/homeserver
+cd /Users/leonardoacosta/Personal/Installfest/homelab
 
 # Create the data directory with proper permissions
 mkdir -p vaultwarden
@@ -145,6 +147,7 @@ VAULTWARDEN_SMTP_TIMEOUT=15
 ### Other Email Providers
 
 **Outlook/Office365**:
+
 ```bash
 VAULTWARDEN_SMTP_HOST=smtp.office365.com
 VAULTWARDEN_SMTP_PORT=587
@@ -152,6 +155,7 @@ VAULTWARDEN_SMTP_SECURITY=starttls
 ```
 
 **Custom SMTP Server**:
+
 ```bash
 VAULTWARDEN_SMTP_HOST=mail.yourdomain.com
 VAULTWARDEN_SMTP_PORT=587
@@ -165,11 +169,13 @@ For secure external access, configure SSL reverse proxy through your existing Ng
 ### Step 1: Prepare DNS
 
 Option A - Local DNS (AdGuard Home):
+
 1. Log into AdGuard Home: `http://YOUR_SERVER_IP:82`
 2. Go to Filters → DNS rewrites
 3. Add rewrite: `vault.yourdomain.com` → `172.20.0.81` (NPM IP)
 
 Option B - Public DNS:
+
 1. Add an A record in your DNS provider
 2. Point to your public IP
 3. Ensure port 443 is forwarded to Nginx Proxy Manager
@@ -177,11 +183,13 @@ Option B - Public DNS:
 ### Step 2: Configure Nginx Proxy Manager
 
 1. Log into NPM: `http://YOUR_SERVER_IP:81`
+
    - Default: `admin@example.com` / `changeme` (CHANGE THIS!)
 
 2. Click "Proxy Hosts" → "Add Proxy Host"
 
 3. **Details Tab**:
+
    - Domain Names: `vault.yourdomain.com`
    - Scheme: `http`
    - Forward Hostname/IP: `172.20.0.22` (Vaultwarden static IP)
@@ -191,6 +199,7 @@ Option B - Public DNS:
    - Websockets Support: ✓ (checked) **CRITICAL for sync**
 
 4. **SSL Tab**:
+
    - SSL Certificate: Request a new SSL certificate
    - Force SSL: ✓ (checked)
    - HTTP/2 Support: ✓ (checked)
@@ -249,27 +258,32 @@ docker-compose restart vaultwarden
 Vaultwarden is fully compatible with official Bitwarden clients.
 
 ### Browser Extensions
+
 - [Chrome/Edge](https://chrome.google.com/webstore/detail/bitwarden/nngceckbapebfimnlniiiahkandclblb)
 - [Firefox](https://addons.mozilla.org/firefox/addon/bitwarden-password-manager/)
 - [Safari](https://apps.apple.com/app/bitwarden/id1352778147)
 
 **Configuration**:
+
 1. Install extension
 2. Click settings (gear icon)
 3. Server URL: `https://vault.yourdomain.com` (or `http://YOUR_IP:8222` for local)
 4. Click "Log In"
 
 ### Mobile Apps
+
 - [iOS](https://apps.apple.com/app/bitwarden-password-manager/id1137397744)
 - [Android](https://play.google.com/store/apps/details?id=com.x8bit.bitwarden)
 
 **Configuration**:
+
 1. Open app, tap settings before logging in
 2. Self-hosted Environment → Custom Environment
 3. Server URL: `https://vault.yourdomain.com`
 4. Tap "Save" then log in
 
 ### Desktop Apps
+
 - [Windows/Mac/Linux](https://bitwarden.com/download/)
 
 **Configuration**: Same as browser extensions
@@ -277,6 +291,7 @@ Vaultwarden is fully compatible with official Bitwarden clients.
 ## Security Best Practices
 
 ### 1. Master Password
+
 - Use a strong, unique master password (20+ characters)
 - NEVER reuse this password anywhere else
 - Write it down and store physically secure (safe/vault)
@@ -308,8 +323,9 @@ docker-compose restart vaultwarden
 The Vaultwarden data directory contains your encrypted vault:
 
 **Manual Backup**:
+
 ```bash
-cd /Users/leonardoacosta/Personal/Installfest/homeserver
+cd /Users/leonardoacosta/Personal/Installfest/homelab
 
 # Stop Vaultwarden to ensure consistency
 docker-compose stop vaultwarden
@@ -322,16 +338,17 @@ docker-compose start vaultwarden
 ```
 
 **Automated Backup** (add to cron):
+
 ```bash
 #!/bin/bash
-# /Users/leonardoacosta/Personal/Installfest/homeserver/scripts/backup-vaultwarden.sh
+# /Users/leonardoacosta/Personal/Installfest/homelab/scripts/backup-vaultwarden.sh
 
 BACKUP_DIR="/backup/vaultwarden"
 DATE=$(date +%Y%m%d_%H%M%S)
-HOMESERVER_DIR="/Users/leonardoacosta/Personal/Installfest/homeserver"
+homelab_DIR="/Users/leonardoacosta/Personal/Installfest/homelab"
 
 mkdir -p "$BACKUP_DIR"
-cd "$HOMESERVER_DIR"
+cd "$homelab_DIR"
 
 # Stop container for consistent backup
 docker-compose stop vaultwarden
@@ -349,13 +366,14 @@ echo "Backup completed: vaultwarden_${DATE}.tar.gz"
 ```
 
 Make it executable and add to cron:
+
 ```bash
 chmod +x scripts/backup-vaultwarden.sh
 
 # Add to crontab (backup daily at 2 AM)
 crontab -e
 # Add line:
-0 2 * * * /Users/leonardoacosta/Personal/Installfest/homeserver/scripts/backup-vaultwarden.sh
+0 2 * * * /Users/leonardoacosta/Personal/Installfest/homelab/scripts/backup-vaultwarden.sh
 ```
 
 ### 5. Monitor Logs
@@ -391,16 +409,19 @@ sudo ufw allow from 192.168.1.0/24 to any port 8222 proto tcp
 ### Issue: Container Won't Start
 
 **Check logs**:
+
 ```bash
 docker-compose logs vaultwarden
 ```
 
 **Common causes**:
+
 1. Port conflict (8222 or 3012 already in use)
 2. Permission issues on `./vaultwarden` directory
 3. Invalid ADMIN_TOKEN in `.env`
 
 **Solutions**:
+
 ```bash
 # Check port usage
 sudo lsof -i :8222
@@ -418,6 +439,7 @@ cat .env | grep VAULTWARDEN
 **Symptom**: 401 Unauthorized on `/admin`
 
 **Solutions**:
+
 1. Verify `VAULTWARDEN_ADMIN_TOKEN` is set in `.env`
 2. Token should be base64 encoded string (48+ characters)
 3. Check for extra spaces/newlines in `.env`
@@ -426,16 +448,19 @@ cat .env | grep VAULTWARDEN
 ### Issue: WebSocket Not Working (No Real-Time Sync)
 
 **Symptoms**:
+
 - Changes take minutes to sync
 - Console shows WebSocket connection errors
 
 **Solutions**:
+
 1. Verify port 3012 is accessible: `curl http://YOUR_IP:3012`
 2. Check Nginx Proxy Manager has "WebSocket Support" enabled
 3. Verify advanced config includes WebSocket location block (see SSL setup above)
 4. Check firewall isn't blocking port 3012
 
 **Test WebSocket**:
+
 ```bash
 # From another machine on your network
 curl -i -N -H "Connection: Upgrade" \
@@ -447,18 +472,21 @@ curl -i -N -H "Connection: Upgrade" \
 ### Issue: Email Not Sending
 
 **Check admin panel**:
+
 1. Navigate to `/admin`
 2. Click "Diagnostics"
 3. Scroll to "SMTP Test"
 4. Click "Send test email"
 
 **Common issues**:
+
 - App password not configured (Gmail requires app-specific passwords)
 - Wrong SMTP port (587 for STARTTLS, 465 for TLS, 25 for plain)
 - Firewall blocking outbound SMTP
 - SMTP_SECURITY setting incorrect
 
 **Debug**:
+
 ```bash
 # View detailed SMTP logs
 docker-compose logs vaultwarden | grep -i smtp
@@ -467,12 +495,14 @@ docker-compose logs vaultwarden | grep -i smtp
 ### Issue: Database Corruption
 
 **Symptoms**:
+
 - Container starts but vault won't load
 - Errors about database being locked or malformed
 
 **Recovery**:
+
 ```bash
-cd /Users/leonardoacosta/Personal/Installfest/homeserver
+cd /Users/leonardoacosta/Personal/Installfest/homelab
 
 # Stop container
 docker-compose stop vaultwarden
@@ -489,11 +519,13 @@ docker-compose start vaultwarden
 ### Issue: Can't Login After Setup
 
 **Forgot Master Password?**
+
 - NO RECOVERY POSSIBLE - encryption is client-side
 - If SMTP configured, use "Password Hint" on login page
 - Otherwise, must delete user and start over
 
 **To delete a user**:
+
 1. Access admin panel: `http://YOUR_IP:8222/admin`
 2. Go to "Users"
 3. Find user and click "Delete"
@@ -553,6 +585,7 @@ Vaultwarden fetches website icons automatically:
 ### Logging and Monitoring
 
 **Increase log verbosity for debugging**:
+
 ```bash
 # Edit .env
 VAULTWARDEN_LOG_LEVEL=debug
@@ -565,6 +598,7 @@ docker-compose logs -f vaultwarden
 ```
 
 **Log to file**:
+
 ```bash
 # Redirect logs to file
 docker-compose logs -f vaultwarden >> ./vaultwarden/vaultwarden.log
@@ -575,13 +609,13 @@ If you add Prometheus monitoring (as suggested in SECURITY_AUDIT.md):
 
 ```yaml
 # Add to docker-compose.monitoring.yml
-  vaultwarden-exporter:
-    image: docker.io/vaultwarden/vaultwarden-prometheus-exporter
-    container_name: vaultwarden-exporter
-    environment:
-      - VW_URL=http://172.20.0.22:80
-    networks:
-      - homelab
+vaultwarden-exporter:
+  image: docker.io/vaultwarden/vaultwarden-prometheus-exporter
+  container_name: vaultwarden-exporter
+  environment:
+    - VW_URL=http://172.20.0.22:80
+  networks:
+    - homelab
 ```
 
 ## Maintenance
@@ -589,7 +623,7 @@ If you add Prometheus monitoring (as suggested in SECURITY_AUDIT.md):
 ### Updating Vaultwarden
 
 ```bash
-cd /Users/leonardoacosta/Personal/Installfest/homeserver
+cd /Users/leonardoacosta/Personal/Installfest/homelab
 
 # Backup first!
 docker-compose stop vaultwarden
@@ -676,13 +710,14 @@ done
 If you deploy Prometheus (recommended in SECURITY_AUDIT.md):
 
 Add health check monitoring:
+
 ```yaml
 # prometheus.yml
 scrape_configs:
-  - job_name: 'vaultwarden'
+  - job_name: "vaultwarden"
     static_configs:
-      - targets: ['172.20.0.22:80']
-    metrics_path: '/alive'
+      - targets: ["172.20.0.22:80"]
+    metrics_path: "/alive"
 ```
 
 ## Resources
@@ -695,17 +730,20 @@ scrape_configs:
 ## Quick Reference
 
 ### Ports
+
 - **8222**: Web vault (HTTP)
 - **3012**: WebSocket (real-time sync)
 
 ### Important Files
-- **Config**: `/Users/leonardoacosta/Personal/Installfest/homeserver/.env`
-- **Data**: `/Users/leonardoacosta/Personal/Installfest/homeserver/vaultwarden/`
+
+- **Config**: `/Users/leonardoacosta/Personal/Installfest/homelab/.env`
+- **Data**: `/Users/leonardoacosta/Personal/Installfest/homelab/vaultwarden/`
 - **Database**: `./vaultwarden/db.sqlite3`
 - **Icons**: `./vaultwarden/icon_cache/`
 - **Attachments**: `./vaultwarden/attachments/`
 
 ### Common Commands
+
 ```bash
 # Start
 docker-compose up -d vaultwarden
@@ -733,6 +771,7 @@ docker-compose pull vaultwarden && docker-compose up -d vaultwarden
 ```
 
 ### Emergency Contacts
+
 - Admin Panel: `http://YOUR_IP:8222/admin`
 - Health Check: `http://YOUR_IP:8222/alive`
 - WebSocket Test: `http://YOUR_IP:3012`

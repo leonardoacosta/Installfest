@@ -1,0 +1,310 @@
+# Glance Dashboard Configuration
+# This configuration provides a comprehensive overview of all homelab services
+# Organized by function with proper network access considerations
+
+theme:
+  background-color: 15 15 15 # Dark background (RGB)
+  contrast-multiplier: 1.2 # Slightly increased contrast
+  primary-color: 139 92 246 # Purple accent (matches modern dashboards)
+  positive-color: 34 197 94 # Green for up status
+  negative-color: 239 68 68 # Red for down status
+
+branding:
+  logo-url: "https://raw.githubusercontent.com/glanceapp/glance/main/docs/static/images/logo.svg"
+  favicon-url: "https://raw.githubusercontent.com/glanceapp/glance/main/docs/static/images/logo.svg"
+
+# Server configuration
+server:
+  host: 0.0.0.0
+  port: 8080
+  assets-path: /app/data/assets
+
+pages:
+  - name: Home
+    slug: home
+    columns:
+      - size: small
+        widgets:
+          - type: weather
+            location: Dallas, Texas # Update with your location
+            units: imperial # or 'metric'
+
+          - type: monitor
+            title: Service Health
+            cache: 1m
+            sites:
+              - title: Home Assistant
+                url: http://172.20.0.123:8123
+                icon: si:homeassistant
+              - title: Jellyfin
+                url: http://172.20.0.96:8096
+                icon: si:jellyfin
+              - title: AdGuard Home
+                url: http://172.20.0.53:82
+                icon: si:adguard
+              - title: Nginx Proxy Manager
+                url: http://172.20.0.81:81
+                icon: si:nginx
+              - title: Vaultwarden
+                url: http://172.20.0.22:80
+                icon: si:bitwarden
+              - title: Ollama
+                url: http://172.20.0.11:11434/api/tags
+                icon: si:ollama
+
+      - size: full
+        widgets:
+          # Core Services
+          - type: group
+            title: Core Infrastructure
+            columns: 3
+            widgets:
+              - type: link
+                title: Home Assistant
+                url: http://homeassistant.local:8123
+                description: Smart Home Hub
+                icon: si:homeassistant
+                same-tab: false
+                hide-arrow: false
+
+              - type: link
+                title: AdGuard Home
+                url: http://adguard.local:82
+                description: DNS Ad Blocker
+                icon: si:adguard
+                same-tab: false
+                hide-arrow: false
+
+              - type: link
+                title: Nginx Proxy Manager
+                url: http://npm.local:81
+                description: Reverse Proxy
+                icon: si:nginx
+                same-tab: false
+                hide-arrow: false
+
+          # AI & Knowledge
+          - type: group
+            title: AI & Knowledge
+            columns: 2
+            widgets:
+              - type: link
+                title: Ollama WebUI
+                url: http://ollama.local:8081
+                description: Local LLM Interface
+                icon: si:ollama
+                same-tab: false
+                hide-arrow: false
+
+              - type: link
+                title: Ollama API
+                url: http://ollama.local:11434
+                description: LLM API Endpoint
+                icon: si:api
+                same-tab: false
+                hide-arrow: false
+
+          # Security & Storage
+          - type: group
+            title: Security & Storage
+            columns: 2
+            widgets:
+              - type: link
+                title: Vaultwarden
+                url: http://vaultwarden.local:8222
+                description: Password Manager
+                icon: si:bitwarden
+                same-tab: false
+                hide-arrow: false
+
+              - type: link
+                title: Samba Share
+                url: smb://homelab.local
+                description: Network Storage
+                icon: si:files
+                same-tab: false
+                hide-arrow: false
+
+      - size: small
+        widgets:
+          # System Stats (if you add Glances monitoring later)
+          - type: extension
+            url: http://172.20.0.123:8123/api/states
+            title: Home Assistant Status
+            cache: 30s
+            allow-potentially-dangerous-html: true
+            parameters:
+              token: "YOUR_HA_LONG_LIVED_TOKEN" # Add your HA token
+
+          # Docker Status
+          - type: monitor
+            title: Docker Services
+            cache: 30s
+            style: dynamic-columns
+            sites:
+              - title: Gluetun VPN
+                url: http://172.21.0.2:8000 # Gluetun health endpoint
+                icon: si:vpn
+              - title: Prowlarr
+                url: http://172.21.0.2:9696
+                icon: si:prowlarr
+              - title: qBittorrent
+                url: http://172.21.0.2:8080
+                icon: si:qbittorrent
+
+  - name: Media
+    slug: media
+    columns:
+      - size: full
+        widgets:
+          # Media Streaming
+          - type: group
+            title: Media Streaming
+            columns: 2
+            widgets:
+              - type: link
+                title: Jellyfin
+                url: http://jellyfin.local:8096
+                description: Media Server
+                icon: si:jellyfin
+                same-tab: false
+                hide-arrow: false
+
+              - type: link
+                title: Jellyseerr
+                url: http://jellyseerr.local:5055
+                description: Media Requests
+                icon: si:jellyseerr
+                same-tab: false
+                hide-arrow: false
+
+          # Media Management
+          - type: group
+            title: Media Management
+            columns: 4
+            widgets:
+              - type: link
+                title: Radarr
+                url: http://radarr.local:7878
+                description: Movies
+                icon: si:radarr
+                same-tab: false
+                hide-arrow: false
+
+              - type: link
+                title: Sonarr
+                url: http://sonarr.local:8989
+                description: TV Shows
+                icon: si:sonarr
+                same-tab: false
+                hide-arrow: false
+
+              - type: link
+                title: Lidarr
+                url: http://lidarr.local:8686
+                description: Music
+                icon: si:lidarr
+                same-tab: false
+                hide-arrow: false
+
+              - type: link
+                title: Bazarr
+                url: http://bazarr.local:6767
+                description: Subtitles
+                icon: si:bazarr
+                same-tab: false
+                hide-arrow: false
+
+      - size: small
+        widgets:
+          # Download Clients
+          - type: group
+            title: Download Clients
+            widgets:
+              - type: link
+                title: qBittorrent
+                url: http://qbittorrent.local:8080
+                description: Torrent Client (VPN)
+                icon: si:qbittorrent
+                same-tab: false
+                hide-arrow: false
+
+              - type: link
+                title: NZBGet
+                url: http://nzbget.local:6789
+                description: Usenet Client (VPN)
+                icon: si:nzbget
+                same-tab: false
+                hide-arrow: false
+
+              - type: link
+                title: Prowlarr
+                url: http://prowlarr.local:9696
+                description: Indexer Manager (VPN)
+                icon: si:prowlarr
+                same-tab: false
+                hide-arrow: false
+
+          # Storage Stats (optional)
+          - type: extension
+            url: http://172.20.0.96:8096/System/Info/Public
+            title: Jellyfin Stats
+            cache: 5m
+
+  - name: Monitoring
+    slug: monitoring
+    columns:
+      - size: full
+        widgets:
+          # Network Overview
+          - type: monitor
+            title: Network Health
+            cache: 30s
+            columns: 2
+            sites:
+              # Homelab Network Services
+              - title: DNS (AdGuard)
+                url: http://172.20.0.53:82/control/status
+                icon: si:dns
+              - title: Reverse Proxy
+                url: http://172.20.0.81:81/api
+                icon: si:nginx
+              # Media Network Services
+              - title: VPN Tunnel
+                url: http://172.21.0.2:8000/v1/publicip
+                icon: si:vpn
+              - title: Media Network
+                url: http://172.21.0.96:8096/System/Ping
+                icon: si:network
+
+          # Service Logs Widget (using iframe, optional)
+          - type: iframe
+            title: System Logs
+            url: http://172.20.0.81:81 # NPM has log viewer
+            height: 400
+            cache: never
+
+      - size: small
+        widgets:
+          # Quick Stats
+          - type: clock
+            hour-format: 12h
+            timezones:
+              - timezone: America/Chicago
+                label: Local
+              - timezone: UTC
+                label: UTC
+
+          # RSS Feeds (optional)
+          - type: rss
+            title: Tech News
+            url: https://news.ycombinator.com/rss
+            limit: 5
+            cache: 30m
+# Optional: External resources
+# resources:
+#   - type: css
+#     content: |
+#       .widget {
+#         backdrop-filter: blur(10px);
+#       }

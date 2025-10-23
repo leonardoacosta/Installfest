@@ -4,10 +4,10 @@
 [ -f "$HOME/.env" ] && source "$HOME/.env"
 
 # Themes (onedark or nord)
-# export TMUX_THEME="nord"
-# export NVIM_THEME="nord"
-# export STARSHIP_THEME="nord"
-# export WEZTERM_THEME="nord"
+export TMUX_THEME="nord"
+export NVIM_THEME="nord"
+export STARSHIP_THEME="nord"
+export WEZTERM_THEME="nord"
 
 # Locale settings
 export LANG="en_US.UTF-8" # Sets default locale for all categories
@@ -34,3 +34,4 @@ export CPPFLAGS="-I/usr/local/opt/zlib/include -I/usr/local/opt/bzip2/include"
 export DEFAULT_USER="$(whoami)"
 # uv
 export PATH="/Users/leonardoacosta/.local/bin:$PATH"
+eval "$(/opt/homebrew/bin/brew shellenv)"
