@@ -193,12 +193,13 @@ jobs:
                   error "Homelab directory not found in workspace: $WORKSPACE_HOMELAB"
                   exit 1
               fi
+              cd homelab
 
               # Check if docker-compose.yml exists
-              # if [ ! -f "docker-compose.yml" ]; then
-              #     error "docker-compose.yml not found in $DEPLOY_PATH"
-              #     exit 1
-              # fi
+              if [ ! -f "docker-compose.yml" ]; then
+                  error "docker-compose.yml not found in $DEPLOY_PATH"
+                  exit 1
+              fi
 
               # Validate docker-compose configuration
               log "Validating docker-compose configuration"
