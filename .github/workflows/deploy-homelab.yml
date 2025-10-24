@@ -194,6 +194,9 @@ jobs:
               fi
               cd homelab
 
+              # write env into .env
+              echo "$ENV" >> .env
+
               # Check if docker-compose.yml exists
               if [ ! -f "docker-compose.yml" ]; then
                   error "docker-compose.yml not found in $DEPLOY_PATH"
