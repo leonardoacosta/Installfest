@@ -184,6 +184,13 @@ jobs:
 
               # Copy configurations from GitHub workspace
               log "Copying configurations from GitHub workspace"
+              echo "GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
+              ls -la $GITHUB_WORKSPACE
+              log "================================================"  
+              echo "WORKSPACE_HOMELAB: $WORKSPACE_HOMELAB"
+              ls -la $WORKSPACE_HOMELAB
+              log "================================================"  
+
               WORKSPACE_HOMELAB="${GITHUB_WORKSPACE}/homelab"
 
               if [ -d "$WORKSPACE_HOMELAB" ]; then
