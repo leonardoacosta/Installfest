@@ -6,16 +6,18 @@
 
 set -e  # Exit on error
 
-homelab_DIR="/Users/leonardoacosta/Personal/Installfest/homelab"
+# Get script directory
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+LIB_DIR="$SCRIPT_DIR/../lib"
+
+# Source homelab libraries
+source "$LIB_DIR/colors.sh"
+source "$LIB_DIR/logging.sh"
+source "$LIB_DIR/docker.sh"
+
+homelab_DIR="$SCRIPT_DIR/.."
 ENV_FILE="$homelab_DIR/.env"
 DATA_DIR="$homelab_DIR/vaultwarden"
-
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
 
 echo -e "${BLUE}==========================================${NC}"
 echo -e "${BLUE}  Vaultwarden Deployment Script${NC}"
@@ -118,41 +120,27 @@ echo -e "${GREEN}Permissions set for UID:GID = ${PUID}:${PGID}${NC}"
 echo ""
 echo -e "${YELLOW}[4/6] Verifying Docker Compose configuration...${NC}"
 
-if docker-compose config > /dev/null 2>&1; then
+if compose_config > /dev/null 2>&1; then
     echo -e "${GREEN}Docker Compose configuration is valid${NC}"
 else
     echo -e "${RED}Error: Docker Compose configuration is invalid${NC}"
-    echo "Run 'docker-compose config' to see the error"
+    echo "Run 'docker compose config' to see the error"
     exit 1
 fi
 
 # Step 5: Pull image
 echo ""
 echo -e "${YELLOW}[5/6] Pulling Vaultwarden image...${NC}"
-docker-compose pull vaultwarden
+compose_pull vaultwarden
 
 # Step 6: Start Vaultwarden
 echo ""
 echo -e "${YELLOW}[6/6] Starting Vaultwarden...${NC}"
-docker-compose up -d vaultwarden
+compose_up vaultwarden
 
 # Wait for container to be healthy
 echo ""
-echo -e "${YELLOW}Waiting for Vaultwarden to become healthy...${NC}"
-for i in {1..30}; do
-    HEALTH=$(docker inspect --format='{{.State.Health.Status}}' vaultwarden 2>/dev/null || echo "starting")
-
-    if [ "$HEALTH" = "healthy" ]; then
-        echo -e "${GREEN}Vaultwarden is healthy!${NC}"
-        break
-    elif [ "$HEALTH" = "unhealthy" ]; then
-        echo -e "${RED}Vaultwarden is unhealthy. Check logs with: docker-compose logs vaultwarden${NC}"
-        exit 1
-    fi
-
-    echo -n "."
-    sleep 2
-done
+wait_for_healthy "vaultwarden" 60 2
 
 # Display summary
 echo ""
@@ -200,10 +188,10 @@ echo "  Full setup guide: $homelab_DIR/VAULTWARDEN_SETUP.md"
 echo ""
 
 echo -e "${BLUE}Useful Commands:${NC}"
-echo "  View logs:     docker-compose logs -f vaultwarden"
+echo "  View logs:     docker compose logs -f vaultwarden"
 echo "  Check status:  docker ps | grep vaultwarden"
-echo "  Restart:       docker-compose restart vaultwarden"
-echo "  Stop:          docker-compose stop vaultwarden"
+echo "  Restart:       docker compose restart vaultwarden"
+echo "  Stop:          docker compose stop vaultwarden"
 echo ""
 
 echo -e "${YELLOW}Security Reminder:${NC}"
@@ -216,7 +204,7 @@ echo ""
 
 # Show logs
 echo -e "${BLUE}Recent logs:${NC}"
-docker-compose logs --tail=20 vaultwarden
+compose_logs --tail=20 vaultwarden
 
 echo ""
 echo -e "${GREEN}Deployment complete! 🔐${NC}"

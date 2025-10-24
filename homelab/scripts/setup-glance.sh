@@ -4,35 +4,20 @@
 
 set -e
 
-# Color codes for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+# Get script directory
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+LIB_DIR="$SCRIPT_DIR/../lib"
+
+# Source homelab libraries
+source "$LIB_DIR/colors.sh"
+source "$LIB_DIR/logging.sh"
+source "$LIB_DIR/docker.sh"
 
 # Configuration
 GLANCE_DIR="./glance"
 GLANCE_CONFIG="$GLANCE_DIR/glance.yml"
 COMPOSE_FILE="docker-compose.yml"
 ENV_FILE=".env"
-
-# Functions
-print_status() {
-    echo -e "${BLUE}[INFO]${NC} $1"
-}
-
-print_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
-}
-
-print_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
-}
-
-print_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
 
 # Check prerequisites
 check_prerequisites() {
@@ -188,26 +173,19 @@ deploy_glance() {
         print_status "Glance is already running"
         read -p "Do you want to restart it? [y/n]: " restart
         if [[ "$restart" == "y" ]]; then
-            docker-compose restart glance
+            compose_restart glance
             print_success "Glance restarted"
         fi
     else
         # Start Glance
         print_status "Starting Glance..."
-        docker-compose up -d glance
+        compose_up glance
 
         # Wait for container to be healthy
         print_status "Waiting for Glance to be healthy..."
-        for i in {1..30}; do
-            if docker ps | grep -q "glance.*healthy"; then
-                print_success "Glance is healthy"
-                break
-            elif [ $i -eq 30 ]; then
-                print_warning "Glance health check timed out, but container may still be running"
-                break
-            fi
-            sleep 2
-        done
+        if ! wait_for_healthy "glance" 60 2; then
+            print_warning "Glance health check timed out, but container may still be running"
+        fi
     fi
 
     # Show access information

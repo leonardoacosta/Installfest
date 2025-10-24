@@ -33,7 +33,7 @@ services:
   # ***********************************
   # ********** Dashboard & Monitoring *
   # ***********************************
-  # ? Glance - Self-Hosted Dashboard (Replacing Homer)
+  # ? Glance - Self-Hosted Dashboard
   glance:
     image: glanceapp/glance:latest
     container_name: glance
@@ -111,7 +111,6 @@ services:
     # devices:
     #   - /dev/ttyUSB0:/dev/ttyUSB0
 
-  # ? ----------------------------------
   # ? AdGuard Home - DNS Ad Blocker
   adguardhome:
     image: docker.io/adguard/adguardhome:v0.107.52
@@ -142,7 +141,6 @@ services:
     security_opt:
       - no-new-privileges:true
 
-  # ? ----------------------------------
   # ? Nginx Proxy Manager - Reverse Proxy
   nginx-proxy-manager:
     image: docker.io/jc21/nginx-proxy-manager:latest
@@ -215,7 +213,6 @@ services:
     #           count: 1
     #           capabilities: [gpu]
 
-  # ? ----------------------------------
   # ? Ollama WebUI - Interface for Ollama
   ollama-webui:
     image: ghcr.io/open-webui/open-webui:main
@@ -299,7 +296,6 @@ services:
     # sudo sysctl -w net.ipv4.ip_forward=1
     # sudo sysctl -w net.ipv6.conf.all.forwarding=1
 
-  # ? ----------------------------------
   # ? Vaultwarden - Password Manager
   vaultwarden:
     image: docker.io/vaultwarden/server:1.32.5
@@ -430,7 +426,6 @@ services:
     sysctls:
       - net.ipv6.conf.all.disable_ipv6=1
 
-  # ? ----------------------------------
   # ? qBittorrent - Torrent Client
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
@@ -453,7 +448,6 @@ services:
     security_opt:
       - no-new-privileges:true
 
-  # ? ----------------------------------
   # ? Prowlarr - Indexer Manager
   prowlarr:
     image: lscr.io/linuxserver/prowlarr:latest
@@ -473,7 +467,6 @@ services:
     security_opt:
       - no-new-privileges:true
 
-  # ? ----------------------------------
   # ? Radarr - Movie Manager
   radarr:
     image: lscr.io/linuxserver/radarr:latest
@@ -495,7 +488,6 @@ services:
     security_opt:
       - no-new-privileges:true
 
-  # ? ----------------------------------
   # ? Sonarr - TV Show Manager
   sonarr:
     image: lscr.io/linuxserver/sonarr:latest
@@ -517,7 +509,6 @@ services:
     security_opt:
       - no-new-privileges:true
 
-  # ? ----------------------------------
   # ? Lidarr - Music Manager
   lidarr:
     image: lscr.io/linuxserver/lidarr:latest
@@ -539,7 +530,6 @@ services:
     security_opt:
       - no-new-privileges:true
 
-  # ? ----------------------------------
   # ? Bazarr - Subtitle Manager
   bazarr:
     image: docker.io/linuxserver/bazarr:latest
@@ -560,7 +550,6 @@ services:
     security_opt:
       - no-new-privileges:true
 
-  # ? ----------------------------------
   # ? Jellyseerr - Media Request Management
   jellyseerr:
     image: docker.io/fallenbagel/jellyseerr:latest
@@ -583,7 +572,6 @@ services:
     security_opt:
       - no-new-privileges:true
 
-  # ? ----------------------------------
   # ? Byparr - Cloudflare Bypass
   byparr:
     image: ghcr.io/thephaseless/byparr:latest
@@ -601,7 +589,6 @@ services:
     security_opt:
       - no-new-privileges:true
 
-  # ? ----------------------------------
   # ? NZBGet - Usenet Client
   nzbget:
     image: lscr.io/linuxserver/nzbget:latest
