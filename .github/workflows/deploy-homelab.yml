@@ -30,20 +30,23 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      - name: Clean up corrupted directories
-        run: |
-          # Remove any literal ~/homelab directories from previous failed runs
-          if [ -d "${GITHUB_WORKSPACE}/~/homelab" ]; then
-            echo "Cleaning up corrupted ~/homelab directory..."
-            sudo rm -rf "${GITHUB_WORKSPACE}/~/homelab" || true
-          fi
-        continue-on-error: true
+      # - name: Clean up corrupted directories
+      #   run: |
+      #     # Remove any literal ~/homelab directories from previous failed runs
+      #     WORKSPACE_DIR="/home/nyaptor/actions-runner/_work/Installfest/Installfest"
+      #     if [ -d "$WORKSPACE_DIR/~/homelab" ]; then
+      #       echo "Cleaning up corrupted ~/homelab directory..."
+      #       sudo rm -rf "$WORKSPACE_DIR/~/homelab" || true
+      #       echo "Cleanup completed"
+      #     else
+      #       echo "No corrupted directory found"
+      #     fi
+      #   continue-on-error: true
 
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 2 # Fetch previous commit for comparison
-          clean: false  # Don't clean, we'll handle it manually
 
       - name: Check for Changes
         id: changes
