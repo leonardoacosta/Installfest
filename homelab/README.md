@@ -3,7 +3,14 @@
 A comprehensive homelab setup featuring smart home, media management, ad-blocking, local AI, and secure networking services - optimized for Arch Linux with Docker.
 
 **⚠️ Deployment Target: Arch Linux Server with Docker**
-This stack uses Docker and is designed for Arch Linux servers. Deploy to your Arch Linux machine using SSH or direct access.
+This stack uses Docker and is designed for Arch Linux servers. Deploy to your homelab server using SSH or direct access.
+
+> **🔄 Recently Updated:**
+> - Migrated from Podman to Docker for better compatibility
+> - Refactored management script into modular library components
+> - Added automated GitHub Actions deployment workflow
+> - Improved Tailscale IP forwarding configuration
+> - Using optimized docker-compose with dual-network architecture
 
 ## 🚀 Quick Start
 
@@ -127,6 +134,41 @@ nano .env
 | **Jellyseerr**  | http://10.0.0.51:5055 | 172.20.0.55              | Media request portal                     |
 | **Byparr**      | http://10.0.0.51:8191 | 172.21.0.2 (via Gluetun) | Cloudflare bypass (internal use)         |
 
+## 🚀 Automated Deployment (GitHub Actions)
+
+This homelab supports automated deployment via GitHub Actions to your self-hosted runner:
+
+1. **Push to main branch** - Automatically deploys to `~/homelab`
+2. **Workflow dispatch** - Manual deployment with force/rollback options
+3. **Health checks** - Validates critical services after deployment
+
+See [.github/workflows/deploy-homelab.yml](.github/workflows/deploy-homelab.yml) for configuration.
+
+### Prerequisites for Automated Deployment
+
+**On your homelab server:**
+```bash
+# Install GitHub Actions runner
+# Follow: https://github.com/YOUR_USER/YOUR_REPO/settings/actions/runners/new
+
+# Ensure Docker is installed and running
+sudo systemctl enable --now docker
+
+# Set system-level IP forwarding for Tailscale
+sudo sysctl -w net.ipv4.ip_forward=1
+sudo sysctl -w net.ipv6.conf.all.forwarding=1
+echo 'net.ipv4.ip_forward=1' | sudo tee /etc/sysctl.d/99-tailscale.conf
+echo 'net.ipv6.conf.all.forwarding=1' | sudo tee -a /etc/sysctl.d/99-tailscale.conf
+```
+
+The workflow automatically:
+- Creates `~/homelab` directory if missing
+- Copies files from repository to server
+- Stops existing containers
+- Starts updated services
+- Runs health checks on critical services
+- Backs up previous configuration
+
 ## 🔧 Reverse Proxy Setup with Nginx Proxy Manager
 
 Nginx Proxy Manager (172.20.0.81, 172.21.0.81) provides easy SSL/TLS certificates and subdomain routing with access to **both networks**:
@@ -177,12 +219,21 @@ Forward Port: 7878
 ./homelab.sh restart  # Automatic fix
 ```
 
-### DBUS Session Warning
+### Tailscale IP Forwarding
+
+**Note:** Tailscale requires IP forwarding enabled at the system level (not in docker-compose):
 
 ```bash
-export XDG_RUNTIME_DIR="/run/user/$(id -u)"
-# Or just ignore - Podman works fine without it
+# Already configured by setup wizard, but if needed manually:
+sudo sysctl -w net.ipv4.ip_forward=1
+sudo sysctl -w net.ipv6.conf.all.forwarding=1
+
+# Make permanent
+echo 'net.ipv4.ip_forward=1' | sudo tee /etc/sysctl.d/99-tailscale.conf
+echo 'net.ipv6.conf.all.forwarding=1' | sudo tee -a /etc/sysctl.d/99-tailscale.conf
 ```
+
+This is required because Tailscale uses `network_mode: host` and cannot set sysctls from within Docker.
 
 ### Permissions Issues
 
@@ -437,19 +488,52 @@ docker exec qbittorrent curl ifconfig.me
 
 ## 🔄 Updates
 
+### Manual Updates
+
 ```bash
 ./homelab.sh  # Choose option 9
-# Or: podman-compose pull && podman-compose up -d
+# Or: docker compose pull && docker compose up -d
 ```
+
+### Automatic Updates via GitHub Actions
+
+Push changes to the `main` branch or trigger manual deployment:
+
+```bash
+# Commit and push changes
+git add .
+git commit -m "Update homelab configuration"
+git push origin main
+
+# GitHub Actions automatically deploys to your self-hosted runner
+```
+
+The workflow handles:
+- Stopping old containers
+- Copying updated files
+- Starting new containers
+- Health checks
+- Automatic rollback on failure
 
 ## 📁 Directory Structure
 
 ```
 homelab/
-├── homelab.sh                  # Main management wizard
-├── docker-compose.yml             # Service definitions (networks + all containers)
+├── homelab.sh                     # Main management wizard (orchestrates lib/)
+├── lib/                           # Modular library functions
+│   ├── colors.sh                  # Print functions and colors
+│   ├── config.sh                  # Configuration and environment setup
+│   ├── docker.sh                  # Docker runtime detection
+│   ├── install.sh                 # Arch Linux installation
+│   ├── services.sh                # Service management (start/stop/logs)
+│   ├── system.sh                  # OS detection and environment
+│   └── troubleshoot.sh            # Troubleshooting menu
+├── docker-compose.yml             # Optimized dual-network service definitions
+├── docker-compose-backup.yml      # Previous standard configuration
 ├── .env                           # Your configuration (create from env.example)
 ├── env.example                    # Configuration template
+├── homelab.service                # systemd service unit for auto-start
+├── deploy.sh                      # Advanced deployment script with backups
 │
 ├── Core Infrastructure Configs (Homelab Network):
 ├── homeassistant/                 # Home Assistant config & automations
@@ -499,11 +583,14 @@ Environment Variables for Paths:
 
 ### Important Notes
 
+- **Modular architecture**: Management script split into focused library modules in `lib/`
 - **Config persistence**: All service configs stored in named directories
 - **Docker volumes**: Ollama data uses named volumes for better performance
 - **VPN isolation**: Gluetun, qBittorrent, Prowlarr, NZBGet, Byparr in Media network
 - **SSL sharing**: NPM's letsencrypt/ mounted read-only in Home Assistant
 - **Media organization**: \*arr services automatically organize downloads → media/
+- **System requirements**: Tailscale IP forwarding configured automatically by setup wizard
+- **Dual networks**: Optimized docker-compose with isolated homelab (172.20.x.x) and media (172.21.x.x) networks
 
 ## 💡 Tips
 
