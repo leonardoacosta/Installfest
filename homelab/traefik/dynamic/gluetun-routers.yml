@@ -1,0 +1,79 @@
+# Traefik v3 Dynamic Configuration - Gluetun Services
+# Services using network_mode: service:gluetun cannot have Traefik labels directly
+# We define their routes here using the file provider
+
+http:
+  # ============================================
+  # Routers for services behind Gluetun VPN
+  # ============================================
+  routers:
+    # qBittorrent - Torrent Client
+    qbittorrent:
+      rule: "Host(`qbittorrent.{{ env \"DOMAIN\" }}`) || Host(`qb.{{ env \"DOMAIN\" }}`) || Host(`torrent.{{ env \"DOMAIN\" }}`)"
+      entryPoints:
+        - websecure
+      service: qbittorrent-service
+      middlewares:
+        - homelab-admin@file  # Requires authentication
+      tls:
+        certResolver: letsencrypt
+
+    # Prowlarr - Indexer Manager
+    prowlarr:
+      rule: "Host(`prowlarr.{{ env \"DOMAIN\" }}`)"
+      entryPoints:
+        - websecure
+      service: prowlarr-service
+      middlewares:
+        - media-services@file
+      tls:
+        certResolver: letsencrypt
+
+    # NZBGet - Usenet Client
+    nzbget:
+      rule: "Host(`nzbget.{{ env \"DOMAIN\" }}`) || Host(`usenet.{{ env \"DOMAIN\" }}`)"
+      entryPoints:
+        - websecure
+      service: nzbget-service
+      middlewares:
+        - homelab-admin@file
+      tls:
+        certResolver: letsencrypt
+
+  # ============================================
+  # Services for Gluetun-backed applications
+  # ============================================
+  services:
+    # qBittorrent Service
+    qbittorrent-service:
+      loadBalancer:
+        servers:
+          # Use Gluetun's IP on the media network
+          - url: "http://172.21.0.2:8080"
+        passHostHeader: true
+        healthCheck:
+          path: /
+          interval: 30s
+          timeout: 5s
+
+    # Prowlarr Service
+    prowlarr-service:
+      loadBalancer:
+        servers:
+          - url: "http://172.21.0.2:9696"
+        passHostHeader: true
+        healthCheck:
+          path: /ping
+          interval: 30s
+          timeout: 5s
+
+    # NZBGet Service
+    nzbget-service:
+      loadBalancer:
+        servers:
+          - url: "http://172.21.0.2:6789"
+        passHostHeader: true
+        healthCheck:
+          path: /
+          interval: 30s
+          timeout: 5s

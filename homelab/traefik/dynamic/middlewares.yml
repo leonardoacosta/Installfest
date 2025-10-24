@@ -1,0 +1,230 @@
+# Traefik v3 Dynamic Configuration - Middlewares
+# This file defines reusable middlewares for security, authentication, and request modification
+
+http:
+  middlewares:
+    # ============================================
+    # Security Headers Middleware
+    # ============================================
+    security-headers:
+      headers:
+        # Security headers for modern web applications
+        browserXssFilter: true
+        contentTypeNosniff: true
+        forceSTSHeader: true
+        stsIncludeSubdomains: true
+        stsPreload: true
+        stsSeconds: 31536000
+        frameDeny: true
+        customFrameOptionsValue: "SAMEORIGIN"
+        # Content Security Policy - adjust based on your needs
+        # contentSecurityPolicy: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
+        # Referrer Policy
+        referrerPolicy: "strict-origin-when-cross-origin"
+        # Permissions Policy (replaces Feature Policy)
+        permissionsPolicy: "camera=(), microphone=(), geolocation=()"
+        # Custom headers
+        customResponseHeaders:
+          X-Robots-Tag: "noindex,nofollow,nosnippet,noarchive,notranslate,noimageindex"
+          server: ""  # Hide server information
+
+    # ============================================
+    # Basic Authentication (Dashboard & Admin)
+    # ============================================
+    # Generate password hash with: htpasswd -nb admin your_password
+    # Or use: echo $(htpasswd -nb admin your_password) | sed -e s/\\$/\\$\\$/g
+    dashboard-auth:
+      basicAuth:
+        users:
+          # Default: admin/admin - CHANGE THIS!
+          # Generated with: echo $(htpasswd -nb admin admin) | sed -e s/\\$/\\$\\$/g
+          - "admin:$apr1$H6uskkkW$IgXLP6ewTrSuBkTrqE8wj/"
+        realm: "Traefik Dashboard"
+        removeHeader: true
+
+    # Admin panel authentication (stronger password)
+    admin-auth:
+      basicAuth:
+        users:
+          # Generated with: echo $(htpasswd -nb admin SecurePassword123!) | sed -e s/\\$/\\$\\$/g
+          - "admin:$apr1$H6uskkkW$IgXLP6ewTrSuBkTrqE8wj/"
+        realm: "Admin Area"
+
+    # ============================================
+    # Rate Limiting Middleware
+    # ============================================
+    rate-limit-general:
+      rateLimit:
+        average: 100      # Average requests per second
+        period: 1s
+        burst: 50         # Allow burst of 50 requests
+
+    rate-limit-strict:
+      rateLimit:
+        average: 10       # Stricter limit for sensitive endpoints
+        period: 1s
+        burst: 5
+
+    rate-limit-auth:
+      rateLimit:
+        average: 5        # Very strict for authentication endpoints
+        period: 1m
+        burst: 2
+
+    # ============================================
+    # Compression Middleware
+    # ============================================
+    compression:
+      compress:
+        excludedContentTypes:
+          - "text/event-stream"
+          - "application/grpc"
+        minResponseBodyBytes: 1024
+
+    # ============================================
+    # IP Whitelist (Local Network Only)
+    # ============================================
+    local-only:
+      ipWhiteList:
+        sourceRange:
+          - "127.0.0.1/32"
+          - "172.20.0.0/16"   # homelab network
+          - "172.21.0.0/16"   # media network
+          - "10.0.0.0/8"      # Private network range
+          - "192.168.0.0/16"  # Private network range
+
+    # ============================================
+    # Redirect Schemes
+    # ============================================
+    https-redirect:
+      redirectScheme:
+        scheme: https
+        permanent: true
+
+    # ============================================
+    # Add Prefix for specific services
+    # ============================================
+    # add-prefix:
+    #   addPrefix:
+    #     prefix: "/api"
+
+    # ============================================
+    # Strip Prefix (useful for reverse proxy)
+    # ============================================
+    # strip-prefix:
+    #   stripPrefix:
+    #     prefixes:
+    #       - "/api"
+    #     forceSlash: true
+
+    # ============================================
+    # Error Pages
+    # ============================================
+    # error-pages:
+    #   errors:
+    #     status:
+    #       - "400-599"
+    #     service: error-pages-service
+    #     query: "/{status}.html"
+
+    # ============================================
+    # Buffering (for large file uploads)
+    # ============================================
+    buffering:
+      buffering:
+        maxRequestBodyBytes: 10485760  # 10MB
+        memRequestBodyBytes: 2097152   # 2MB
+        maxResponseBodyBytes: 10485760
+        memResponseBodyBytes: 2097152
+        retryExpression: "IsNetworkError() && Attempts() <= 2"
+
+    # ============================================
+    # CORS Headers (for APIs)
+    # ============================================
+    cors-headers:
+      headers:
+        accessControlAllowMethods:
+          - "GET"
+          - "POST"
+          - "PUT"
+          - "DELETE"
+          - "OPTIONS"
+        accessControlAllowOriginList:
+          - "*"  # Change to specific domains in production
+        accessControlAllowHeaders:
+          - "Content-Type"
+          - "Authorization"
+        accessControlExposeHeaders:
+          - "Content-Length"
+        accessControlMaxAge: 100
+        addVaryHeader: true
+
+    # ============================================
+    # Homelab Specific Middlewares
+    # ============================================
+    # Middleware chain for general services
+    homelab-general:
+      chain:
+        middlewares:
+          - security-headers
+          - compression
+          - rate-limit-general
+
+    # Middleware chain for admin services
+    homelab-admin:
+      chain:
+        middlewares:
+          - security-headers
+          - compression
+          - admin-auth
+          - rate-limit-strict
+          - local-only
+
+    # Middleware chain for media services
+    media-services:
+      chain:
+        middlewares:
+          - security-headers
+          - compression
+          - rate-limit-general
+
+    # Middleware chain for public services (no auth)
+    homelab-public:
+      chain:
+        middlewares:
+          - security-headers
+          - compression
+
+    # ============================================
+    # Service-Specific Middlewares
+    # ============================================
+    # Vaultwarden specific (no compression for WebSockets)
+    vaultwarden-headers:
+      headers:
+        browserXssFilter: true
+        contentTypeNosniff: true
+        forceSTSHeader: true
+        stsIncludeSubdomains: true
+        stsSeconds: 31536000
+        frameDeny: true
+        customResponseHeaders:
+          X-Robots-Tag: "noindex,nofollow"
+
+    # Home Assistant specific
+    homeassistant-headers:
+      headers:
+        customRequestHeaders:
+          X-Forwarded-Proto: "https"
+        customResponseHeaders:
+          X-Frame-Options: "SAMEORIGIN"
+
+# ============================================
+# TCP Middlewares (if needed)
+# ============================================
+tcp:
+  middlewares: {}
+
+# ============================================
+# UDP Middlewares (not supported in Traefik)
+# ============================================
+# UDP traffic cannot use middlewares

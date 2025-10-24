@@ -141,35 +141,75 @@ services:
     security_opt:
       - no-new-privileges:true
 
-  # ? Nginx Proxy Manager - Reverse Proxy
-  nginx-proxy-manager:
-    image: docker.io/jc21/nginx-proxy-manager:latest
-    container_name: nginx-proxy-manager
+  # ? Traefik - Reverse Proxy
+  traefik:
+    image: docker.io/traefik:v3.3
+    container_name: traefik
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     ports:
-      - "81:81"
-      - "443:443"
-      - "80:80"
+      - "80:80" # HTTP
+      - "443:443" # HTTPS
+      # - "8080:8080" # Dashboard (use Traefik routing instead)
     environment:
       - TZ=${TZ:-America/Chicago}
-      - DB_SQLITE_FILE=/data/database.sqlite
-      - DISABLE_IPV6=true
+      # Cloudflare DNS Challenge (uncomment if using DNS challenge)
+      # - CF_API_EMAIL=${CF_API_EMAIL}
+      # - CF_API_KEY=${CF_API_KEY}
     volumes:
-      - ./nginx-proxy-manager/data:/data
-      - ./nginx-proxy-manager/letsencrypt:/etc/letsencrypt
-      - ./nginx-proxy-manager/custom:/data/nginx/custom # Custom configs
+      # Traefik configuration files
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./traefik/dynamic:/etc/traefik/dynamic:ro
+      # Let's Encrypt certificates (persistent storage)
+      - ./traefik/letsencrypt:/letsencrypt
+      # Logs
+      - ./traefik/logs:/var/log/traefik
+      # Docker socket (read-only for security)
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       homelab:
         ipv4_address: 172.20.0.81
       media:
         ipv4_address: 172.21.0.81
-    security_opt:
-      - no-new-privileges:true
     healthcheck:
-      test: ["CMD", "/bin/check-health"]
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          memory: 128M
+    labels:
+      # Enable Traefik for the dashboard
+      - "traefik.enable=true"
+
+      # Dashboard Router
+      - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.${DOMAIN:-local}`)"
+      - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
+      - "traefik.http.routers.traefik-dashboard.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.traefik-dashboard.service=api@internal"
+      - "traefik.http.routers.traefik-dashboard.middlewares=dashboard-auth@file"
+
+      # API Router (for health checks)
+      - "traefik.http.routers.traefik-api.rule=Host(`traefik.${DOMAIN:-local}`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.traefik-api.entrypoints=websecure"
+      - "traefik.http.routers.traefik-api.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.traefik-api.service=api@internal"
+      - "traefik.http.routers.traefik-api.middlewares=dashboard-auth@file"
+
+      # Metadata
+      - "com.centurylinklabs.watchtower.enable=true"
+      - "homepage.group=Infrastructure"
+      - "homepage.name=Traefik"
+      - "homepage.icon=traefik"
+      - "homepage.href=https://traefik.${DOMAIN:-local}"
+      - "homepage.description=Reverse Proxy & Load Balancer"
 
   # ************************************
   # ********** AI & Knowledge **********
