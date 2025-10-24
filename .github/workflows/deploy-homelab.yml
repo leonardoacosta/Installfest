@@ -188,7 +188,6 @@ jobs:
                   log "Copying files from $WORKSPACE_HOMELAB to $DEPLOY_PATH"
                   cp -r "$WORKSPACE_HOMELAB"/* "$DEPLOY_PATH"/
                   log "Files copied successfully"
-                  ls -la "$DEPLOY_PATH"
               else
                   error "Homelab directory not found in workspace: $WORKSPACE_HOMELAB"
                   exit 1
@@ -215,6 +214,10 @@ jobs:
               # Pull latest images
               log "Pulling latest Docker images"
               docker-compose pull --quiet
+
+              # Stop and remove old containers
+              log "Stopping and removing old containers"
+              docker-compose down --remove-orphans
 
               # Deploy services
               log "Deploying services"
