@@ -186,7 +186,7 @@ jobs:
               log "Copying configurations from GitHub workspace"
               WORKSPACE_HOMELAB="${GITHUB_WORKSPACE}/homelab"
 
-              cd homelab
+              cd ~/homelab
 
               if [ -d "$WORKSPACE_HOMELAB" ]; then
                   log "Copying files from $WORKSPACE_HOMELAB to here"
