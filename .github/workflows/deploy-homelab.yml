@@ -184,15 +184,7 @@ jobs:
 
               # Copy configurations from GitHub workspace
               log "Copying configurations from GitHub workspace"
-              echo "GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
-              ls -la $GITHUB_WORKSPACE
-              log "================================================"  
-
               WORKSPACE_HOMELAB="${GITHUB_WORKSPACE}/homelab"
-
-              echo "WORKSPACE_HOMELAB: $WORKSPACE_HOMELAB"
-              ls -la $WORKSPACE_HOMELAB
-              log "================================================"  
 
               cd homelab
 
@@ -206,20 +198,11 @@ jobs:
               fi
 
 
-
-              pwd
-              ls -la
-              log "================================================"  
-
               # Check if docker-compose.yml exists
               if [ ! -f "docker-compose.yml" ]; then
                   error "docker-compose.yml not found in $DEPLOY_PATH"
                   exit 1
               fi
-
-              pwd
-              ls -la
-              log "================================================"  
 
               # Validate docker-compose configuration
               log "Validating docker-compose configuration"
@@ -228,10 +211,6 @@ jobs:
                   rollback
                   exit 1
               fi
-
-              pwd
-              ls -la
-              log "================================================"  
 
               # Get list of services before update
               OLD_SERVICES=$(docker-compose ps --services 2>/dev/null | sort)
