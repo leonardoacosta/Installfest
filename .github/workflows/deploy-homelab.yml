@@ -190,6 +190,7 @@ jobs:
                   log "Copying files from $WORKSPACE_HOMELAB to $DEPLOY_PATH"
                   cp -r "$WORKSPACE_HOMELAB"/* "$DEPLOY_PATH"/
                   log "Files copied successfully"
+                  ls -la "$DEPLOY_PATH"
               else
                   error "Homelab directory not found in workspace: $WORKSPACE_HOMELAB"
                   exit 1
