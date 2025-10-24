@@ -174,10 +174,10 @@ jobs:
               fi
 
               # Navigate to deployment directory
-              if [ ! -d "$DEPLOY_PATH" ]; then
-                  error "Deployment directory does not exist: $DEPLOY_PATH"
-                  exit 1
-              fi
+              # if [ ! -d "$DEPLOY_PATH" ]; then
+              #     error "Deployment directory does not exist: $DEPLOY_PATH"
+              #     exit 1
+              # fi
 
               cd "$DEPLOY_PATH"
 
