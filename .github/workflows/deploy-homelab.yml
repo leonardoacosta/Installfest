@@ -212,16 +212,25 @@ jobs:
                   exit 1
               fi
 
+              # Stop any existing containers with the same names
+              # log "Stopping any existing containers"
+              # CONTAINERS_TO_STOP="bazarr gluetun sonarr radarr prowlarr nginx-proxy-manager homeassistant vaultwarden adguardhome jellyfin homer glance qbittorrent"
+              # for container in $CONTAINERS_TO_STOP; do
+              #     if docker ps -a --format '{{.Names}}' | grep -q "^${container}$"; then
+              #         log "Stopping and removing container: $container"
+              #         docker stop "$container" 2>/dev/null || true
+              #         docker rm "$container" 2>/dev/null || true
+              #     fi
+              # done
+
+              docker stop $(docker ps -q)
+
               # Get list of services before update
               OLD_SERVICES=$(docker-compose ps --services 2>/dev/null | sort)
 
               # Pull latest images
               log "Pulling latest Docker images"
               docker-compose pull --quiet
-
-              # Stop and remove old containers
-              log "Stopping and removing old containers"
-              docker-compose down --remove-orphans
 
               # Deploy services
               log "Deploying services"
