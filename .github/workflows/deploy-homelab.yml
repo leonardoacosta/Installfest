@@ -163,9 +163,11 @@ jobs:
           # Main deployment logic
           main() {
               pwd
+              ls -la
               log "================================================"  
               cd ~
               pwd
+              ls -la
               log "================================================"  
               log "Starting deployment to $DEPLOY_PATH"
 
