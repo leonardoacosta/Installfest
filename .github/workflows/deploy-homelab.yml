@@ -52,7 +52,7 @@ jobs:
       - name: Deploy to Homelab
         if: steps.changes.outputs.has_changes == 'true'
         env:
-          HOMELAB_PATH: ${{ vars.HOMELAB_PATH || '~/Repos/Installfest/homeserver' }}
+          HOMELAB_PATH: ${{ vars.HOMELAB_PATH || '~/homelab' }}
           ROLLBACK: ${{ inputs.rollback }}
           HEALTH_CHECK_RETRIES: ${{ env.HEALTH_CHECK_RETRIES }}
           HEALTH_CHECK_DELAY: ${{ env.HEALTH_CHECK_DELAY }}
