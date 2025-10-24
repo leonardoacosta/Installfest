@@ -223,7 +223,11 @@ jobs:
               #     fi
               # done
 
-              docker stop $(docker ps -q)
+              log "Stopping all containers"
+              docker stop $(docker ps -q) || true
+              
+              log "Removing all containers"
+              docker rm $(docker ps -a -q) || true
 
               # Get list of services before update
               OLD_SERVICES=$(docker-compose ps --services 2>/dev/null | sort)
