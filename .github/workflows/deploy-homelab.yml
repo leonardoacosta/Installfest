@@ -164,20 +164,18 @@ jobs:
           main() {
               log "Starting deployment to $DEPLOY_PATH"
 
-              ls -la ~/
-              ls -la ~/homelab
+              # Ensure deployment directory exists
+              if [ ! -d "$DEPLOY_PATH" ]; then
+                  error "Deployment directory does not exist: $DEPLOY_PATH"
+                  log "Creating deployment directory..."
+                  mkdir -p "$DEPLOY_PATH"
+              fi
 
               # Check if rollback is requested
               if [ "${ROLLBACK:-false}" == "true" ]; then
                   rollback
                   exit $?
               fi
-
-              # Navigate to deployment directory
-              # if [ ! -d "$DEPLOY_PATH" ]; then
-              #     error "Deployment directory does not exist: $DEPLOY_PATH"
-              #     exit 1
-              # fi
 
               cd "$DEPLOY_PATH"
 
