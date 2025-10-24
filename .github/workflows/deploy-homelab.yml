@@ -98,7 +98,7 @@ jobs:
                   # Save current running services state
                   cd "$DEPLOY_PATH"
                   docker-compose ps --format json > "$BACKUP_PATH/services_state.json" 2>/dev/null || true
-
+                  cd ~
                   log "Backup created successfully"
                   return 0
               else
@@ -173,27 +173,14 @@ jobs:
                   mkdir -p "$DEPLOY_PATH"
               fi
 
-
-              pwd
-              ls -la
-              log "================================================"  
-
               # Check if rollback is requested
               if [ "${ROLLBACK:-false}" == "true" ]; then
                   rollback
                   exit $?
               fi
 
-              pwd
-              ls -la
-              log "================================================"  
-
               # Create backup before deployment
               create_backup
-
-              pwd
-              ls -la
-              log "================================================"  
 
               # Copy configurations from GitHub workspace
               log "Copying configurations from GitHub workspace"
