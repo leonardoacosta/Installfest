@@ -162,13 +162,6 @@ jobs:
 
           # Main deployment logic
           main() {
-              pwd
-              ls -la
-              log "================================================"  
-              cd ~
-              pwd
-              ls -la
-              log "================================================"  
               log "Starting deployment to $DEPLOY_PATH"
 
               # Ensure deployment directory exists
@@ -178,6 +171,11 @@ jobs:
                   mkdir -p "$DEPLOY_PATH"
               fi
 
+
+              pwd
+              ls -la
+              log "================================================"  
+
               # Check if rollback is requested
               if [ "${ROLLBACK:-false}" == "true" ]; then
                   rollback
@@ -186,6 +184,13 @@ jobs:
 
               # Create backup before deployment
               create_backup
+
+
+
+              pwd
+              ls -la
+              log "================================================"  
+
 
               # Copy configurations from GitHub workspace
               log "Copying configurations from GitHub workspace"
@@ -199,7 +204,19 @@ jobs:
                   error "Homelab directory not found in workspace: $WORKSPACE_HOMELAB"
                   exit 1
               fi
+
+
+              pwd
+              ls -la
+              log "================================================"  
+
+
               cd homelab
+
+
+              pwd
+              ls -la
+              log "================================================"  
 
               # Check if docker-compose.yml exists
               if [ ! -f "docker-compose.yml" ]; then
