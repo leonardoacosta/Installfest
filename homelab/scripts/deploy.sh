@@ -284,7 +284,7 @@ perform_health_checks() {
     log "Performing health checks on critical services"
 
     # Define critical services (customize based on your setup)
-    local CRITICAL_SERVICES="${CRITICAL_SERVICES:-nginx-proxy-manager adguardhome homeassistant}"
+    local CRITICAL_SERVICES="${CRITICAL_SERVICES:-nginx-proxy-manager adguardhome homeassistant gluetun}"
     local all_healthy=true
 
     for service in $CRITICAL_SERVICES; do

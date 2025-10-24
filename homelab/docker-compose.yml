@@ -1,3 +1,7 @@
+# Optimized Docker Compose Configuration for Homelab
+# Version: 2.0
+# Networks: homelab (172.20.0.0/16), media (172.21.0.0/16)
+
 networks:
   homelab:
     name: homelab
@@ -6,6 +10,11 @@ networks:
     ipam:
       config:
         - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1
+    driver_opts:
+      com.docker.network.bridge.name: br-homelab
+      com.docker.network.bridge.enable_icc: "true"
+      com.docker.network.bridge.enable_ip_masquerade: "true"
 
   media:
     name: media
@@ -14,56 +23,15 @@ networks:
     ipam:
       config:
         - subnet: 172.21.0.0/16
+          gateway: 172.21.0.1
+    driver_opts:
+      com.docker.network.bridge.name: br-media
+      com.docker.network.bridge.enable_icc: "true"
+      com.docker.network.bridge.enable_ip_masquerade: "true"
 
 services:
-  # Home Assistant - Smart Home Hub
-  homeassistant:
-    image: ghcr.io/home-assistant/home-assistant:stable
-    container_name: homeassistant
-    restart: unless-stopped
-    privileged: true
-    environment:
-      - TZ=${TZ:-America/Chicago}
-    volumes:
-      - ./homeassistant:/config
-      - /etc/localtime:/etc/localtime:ro
-      - ./nginx-proxy-manager/letsencrypt:/etc/letsencrypt:ro # SSL certificates from NPM
-    ports:
-      - "8123:8123" # Web interface
-    networks:
-      homelab:
-        ipv4_address: 172.20.0.123
-    # Uncomment if you have USB devices (Zigbee/Z-Wave dongles)
-    # devices:
-    #   - /dev/ttyUSB0:/dev/ttyUSB0
-
-  # AdGuard Home - DNS Ad Blocker
-  adguardhome:
-    image: docker.io/adguard/adguardhome:v0.107.52
-    container_name: adguardhome
-    restart: unless-stopped
-    environment:
-      - TZ=${TZ:-America/Chicago}
-    ports:
-      - "53:53/tcp" # DNS
-      - "53:53/udp" # DNS
-      - "82:82/tcp" # Web interface over 8080
-      - "8443:443/tcp" # HTTPS web interface
-      - "3000:3000/tcp" # Initial setup
-      - "853:853/tcp" # DNS-over-TLS
-      - "784:784/udp" # DNS-over-QUIC
-      - "853:853/udp" # DNS-over-QUIC
-      - "8853:8853/udp" # DNS-over-QUIC
-      - "5443:5443/tcp" # DNSCrypt
-      - "5443:5443/udp" # DNSCrypt
-    volumes:
-      - ./adguardhome/work:/opt/adguardhome/work
-      - ./adguardhome/conf:/opt/adguardhome/conf
-    networks:
-      homelab:
-        ipv4_address: 172.20.0.53
-
-  # Glance - Self-Hosted Dashboard
+  # ============= Dashboard & Monitoring =============
+  # Glance - Self-Hosted Dashboard (Replacing Homer)
   glance:
     image: glanceapp/glance:latest
     container_name: glance
@@ -73,11 +41,15 @@ services:
       - TZ=${TZ:-America/Chicago}
     volumes:
       - ./glance:/app/data
+      - /var/run/docker.sock:/var/run/docker.sock:ro # For Docker monitoring widgets
     ports:
-      - "8085:8080" # Glance dashboard web interface
+      - "8085:8080"
     networks:
       homelab:
         ipv4_address: 172.20.0.85
+      # Also connect to media network for complete service visibility
+      media:
+        ipv4_address: 172.21.0.85
     healthcheck:
       test:
         [
@@ -99,7 +71,102 @@ services:
           memory: 256M
         reservations:
           memory: 128M
+    security_opt:
+      - no-new-privileges:true
+    labels:
+      - "traefik.enable=false" # Disable if using Traefik
+      - "com.centurylinklabs.watchtower.enable=true" # Auto-update
+      - "homepage.group=Infrastructure"
+      - "homepage.name=Glance"
+      - "homepage.icon=glance"
+      - "homepage.href=http://glance.local:8085"
+      - "homepage.description=Homelab Dashboard"
 
+  # ============= Core Infrastructure =============
+  # Home Assistant - Smart Home Hub
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    container_name: homeassistant
+    restart: unless-stopped
+    privileged: true
+    environment:
+      - TZ=${TZ:-America/Chicago}
+    volumes:
+      - ./homeassistant:/config
+      - /etc/localtime:/etc/localtime:ro
+      - ./nginx-proxy-manager/letsencrypt:/etc/letsencrypt:ro
+    ports:
+      - "8123:8123"
+    networks:
+      homelab:
+        ipv4_address: 172.20.0.123
+    security_opt:
+      - seccomp:unconfined
+      - apparmor:unconfined
+    # devices:
+    #   - /dev/ttyUSB0:/dev/ttyUSB0
+
+  # AdGuard Home - DNS Ad Blocker
+  adguardhome:
+    image: docker.io/adguard/adguardhome:v0.107.52
+    container_name: adguardhome
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ:-America/Chicago}
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "82:82/tcp" # Web interface (port 82 to avoid conflicts)
+      - "8443:443/tcp" # HTTPS web interface
+      - "3000:3000/tcp" # Initial setup
+      - "853:853/tcp" # DNS-over-TLS
+      - "784:784/udp" # DNS-over-QUIC
+      - "853:853/udp"
+      - "8853:8853/udp"
+      - "5443:5443/tcp" # DNSCrypt
+      - "5443:5443/udp"
+    volumes:
+      - ./adguardhome/work:/opt/adguardhome/work
+      - ./adguardhome/conf:/opt/adguardhome/conf
+    networks:
+      homelab:
+        ipv4_address: 172.20.0.53
+    cap_add:
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
+
+  # Nginx Proxy Manager - Reverse Proxy
+  nginx-proxy-manager:
+    image: docker.io/jc21/nginx-proxy-manager:latest
+    container_name: nginx-proxy-manager
+    restart: unless-stopped
+    ports:
+      - "81:81"
+      - "443:443"
+      - "80:80"
+    environment:
+      - TZ=${TZ:-America/Chicago}
+      - DB_SQLITE_FILE=/data/database.sqlite
+      - DISABLE_IPV6=true
+    volumes:
+      - ./nginx-proxy-manager/data:/data
+      - ./nginx-proxy-manager/letsencrypt:/etc/letsencrypt
+      - ./nginx-proxy-manager/custom:/data/nginx/custom # Custom configs
+    networks:
+      homelab:
+        ipv4_address: 172.20.0.81
+      media:
+        ipv4_address: 172.21.0.81
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "/bin/check-health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============= AI & Knowledge =============
   # Ollama - Local LLM Server
   ollama:
     image: docker.io/ollama/ollama:0.5.4
@@ -112,16 +179,25 @@ services:
     environment:
       - OLLAMA_HOST=0.0.0.0
       - OLLAMA_ORIGINS=*
+      - OLLAMA_NUM_PARALLEL=${OLLAMA_PARALLEL:-2}
+      - OLLAMA_MAX_LOADED_MODELS=${OLLAMA_MAX_MODELS:-2}
+      - OLLAMA_KEEP_ALIVE=${OLLAMA_KEEP_ALIVE:-5m}
     networks:
       homelab:
         ipv4_address: 172.20.0.11
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:11434/ || exit 1"]
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
       interval: 30s
       timeout: 10s
-      retries: 5
-      start_period: 60s
-    # Uncomment for GPU support (NVIDIA)
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: "4.0"
+          memory: 8G
+        reservations:
+          memory: 2G
     # deploy:
     #   resources:
     #     reservations:
@@ -139,9 +215,11 @@ services:
       - "8081:8080"
     environment:
       - OLLAMA_BASE_URL=http://ollama:11434
+      - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY:-changeme}
+      - WEBUI_AUTH=${WEBUI_AUTH:-true}
+      - ENABLE_SIGNUP=${ENABLE_SIGNUP:-true}
     volumes:
       - ollama_webui_data:/app/backend/data
-
     depends_on:
       ollama:
         condition: service_healthy
@@ -149,7 +227,10 @@ services:
     networks:
       homelab:
         ipv4_address: 172.20.0.12
+    security_opt:
+      - no-new-privileges:true
 
+  # ============= Media Services =============
   # Jellyfin - Media Server
   jellyfin:
     image: docker.io/jellyfin/jellyfin:10.10.7
@@ -158,46 +239,28 @@ services:
     user: "${PUID:-1000}:${PGID:-1000}"
     environment:
       - TZ=${TZ:-America/Chicago}
+      - JELLYFIN_PublishedServerUrl=${JELLYFIN_URL:-http://jellyfin.local}
     volumes:
       - ./jellyfin/config:/config
       - ./jellyfin/cache:/cache
       - ${MEDIA_PATH:-/data/media}:/media:ro
-      - ${MEDIA_PATH2:-/data/media2}:/media2:ro # Optional second media path
+      - ${MEDIA_PATH2:-/data/media2}:/media2:ro
     ports:
-      - "8096:8096" # Web interface
-      - "8920:8920" # HTTPS web interface (optional)
-      - "7359:7359/udp" # Client discovery
-      - "1900:1900/udp" # DLNA
+      - "8096:8096"
+      - "8920:8920"
+      - "7359:7359/udp"
+      - "1900:1900/udp"
     networks:
       homelab:
         ipv4_address: 172.20.0.96
       media:
         ipv4_address: 172.21.0.96
-    # Uncomment for hardware acceleration (Intel QuickSync)
     # devices:
-    #   - /dev/dri:/dev/dri
+    #   - /dev/dri:/dev/dri  # Intel QuickSync
+    # group_add:
+    #   - "989"  # render group for hardware acceleration
 
-  # Nginx Proxy Manager - Reverse Proxy
-  nginx-proxy-manager:
-    image: docker.io/jc21/nginx-proxy-manager:latest
-    container_name: nginx-proxy-manager
-    restart: unless-stopped
-    ports:
-      - "81:81" # Admin interface
-      - "443:443" # HTTPS
-      - "80:80" # HTTP
-    environment:
-      - TZ=${TZ:-America/Chicago}
-      - ERROR_LOG_LEVEL=debug
-    volumes:
-      - ./nginx-proxy-manager/data:/data
-      - ./nginx-proxy-manager/letsencrypt:/etc/letsencrypt
-    networks:
-      homelab:
-        ipv4_address: 172.20.0.81
-      media:
-        ipv4_address: 172.21.0.81
-
+  # ============= VPN & Security =============
   # Tailscale - Mesh VPN
   tailscale:
     image: docker.io/tailscale/tailscale:stable
@@ -205,11 +268,11 @@ services:
     restart: unless-stopped
     hostname: homelab-tailscale
     environment:
-      - TS_AUTHKEY=${TS_AUTHKEY} # Get from https://login.tailscale.com/admin/settings/keys
+      - TS_AUTHKEY=${TS_AUTHKEY}
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=false
       - TS_ROUTES=${TS_ROUTES:-172.20.0.0/16,172.21.0.0/16}
-      - TS_EXTRA_ARGS=--advertise-exit-node
+      - TS_EXTRA_ARGS=--advertise-exit-node --accept-dns=false
     volumes:
       - ./tailscale/state:/var/lib/tailscale
       - /dev/net/tun:/dev/net/tun
@@ -217,37 +280,88 @@ services:
       - NET_ADMIN
       - SYS_MODULE
     network_mode: host
-    # networks:
-    #   homelab:
-    #     ipv4_address: 172.20.0.100
-    #   media:
-    #     ipv4_address: 172.21.0.100
+    sysctls:
+      - net.ipv4.ip_forward=1
+      - net.ipv6.conf.all.forwarding=1
 
+  # Vaultwarden - Password Manager
+  vaultwarden:
+    image: docker.io/vaultwarden/server:1.32.5
+    container_name: vaultwarden
+    restart: unless-stopped
+    user: "${PUID:-1000}:${PGID:-1000}"
+    environment:
+      - TZ=${TZ:-America/New_York}
+      - DOMAIN=${VAULTWARDEN_DOMAIN:-https://vault.local}
+      - ADMIN_TOKEN=${VAULTWARDEN_ADMIN_TOKEN}
+      - SIGNUPS_ALLOWED=${VAULTWARDEN_SIGNUPS_ALLOWED:-false}
+      - INVITATIONS_ALLOWED=${VAULTWARDEN_INVITATIONS_ALLOWED:-true}
+      - WEBSOCKET_ENABLED=true
+      - SENDS_ALLOWED=true
+      - EMERGENCY_ACCESS_ALLOWED=true
+      - WEB_VAULT_ENABLED=true
+      - LOG_LEVEL=${VAULTWARDEN_LOG_LEVEL:-warn}
+      - EXTENDED_LOGGING=true
+      - SHOW_PASSWORD_HINT=false
+      - DATABASE_URL=sqlite:/data/db.sqlite3
+      - DATABASE_MAX_CONNS=10
+      - IP_HEADER=X-Real-IP
+      - ICON_CACHE_TTL=2592000
+      - ICON_CACHE_NEGTTL=259200
+    volumes:
+      - ./vaultwarden:/data
+    ports:
+      - "8222:80"
+      - "3012:3012"
+    networks:
+      homelab:
+        ipv4_address: 172.20.0.22
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          memory: 128M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/alive"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # ============= Storage Services =============
   # Samba - Network Attached Storage
   samba:
     image: ghcr.io/servercontainers/samba:latest
     container_name: samba
     restart: unless-stopped
     ports:
-      - "445:445" # SMB
-      - "139:139" # NetBIOS
+      - "445:445"
+      - "139:139"
     environment:
       - TZ=${TZ:-America/New_York}
       - USERID=${PUID:-1000}
       - GROUPID=${PGID:-1000}
       - SHARE1=${SAMBA_SHARE1:-Media;/media;yes;no;yes;all;none}
       - SHARE2=${SAMBA_SHARE2:-Backup;/backup;yes;no;no;all;none}
-      - USER1=${SAMBA_USER:-user;SAMBA_PASSWORD} # CHANGE PASSWORD!
+      - USER1=${SAMBA_USER:-user;SAMBA_PASSWORD}
       - RECYCLE=false
     volumes:
       - ${NAS_PATH:-/data}:/media
-      # Uncomment if you have a backup directory
       # - ${BACKUP_PATH:-/backup}:/backup
     networks:
       homelab:
         ipv4_address: 172.20.0.45
+    cap_add:
+      - SYS_ADMIN
+      - DAC_READ_SEARCH
+    security_opt:
+      - no-new-privileges:true
 
-  # ************* Media Stack Services *************
+  # ============= Media Stack Services =============
   # Gluetun - VPN Client for Media Services
   gluetun:
     image: docker.io/qmcgaw/gluetun:latest
@@ -264,6 +378,7 @@ services:
       - "8080:8080" # qBittorrent
       - "9696:9696" # Prowlarr
       - "6789:6789" # NZBGet
+      - "8000:8000" # Gluetun HTTP control server
     volumes:
       - ./gluetun:/gluetun
     environment:
@@ -277,13 +392,23 @@ services:
       - TZ=${TZ:-America/Chicago}
       - FIREWALL_VPN_INPUT_PORTS=${FIREWALL_VPN_INPUT_PORTS}
       - FIREWALL_OUTBOUND_SUBNETS=172.21.0.0/16,172.20.0.0/16
-
+      - HTTPPROXY=off
+      - SHADOWSOCKS=off
+      - DOT=off
+      - BLOCK_MALICIOUS=on
+      - BLOCK_SURVEILLANCE=off
+      - BLOCK_ADS=off
+      - UPDATER_PERIOD=24h
+      - HTTP_CONTROL_SERVER_ADDRESS=:8000
+      - HTTP_CONTROL_SERVER_LOG=on
     healthcheck:
       test: ping -c 1 www.google.com || exit 1
       interval: 20s
       timeout: 10s
       retries: 5
     restart: unless-stopped
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=1
 
   # qBittorrent - Torrent Client
   qbittorrent:
@@ -304,6 +429,8 @@ services:
         condition: service_healthy
         restart: true
     network_mode: service:gluetun
+    security_opt:
+      - no-new-privileges:true
 
   # Prowlarr - Indexer Manager
   prowlarr:
@@ -321,6 +448,8 @@ services:
         condition: service_healthy
         restart: true
     network_mode: service:gluetun
+    security_opt:
+      - no-new-privileges:true
 
   # Radarr - Movie Manager
   radarr:
@@ -340,6 +469,8 @@ services:
     networks:
       media:
         ipv4_address: 172.21.0.78
+    security_opt:
+      - no-new-privileges:true
 
   # Sonarr - TV Show Manager
   sonarr:
@@ -359,6 +490,8 @@ services:
     networks:
       media:
         ipv4_address: 172.21.0.89
+    security_opt:
+      - no-new-privileges:true
 
   # Lidarr - Music Manager
   lidarr:
@@ -378,6 +511,8 @@ services:
     networks:
       media:
         ipv4_address: 172.21.0.86
+    security_opt:
+      - no-new-privileges:true
 
   # Bazarr - Subtitle Manager
   bazarr:
@@ -396,6 +531,8 @@ services:
     networks:
       media:
         ipv4_address: 172.21.0.67
+    security_opt:
+      - no-new-privileges:true
 
   # Jellyseerr - Media Request Management
   jellyseerr:
@@ -406,6 +543,7 @@ services:
       - PUID=${PUID:-1000}
       - PGID=${PGID:-1000}
       - TZ=${TZ:-America/New_York}
+      - LOG_LEVEL=info
     volumes:
       - ./jellyseerr:/app/config
     ports:
@@ -415,8 +553,10 @@ services:
         ipv4_address: 172.20.0.55
       media:
         ipv4_address: 172.21.0.55
+    security_opt:
+      - no-new-privileges:true
 
-  # Byparr - Cloudflare Bypass for Prowlarr (FlareSolverr replacement)
+  # Byparr - Cloudflare Bypass
   byparr:
     image: ghcr.io/thephaseless/byparr:latest
     container_name: byparr
@@ -430,66 +570,8 @@ services:
         condition: service_healthy
         restart: true
     network_mode: service:gluetun
-
-  # Vaultwarden - Password Manager (Bitwarden-compatible)
-  vaultwarden:
-    image: docker.io/vaultwarden/server:1.32.5
-    container_name: vaultwarden
-    restart: unless-stopped
-    user: "${PUID:-1000}:${PGID:-1000}"
-    environment:
-      - TZ=${TZ:-America/New_York}
-      - DOMAIN=${VAULTWARDEN_DOMAIN:-https://vault.local}
-      - ADMIN_TOKEN=${VAULTWARDEN_ADMIN_TOKEN}
-      - SIGNUPS_ALLOWED=${VAULTWARDEN_SIGNUPS_ALLOWED:-true}
-      - INVITATIONS_ALLOWED=${VAULTWARDEN_INVITATIONS_ALLOWED:-true}
-      - WEBSOCKET_ENABLED=true
-      - SENDS_ALLOWED=true
-      - EMERGENCY_ACCESS_ALLOWED=true
-      - WEB_VAULT_ENABLED=true
-      - LOG_LEVEL=${VAULTWARDEN_LOG_LEVEL:-info}
-      - EXTENDED_LOGGING=true
-      - SHOW_PASSWORD_HINT=false
-      - USE_SENDMAIL=${VAULTWARDEN_USE_SENDMAIL:-false}
-      - SMTP_HOST=${VAULTWARDEN_SMTP_HOST:-}
-      - SMTP_FROM=${VAULTWARDEN_SMTP_FROM:-}
-      - SMTP_FROM_NAME=${VAULTWARDEN_SMTP_FROM_NAME:-Vaultwarden}
-      - SMTP_SECURITY=${VAULTWARDEN_SMTP_SECURITY:-starttls}
-      - SMTP_PORT=${VAULTWARDEN_SMTP_PORT:-587}
-      - SMTP_USERNAME=${VAULTWARDEN_SMTP_USERNAME:-}
-      - SMTP_PASSWORD=${VAULTWARDEN_SMTP_PASSWORD:-}
-      - SMTP_TIMEOUT=${VAULTWARDEN_SMTP_TIMEOUT:-15}
-    volumes:
-      - ./vaultwarden:/data
-    ports:
-      - "8222:80"
-      - "3012:3012"
-    networks:
-      homelab:
-        ipv4_address: 172.20.0.22
     security_opt:
       - no-new-privileges:true
-    deploy:
-      resources:
-        limits:
-          cpus: "1.0"
-          memory: 512M
-        reservations:
-          memory: 128M
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "wget",
-          "--no-verbose",
-          "--tries=1",
-          "--spider",
-          "http://localhost:80/alive",
-        ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 20s
 
   # NZBGet - Usenet Client
   nzbget:
@@ -508,6 +590,8 @@ services:
         restart: true
     restart: unless-stopped
     network_mode: service:gluetun
+    security_opt:
+      - no-new-privileges:true
 
 volumes:
   ollama_data:

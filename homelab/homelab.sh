@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # homelab Management Wizard
-# Complete setup, management, and troubleshooting for Podman/Docker homelab stack
-# Designed for Arch Linux with rootless Podman
+# Complete setup, management, and troubleshooting for Docker homelab stack
+# Designed for Arch Linux with Docker
 
 set -e
 
@@ -58,12 +58,8 @@ check_container_runtime() {
         COMPOSE_CMD="docker compose"
         RUNTIME="docker"
         print_success "Docker detected"
-    elif command -v podman &> /dev/null; then
-        COMPOSE_CMD="podman-compose"
-        RUNTIME="podman"
-        print_success "Podman detected"
     else
-        print_error "Neither Docker nor Podman is installed"
+        print_error "Docker is not installed"
         return 1
     fi
 }
@@ -85,43 +81,17 @@ setup_environment() {
 
 # ============= Installation Functions =============
 install_arch() {
-    print_header "Arch Linux Installation"
+    print_header "Arch Linux Docker Installation"
 
     print_info "Updating system packages..."
     sudo pacman -Syu --noconfirm
 
-    echo "Which container runtime would you like to install?"
-    echo "1) Docker (recommended)"
-    echo "2) Podman"
-    read -p "Choose (1-2): " runtime_choice
-
-    case $runtime_choice in
-        1)
-            print_info "Installing Docker..."
-            sudo pacman -S --noconfirm docker docker-buildx docker-compose
-            sudo systemctl enable --now docker
-            sudo usermod -aG docker $USER
-            print_warning "Log out and back in for Docker group changes to take effect"
-            print_success "Docker installed successfully"
-            ;;
-        2)
-            print_info "Installing Podman..."
-            sudo pacman -S --noconfirm podman podman-compose buildah skopeo fuse-overlayfs slirp4netns
-
-            # Configure rootless
-            echo 'kernel.unprivileged_userns_clone=1' | sudo tee /etc/sysctl.d/99-rootless.conf
-            sudo sysctl --system
-            sudo loginctl enable-linger $USER
-
-            setup_environment
-            systemctl --user enable --now podman.socket 2>/dev/null || print_info "Podman socket will be available after login"
-            print_success "Podman installed"
-            ;;
-        *)
-            print_error "Invalid choice"
-            return 1
-            ;;
-    esac
+    print_info "Installing Docker..."
+    sudo pacman -S --noconfirm docker docker-buildx docker-compose
+    sudo systemctl enable --now docker
+    sudo usermod -aG docker $USER
+    print_warning "Log out and back in for Docker group changes to take effect"
+    print_success "Docker installed successfully"
 
     # Install tools
     sudo pacman -S --noconfirm git curl wget htop nano
@@ -244,20 +214,12 @@ create_directories() {
             print_warning "Creating media directory: $MEDIA_PATH"
             sudo mkdir -p "$MEDIA_PATH"/{movies,tv,music}
             sudo chown -R $USER:$USER "$MEDIA_PATH"
-
-            if [ "$RUNTIME" = "podman" ]; then
-                podman unshare chown -R 1000:1000 "$MEDIA_PATH" 2>/dev/null || true
-            fi
         fi
 
         if [ -n "$DOWNLOADS_PATH" ] && [ ! -d "$DOWNLOADS_PATH" ]; then
             print_warning "Creating downloads directory: $DOWNLOADS_PATH"
             sudo mkdir -p "$DOWNLOADS_PATH"/{complete,incomplete}
             sudo chown -R $USER:$USER "$DOWNLOADS_PATH"
-
-            if [ "$RUNTIME" = "podman" ]; then
-                podman unshare chown -R 1000:1000 "$DOWNLOADS_PATH" 2>/dev/null || true
-            fi
         fi
     fi
 }
@@ -318,11 +280,7 @@ clean_restart() {
     $COMPOSE_CMD down 2>&1 | grep -v "no container" || true
 
     print_warning "Removing old containers..."
-    if [ "$RUNTIME" = "podman" ]; then
-        podman ps -a -q 2>/dev/null | xargs podman rm -f 2>/dev/null || true
-    else
-        docker ps -a -q 2>/dev/null | xargs docker rm -f 2>/dev/null || true
-    fi
+    docker ps -a -q 2>/dev/null | xargs docker rm -f 2>/dev/null || true
 
     print_info "Waiting for ports to free up..."
     sleep 3
@@ -423,11 +381,7 @@ troubleshoot() {
 
     case $choice in
         1)
-            if [ "$RUNTIME" = "podman" ]; then
-                podman ps -a
-            else
-                docker ps -a
-            fi
+            docker ps -a
             read -p "Press Enter to continue..."
             troubleshoot
             ;;
@@ -459,9 +413,6 @@ troubleshoot() {
             sudo chown -R $USER:$USER ./
             if [ -d "/data" ]; then
                 sudo chown -R $USER:$USER /data
-                if [ "$RUNTIME" = "podman" ]; then
-                    podman unshare chown -R 1000:1000 /data 2>/dev/null || true
-                fi
             fi
             print_success "Permissions fixed"
             read -p "Press Enter to continue..."

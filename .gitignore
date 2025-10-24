@@ -1,3 +1,56 @@
 env
 .env
 logs
+
+# Environment and Secrets
+.env
+*.key
+*.pem
+*.crt
+
+# Logs
+*.log
+logs/
+
+# Service Configuration Directories (contain sensitive data)
+homeassistant/
+adguardhome/
+jellyfin/
+tailscale/state/
+radarr/
+sonarr/
+lidarr/
+bazarr/
+prowlarr/
+jellyseerr/
+qbittorrent/
+nzbget/
+gluetun/
+ollama_data/
+ollama_webui_data/
+flaresolverr/
+samba/
+
+# Cache and temporary files
+*/cache/
+*/tmp/
+*.tmp
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Backup files
+*.bak
+*.backup
+*~

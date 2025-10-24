@@ -162,7 +162,7 @@ jobs:
 
           # Main deployment logic
           main() {
-              cd ~
+              cd $DEPLOY_PATH
 
               log "Starting deployment to $DEPLOY_PATH"
 
