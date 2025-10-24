@@ -6,6 +6,7 @@ A comprehensive homelab setup featuring smart home, media management, ad-blockin
 This stack uses Docker and is designed for Arch Linux servers. Deploy to your homelab server using SSH or direct access.
 
 > **🔄 Recently Updated:**
+>
 > - Migrated from Podman to Docker for better compatibility
 > - Refactored management script into modular library components
 > - Added automated GitHub Actions deployment workflow
@@ -95,7 +96,7 @@ sudo usermod -aG docker $USER
 The wizard creates `.env` for you, but you can also copy from template:
 
 ```bash
-cp env.example .env
+cp .env.example .env
 nano .env
 ```
 
@@ -147,6 +148,7 @@ See [.github/workflows/deploy-homelab.yml](.github/workflows/deploy-homelab.yml)
 ### Prerequisites for Automated Deployment
 
 **On your homelab server:**
+
 ```bash
 # Install GitHub Actions runner
 # Follow: https://github.com/YOUR_USER/YOUR_REPO/settings/actions/runners/new
@@ -162,6 +164,7 @@ echo 'net.ipv6.conf.all.forwarding=1' | sudo tee -a /etc/sysctl.d/99-tailscale.c
 ```
 
 The workflow automatically:
+
 - Creates `~/homelab` directory if missing
 - Copies files from repository to server
 - Stops existing containers
@@ -509,6 +512,7 @@ git push origin main
 ```
 
 The workflow handles:
+
 - Stopping old containers
 - Copying updated files
 - Starting new containers
@@ -530,8 +534,8 @@ homelab/
 │   └── troubleshoot.sh            # Troubleshooting menu
 ├── docker-compose.yml             # Optimized dual-network service definitions
 ├── docker-compose-backup.yml      # Previous standard configuration
-├── .env                           # Your configuration (create from env.example)
-├── env.example                    # Configuration template
+├── .env                           # Your configuration (create from .env.example)
+├── .env.example                   # Configuration template
 ├── homelab.service                # systemd service unit for auto-start
 ├── deploy.sh                      # Advanced deployment script with backups
 │

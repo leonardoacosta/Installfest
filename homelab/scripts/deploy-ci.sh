@@ -1,18 +1,18 @@
 #!/bin/bash
-# GitHub Actions Homelab Deployment Script
+# CI/CD Homelab Deployment Script
 # This script is executed by the GitHub Actions runner to deploy homelab services
 
 set -euo pipefail
 
 # Get script directory
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-HOMELAB_LIB_DIR="${GITHUB_WORKSPACE}/homelab/lib"
+LIB_DIR="$SCRIPT_DIR/../lib"
 
 # Source homelab libraries
-source "$HOMELAB_LIB_DIR/colors.sh"
-source "$HOMELAB_LIB_DIR/logging.sh"
-source "$HOMELAB_LIB_DIR/backup.sh"
-source "$HOMELAB_LIB_DIR/docker.sh"
+source "$LIB_DIR/colors.sh"
+source "$LIB_DIR/logging.sh"
+source "$LIB_DIR/backup.sh"
+source "$LIB_DIR/docker.sh"
 
 # Configuration from environment variables
 DEPLOY_PATH="${HOMELAB_PATH}"

@@ -46,9 +46,9 @@ create_directories() {
 # ============= Environment File Management =============
 setup_env_file() {
     if [ ! -f "$SCRIPT_DIR/.env" ]; then
-        if [ -f "$SCRIPT_DIR/env.example" ]; then
+        if [ -f "$SCRIPT_DIR/.env.example" ]; then
             print_warning "Creating .env from template..."
-            cp "$SCRIPT_DIR/env.example" "$SCRIPT_DIR/.env"
+            cp "$SCRIPT_DIR/.env.example" "$SCRIPT_DIR/.env"
         else
             print_warning "Creating default .env file..."
             cat > "$SCRIPT_DIR/.env" <<'EOF'
