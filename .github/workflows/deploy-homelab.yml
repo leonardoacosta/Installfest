@@ -162,7 +162,19 @@ jobs:
 
           # Main deployment logic
           main() {
-              cd $DEPLOY_PATH
+              log "Current directory: $(pwd)"
+              pwd
+              ls -la
+              log "================================================"  
+              cd ~
+              log "Home directory: $(pwd)"
+              pwd
+              ls -la
+              log "================================================"  
+              cd homelab
+              log "Homelab directory: $(pwd)"
+              ls -la
+              log "================================================"  
 
               log "Starting deployment to $DEPLOY_PATH"
 
@@ -186,19 +198,6 @@ jobs:
               log "Copying configurations from GitHub workspace"
               WORKSPACE_HOMELAB="${GITHUB_WORKSPACE}/homelab"
 
-              log "Current directory: $(pwd)"
-              
-              ls -la
-              log "================================================"  
-              cd ~
-              log "Home directory: $(pwd)"
-              pwd
-              ls -la
-              log "================================================"  
-              cd homelab
-              log "Homelab directory: $(pwd)"
-              ls -la
-              log "================================================"  
 
               if [ -d "$WORKSPACE_HOMELAB" ]; then
                   log "Copying files from $WORKSPACE_HOMELAB to here"
