@@ -194,12 +194,6 @@ jobs:
               fi
               cd homelab
 
-              # Write ENV github variables into .env
-              echo "WRITING ENV INTO .ENV"
-              echo "ENV_FILE=$ENV_FILE"
-              echo "ENV_FILE_CONTENT=$(cat $ENV_FILE)"
-              echo "ENV_FILE_CONTENT" > "$DEPLOY_PATH/.env"
-
               # Check if docker-compose.yml exists
               if [ ! -f "docker-compose.yml" ]; then
                   error "docker-compose.yml not found in $DEPLOY_PATH"
