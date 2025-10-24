@@ -1,12 +1,12 @@
 # Homelab Deployment Setup Guide
 
-This guide explains how to set up automated deployment to your homelab server using GitHub Actions.
+This guide explains how to set up automated deployment to your homelab server using GitHub Actions with a self-hosted runner.
 
 ## Table of Contents
 
 - [Prerequisites](#prerequisites)
-- [GitHub Secrets Configuration](#github-secrets-configuration)
-- [SSH Key Setup](#ssh-key-setup)
+- [Self-Hosted Runner Setup](#self-hosted-runner-setup)
+- [Repository Configuration](#repository-configuration)
 - [Testing the Deployment](#testing-the-deployment)
 - [Troubleshooting](#troubleshooting)
 - [Security Best Practices](#security-best-practices)
@@ -17,120 +17,129 @@ Before setting up the automated deployment, ensure you have:
 
 1. **Homelab Server Requirements:**
 
-   - SSH access to your homelab server
    - Docker and docker-compose installed
    - Git installed and configured
-   - Sufficient disk space (minimum 1GB free)
+   - Sufficient disk space (minimum 2GB free for runner + services)
    - User with sudo privileges (for Docker commands)
+   - Internet connectivity (outbound HTTPS access to GitHub)
 
 2. **GitHub Repository:**
 
    - Admin access to your GitHub repository
-   - Ability to add repository secrets
+   - Ability to register self-hosted runners
 
 3. **Local Development Environment:**
-   - SSH client installed
    - Git configured
+   - Access to push to the repository
 
-## GitHub Secrets Configuration
+## Self-Hosted Runner Setup
 
-Navigate to your repository on GitHub and go to **Settings > Secrets and variables > Actions**. Add the following secrets:
+### Why Self-Hosted Runners?
 
-### Required Secrets
+Self-hosted runners provide superior security and performance for homelab deployments:
 
-| Secret Name       | Description                                          | Example Value                            |
-| ----------------- | ---------------------------------------------------- | ---------------------------------------- |
-| `HOMELAB_HOST`    | IP address or hostname of your homelab server        | `192.168.1.100` or `homelab.example.com` |
-| `HOMELAB_USER`    | SSH username for connecting to the server            | `ubuntu` or `pi`                         |
-| `HOMELAB_SSH_KEY` | Private SSH key for authentication (see setup below) | `-----BEGIN OPENSSH PRIVATE KEY-----...` |
-| `HOMELAB_PATH`    | Absolute path to homelab directory on remote         | `/home/ubuntu/Installfest/homelab`       |
+- ✅ **No inbound connections** - Runner polls GitHub (outbound only)
+- ✅ **No SSH exposure** - No port forwarding or firewall rules needed
+- ✅ **Local execution** - Direct Docker API access, faster deployments
+- ✅ **Works behind NAT** - No static IP or DDNS required
+- ✅ **Secure by design** - Runs within your network perimeter
 
-### How to Add Secrets
+### Step 1: Download and Configure Runner
+
+On your homelab server, run the following commands:
+
+```bash
+# Create a directory for the runner
+mkdir -p ~/actions-runner && cd ~/actions-runner
+
+# Download the latest runner package (check GitHub for latest version)
+curl -o actions-runner-linux-x64-2.319.1.tar.gz -L https://github.com/actions/runner/releases/download/v2.319.1/actions-runner-linux-x64-2.319.1.tar.gz
+
+# Extract the installer
+tar xzf ./actions-runner-linux-x64-2.319.1.tar.gz
+```
+
+### Step 2: Generate Registration Token
 
 1. Go to your repository on GitHub
 2. Click on **Settings** tab
-3. Navigate to **Secrets and variables** > **Actions**
-4. Click **New repository secret**
-5. Enter the secret name and value
-6. Click **Add secret**
+3. Navigate to **Actions** > **Runners**
+4. Click **New self-hosted runner**
+5. Select **Linux** as the operating system
+6. Copy the registration token provided
 
-## SSH Key Setup
+### Step 3: Register the Runner
 
-### Step 1: Generate SSH Key Pair (if not already existing)
-
-On your local machine, generate a new SSH key pair specifically for deployments:
+Back on your homelab server:
 
 ```bash
-# Generate a new SSH key pair (no passphrase for automation)
-ssh-keygen -t ed25519 -C "github-actions-deploy" -f ~/.ssh/homelab_deploy_key -N ""
+# Configure the runner (use the token from GitHub)
+./config.sh --url https://github.com/YOUR_USERNAME/Installfest --token YOUR_REGISTRATION_TOKEN
 
-# Or using RSA (if ed25519 is not supported)
-ssh-keygen -t rsa -b 4096 -C "github-actions-deploy" -f ~/.ssh/homelab_deploy_key -N ""
+# When prompted:
+# - Enter a name for the runner (e.g., "homelab-server")
+# - Accept the default work folder or specify a custom path
+# - Add labels if desired (e.g., "homelab", "docker")
+# - Press Enter to use the runner in the default group
 ```
 
-This creates two files:
+### Step 4: Install Runner as a Service
 
-- `~/.ssh/homelab_deploy_key` (private key)
-- `~/.ssh/homelab_deploy_key.pub` (public key)
-
-### Step 2: Add Public Key to Homelab Server
-
-Copy the public key to your homelab server:
+Install the runner as a systemd service for automatic startup:
 
 ```bash
-# Method 1: Using ssh-copy-id (recommended)
-ssh-copy-id -i ~/.ssh/homelab_deploy_key.pub your_username@your_homelab_ip
+# Install the service
+sudo ./svc.sh install
 
-# Method 2: Manual copy
-# First, display the public key
-cat ~/.ssh/homelab_deploy_key.pub
+# Start the runner service
+sudo ./svc.sh start
 
-# Then SSH into your homelab server
-ssh your_username@your_homelab_ip
-
-# Add the key to authorized_keys
-echo "YOUR_PUBLIC_KEY_CONTENT" >> ~/.ssh/authorized_keys
-chmod 600 ~/.ssh/authorized_keys
+# Check the status
+sudo ./svc.sh status
 ```
 
-### Step 3: Test SSH Connection
+### Step 5: Verify Runner Registration
 
-Verify the key works:
+1. Go back to **Settings** > **Actions** > **Runners** in your GitHub repository
+2. You should see your runner listed with a green "Idle" status
+3. The runner is now ready to accept jobs
+
+### Alternative: Run as Docker Container
+
+If you prefer to run the runner in Docker:
 
 ```bash
-ssh -i ~/.ssh/homelab_deploy_key your_username@your_homelab_ip "echo 'SSH connection successful!'"
+docker run -d --restart unless-stopped \
+  --name github-runner \
+  -e REPO_URL="https://github.com/YOUR_USERNAME/Installfest" \
+  -e RUNNER_TOKEN="YOUR_REGISTRATION_TOKEN" \
+  -e RUNNER_NAME="homelab-docker-runner" \
+  -e RUNNER_WORKDIR="/tmp/runner/work" \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v /tmp/runner:/tmp/runner \
+  myoung34/github-runner:latest
 ```
 
-### Step 4: Add Private Key to GitHub Secrets
+## Repository Configuration
 
-1. Display your private key:
+### Environment Variables (Optional)
 
-   ```bash
-   cat ~/.ssh/homelab_deploy_key
-   ```
+If you need to customize deployment paths, add these as repository variables:
 
-2. Copy the entire output, including:
+1. Go to **Settings** > **Secrets and variables** > **Actions** > **Variables**
+2. Add variables as needed:
 
-   - `-----BEGIN OPENSSH PRIVATE KEY-----`
-   - All the key content
-   - `-----END OPENSSH PRIVATE KEY-----`
+| Variable Name  | Description                            | Example Value                      |
+| -------------- | -------------------------------------- | ---------------------------------- |
+| `HOMELAB_PATH` | Absolute path to homelab directory     | `/home/ubuntu/Installfest/homelab` |
+| `MAX_BACKUPS`  | Number of backups to retain            | `5`                                |
 
-3. Add this as the `HOMELAB_SSH_KEY` secret in GitHub
+### Repository Labels
 
-### Step 5: Secure Your Keys
+Ensure your workflow targets the correct runner using labels:
 
-After adding to GitHub, secure your local keys:
-
-```bash
-# Set appropriate permissions
-chmod 600 ~/.ssh/homelab_deploy_key
-chmod 644 ~/.ssh/homelab_deploy_key.pub
-
-# Optionally, backup and remove the private key from local machine
-# (since it's now stored in GitHub Secrets)
-cp ~/.ssh/homelab_deploy_key ~/.ssh/homelab_deploy_key.backup
-# rm ~/.ssh/homelab_deploy_key  # Uncomment to remove
-```
+- Default label: `self-hosted`
+- Custom labels: Add during runner configuration (e.g., `homelab`, `docker`)
 
 ## Testing the Deployment
 
@@ -159,16 +168,22 @@ git commit -m "test: trigger deployment workflow"
 git push origin main
 ```
 
-### 3. Verify Deployment
+### 3. Monitor Deployment
 
-After the workflow runs, verify on your homelab server:
+Watch the workflow execution in real-time:
+
+1. Go to **Actions** tab in your repository
+2. Click on the running workflow
+3. Click on the **Deploy to Homelab Server** job
+4. Watch the deployment steps execute on your self-hosted runner
+
+### 4. Verify Deployment
+
+After the workflow completes, verify on your homelab server:
 
 ```bash
-# SSH into your homelab
-ssh your_username@your_homelab_ip
-
 # Check Docker services
-cd /path/to/homelab
+cd ~/Installfest/homelab
 docker-compose ps
 
 # Check deployment logs
@@ -176,6 +191,9 @@ ls -la .backups/  # Should see backup directories
 
 # View recent Git commits
 git log --oneline -5
+
+# Check runner logs (if needed)
+sudo journalctl -u actions.runner.* -f
 ```
 
 ## Local Deployment Script Usage
@@ -224,28 +242,53 @@ export CRITICAL_SERVICES="nginx-proxy-manager homeassistant"
 
 ### Common Issues and Solutions
 
-#### 1. SSH Connection Fails
+#### 1. Runner Not Connecting
 
-**Error:** `Host key verification failed` or `Permission denied`
+**Error:** Runner shows as "Offline" in GitHub
 
 **Solution:**
 
-- Verify the SSH key is correctly added to GitHub Secrets
-- Ensure the public key is in the server's `~/.ssh/authorized_keys`
-- Check SSH port (default 22) is open on the server
-- Verify the username and host are correct
+- Check runner service status: `sudo ./svc.sh status`
+- Verify internet connectivity: `curl -I https://github.com`
+- Check runner logs: `sudo journalctl -u actions.runner.* -n 50`
+- Restart runner service: `sudo ./svc.sh restart`
+- Ensure firewall allows outbound HTTPS (port 443)
 
-#### 2. Docker Commands Fail
+#### 2. Runner Registration Fails
+
+**Error:** `Failed to register runner` or `Invalid token`
+
+**Solution:**
+
+- Token expires quickly - generate a new registration token from GitHub
+- Ensure correct repository URL format
+- Check that you have admin permissions on the repository
+- Verify runner isn't already registered with the same name
+
+#### 3. Docker Commands Fail
 
 **Error:** `docker: command not found` or `permission denied`
 
 **Solution:**
 
 - Ensure Docker is installed on the homelab server
-- Add user to docker group: `sudo usermod -aG docker $USER`
-- Log out and back in for group changes to take effect
+- Add runner user to docker group: `sudo usermod -aG docker $USER`
+- Restart runner service for group changes to take effect
+- Verify Docker socket permissions: `ls -l /var/run/docker.sock`
 
-#### 3. Git Pull Fails
+#### 4. Workflow Not Triggering
+
+**Error:** Workflow doesn't run on push or manual dispatch
+
+**Solution:**
+
+- Verify runner is online and idle in GitHub Settings
+- Check workflow file syntax is valid
+- Ensure push is to the correct branch (`main`)
+- Verify `homelab/` path changes are committed
+- Check Actions are enabled in repository settings
+
+#### 5. Git Repository Not Found
 
 **Error:** `fatal: not a git repository`
 
@@ -253,14 +296,14 @@ export CRITICAL_SERVICES="nginx-proxy-manager homeassistant"
 
 - Initialize the repository on the homelab server:
   ```bash
-  cd /path/to/homelab
+  cd ~/Installfest/homelab
   git init
-  git remote add origin https://github.com/yourusername/yourrepo.git
+  git remote add origin https://github.com/YOUR_USERNAME/Installfest.git
   git fetch origin main
   git reset --hard origin/main
   ```
 
-#### 4. Health Checks Fail
+#### 6. Health Checks Fail
 
 **Error:** Services fail health checks after deployment
 
@@ -268,17 +311,19 @@ export CRITICAL_SERVICES="nginx-proxy-manager homeassistant"
 
 - Increase health check retries and delay in workflow
 - Check service logs: `docker-compose logs service-name`
-- Verify service configurations in docker-compose.yml
+- Verify service configurations in [docker-compose.yml](../homelab/docker-compose.yml)
 - Ensure required ports are not already in use
+- Check service dependencies are met
 
-#### 5. Insufficient Disk Space
+#### 7. Insufficient Disk Space
 
 **Error:** `Insufficient disk space`
 
 **Solution:**
 
 - Clean up old Docker images: `docker system prune -a`
-- Remove old backups manually
+- Remove old backups manually from `.backups/`
+- Clean runner work directory: `rm -rf ~/actions-runner/_work/_temp/*`
 - Increase available disk space on the server
 
 ### Viewing Workflow Logs
@@ -287,52 +332,72 @@ export CRITICAL_SERVICES="nginx-proxy-manager homeassistant"
 2. Click on the workflow run
 3. Click on the job name to see detailed logs
 4. Expand any step to see its output
+5. Logs execute in real-time on your self-hosted runner
+
+### Checking Runner Logs
+
+View detailed runner logs on your homelab server:
+
+```bash
+# View recent runner logs
+sudo journalctl -u actions.runner.* -n 100
+
+# Follow live runner logs
+sudo journalctl -u actions.runner.* -f
+
+# Check runner process status
+ps aux | grep Runner.Listener
+```
 
 ### Manual Rollback
 
 If automatic rollback fails, manually rollback on the server:
 
 ```bash
-# SSH into homelab
-ssh your_username@your_homelab_ip
-
 # Navigate to homelab directory
-cd /path/to/homelab
+cd ~/Installfest/homelab
 
 # List available backups
 ls -la .backups/
 
 # Restore from a specific backup
-./.backups/backup_YYYYMMDD_HHMMSS/restore.sh
-
-# Or manually restore
 cp .backups/backup_YYYYMMDD_HHMMSS/docker-compose.yml ./
+[ -f .backups/backup_YYYYMMDD_HHMMSS/.env ] && cp .backups/backup_YYYYMMDD_HHMMSS/.env ./
+
+# Restart services with restored configuration
 docker-compose down
 docker-compose up -d
+
+# Verify services are running
+docker-compose ps
 ```
 
 ## Security Best Practices
 
-### 1. SSH Key Security
+### 1. Runner Security
 
-- **Use dedicated deploy keys:** Don't use your personal SSH keys for automation
-- **No passphrase for automation:** GitHub Actions can't enter passphrases
-- **Rotate keys periodically:** Generate new keys every 6-12 months
-- **Limit key permissions:** Use restricted SSH keys when possible
+- **Dedicated user account:** Run the runner service under a non-root user with limited permissions
+- **Isolated environment:** Consider running the runner in a dedicated VM or container
+- **Network segmentation:** Use firewall rules to limit runner network access
+- **Regular updates:** Keep the runner software updated to the latest version
+- **Audit runner logs:** Regularly review runner activity logs
+- **Token security:** Never commit runner registration tokens to version control
 
-### 2. Server Security
-
-- **Firewall configuration:** Only allow SSH from known IPs if possible
-- **Use non-root user:** Deploy with a dedicated user account
-- **Audit logs:** Regularly review deployment logs
-- **Fail2ban:** Install to prevent brute force attacks
-
-### 3. GitHub Security
+### 2. Repository Security
 
 - **Protect branches:** Enable branch protection for main/production
 - **Review workflow changes:** Require PR reviews for workflow modifications
-- **Limit secret access:** Only give secret access to required workflows
+- **Limit runner access:** Use runner groups to control which repositories can use your runner
 - **Enable 2FA:** Require two-factor authentication for all contributors
+- **Workflow permissions:** Use minimal permissions in workflow files
+
+### 3. Self-Hosted Runner Best Practices
+
+- **Private repositories only:** Only use self-hosted runners with private repositories
+- **No public forks:** Disable workflow runs from forks to prevent code injection
+- **Review job logs:** Monitor what commands are being executed
+- **Runner labels:** Use specific labels to control job routing
+- **Ephemeral runners:** Consider using ephemeral runners that are destroyed after each job
 
 ### 4. Docker Security
 
@@ -340,6 +405,7 @@ docker-compose up -d
 - **Scan images:** Use tools like Trivy to scan for vulnerabilities
 - **Limit container privileges:** Avoid running containers as root
 - **Network isolation:** Use proper Docker networks for service isolation
+- **Secrets management:** Use environment variables, never hardcode secrets
 
 ### 5. Backup Security
 
@@ -347,6 +413,7 @@ docker-compose up -d
 - **Offsite backups:** Store critical backups in multiple locations
 - **Test restore process:** Regularly test backup restoration
 - **Limit retention:** Don't keep backups longer than necessary
+- **Secure backup permissions:** Ensure backups are only readable by authorized users
 
 ## Monitoring and Alerts
 
@@ -356,17 +423,37 @@ The workflow includes basic GitHub notifications. For advanced monitoring:
 
 1. **Slack Integration:**
 
-   - Add Slack webhook URL as a secret
-   - Modify workflow to send Slack notifications
+   - Add Slack webhook URL as a repository secret
+   - Modify workflow to send Slack notifications on success/failure
 
 2. **Email Notifications:**
 
    - Use GitHub's built-in email notifications
    - Configure in Settings > Notifications
+   - Subscribe to workflow run notifications
 
 3. **Health Monitoring:**
    - Consider adding Uptime Kuma or similar monitoring
    - Set up alerts for service failures
+   - Monitor runner health and uptime
+
+### Runner Monitoring
+
+Monitor your self-hosted runner health:
+
+```bash
+# Check runner service status
+sudo systemctl status actions.runner.*
+
+# Monitor runner resource usage
+htop  # or top
+
+# Check runner disk usage
+df -h ~/actions-runner
+
+# View runner metrics
+docker stats  # if running services
+```
 
 ### Deployment Metrics
 
@@ -377,40 +464,63 @@ Track deployment success with these metrics:
 - Rollback frequency
 - Average deployment time
 - Service availability after deployment
+- Runner uptime and reliability
 
 ## Advanced Configuration
 
 ### Custom Health Checks
 
-Modify the critical services list in the workflow:
+Modify the critical services list in the deployment script:
 
-```yaml
-env:
-  CRITICAL_SERVICES: "nginx-proxy-manager adguardhome homeassistant plex"
+```bash
+# In the deployment script on your server
+CRITICAL_SERVICES="nginx-proxy-manager adguardhome homeassistant plex"
 ```
 
-### Parallel Deployments
+### Multiple Self-Hosted Runners
 
-For multiple homelab servers, create matrix builds:
+For redundancy or multiple homelab servers, set up additional runners:
+
+1. Install runner on each server with unique names
+2. Use runner labels to target specific servers
+3. Configure workflow to use specific labels:
 
 ```yaml
-strategy:
-  matrix:
-    server:
-      - host: homelab1.example.com
-        user: ubuntu
-      - host: homelab2.example.com
-        user: pi
+jobs:
+  deploy-server-1:
+    runs-on: [self-hosted, homelab-1]
+  deploy-server-2:
+    runs-on: [self-hosted, homelab-2]
 ```
 
 ### Staging Deployments
 
 Create a staging workflow that deploys to a test environment first:
 
-1. Duplicate the workflow file
-2. Rename to `deploy-staging.yml`
-3. Modify to use staging secrets
-4. Test changes in staging before production
+1. Set up a second self-hosted runner with label `staging`
+2. Create `deploy-staging.yml` workflow
+3. Configure workflow to use staging runner:
+
+```yaml
+jobs:
+  deploy-staging:
+    runs-on: [self-hosted, staging]
+```
+
+### Runner Auto-Update
+
+Enable automatic runner updates:
+
+```bash
+# On your homelab server
+cd ~/actions-runner
+sudo ./svc.sh stop
+./config.sh remove --token YOUR_REMOVAL_TOKEN
+# Re-register with latest version
+./config.sh --url https://github.com/YOUR_USERNAME/Installfest --token YOUR_TOKEN
+sudo ./svc.sh install
+sudo ./svc.sh start
+```
 
 ## Support and Contributions
 
@@ -418,6 +528,8 @@ Create a staging workflow that deploys to a test environment first:
 
 - Check the [Issues](https://github.com/yourusername/yourrepo/issues) section
 - Review workflow run logs for detailed error messages
+- Check runner logs on your homelab server
+- Consult GitHub Actions self-hosted runner documentation
 - Consult Docker and docker-compose documentation
 
 ### Contributing
@@ -427,8 +539,14 @@ Improvements to the deployment process are welcome:
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Test thoroughly
+4. Test thoroughly with your own self-hosted runner
 5. Submit a pull request
+
+### Additional Resources
+
+- [GitHub Actions Self-Hosted Runners Documentation](https://docs.github.com/en/actions/hosting-your-own-runners)
+- [Docker Compose Documentation](https://docs.docker.com/compose/)
+- [GitHub Actions Workflow Syntax](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions)
 
 ### License
 
@@ -437,4 +555,4 @@ This deployment configuration is part of your project and follows the same licen
 ---
 
 **Last Updated:** 2024
-**Version:** 1.0.0
+**Version:** 2.0.0 - Self-Hosted Runner Implementation

@@ -27,7 +27,7 @@ env:
 jobs:
   deploy:
     name: Deploy to Homelab Server
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - name: Checkout Repository
@@ -49,29 +49,23 @@ jobs:
             echo "has_changes=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Setup SSH Key
+      - name: Deploy to Homelab
         if: steps.changes.outputs.has_changes == 'true'
+        env:
+          HOMELAB_PATH: ${{ vars.HOMELAB_PATH || '~/Installfest/homelab' }}
+          ROLLBACK: ${{ inputs.rollback }}
+          HEALTH_CHECK_RETRIES: ${{ env.HEALTH_CHECK_RETRIES }}
+          HEALTH_CHECK_DELAY: ${{ env.HEALTH_CHECK_DELAY }}
+          MAX_BACKUPS: ${{ vars.MAX_BACKUPS || '5' }}
         run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.HOMELAB_SSH_KEY }}" > ~/.ssh/homelab_key
-          chmod 600 ~/.ssh/homelab_key
-
-          # Add host to known_hosts to avoid SSH prompts
-          ssh-keyscan -H ${{ secrets.HOMELAB_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
-
-      - name: Create Deployment Script
-        if: steps.changes.outputs.has_changes == 'true'
-        run: |
-          cat > /tmp/deploy.sh << 'EOF'
           #!/bin/bash
           set -euo pipefail
 
           # Configuration
-          DEPLOY_PATH="${HOMELAB_PATH:-/home/$USER/homelab}"
+          DEPLOY_PATH="${HOMELAB_PATH}"
           BACKUP_DIR="$DEPLOY_PATH/.backups"
           TIMESTAMP=$(date +%Y%m%d_%H%M%S)
           BACKUP_PATH="$BACKUP_DIR/backup_$TIMESTAMP"
-          MAX_BACKUPS=5
 
           # Colors for output
           RED='\033[0;31m'
@@ -272,33 +266,6 @@ jobs:
 
           # Execute main function
           main
-          EOF
-
-          chmod +x /tmp/deploy.sh
-
-      - name: Deploy to Homelab
-        if: steps.changes.outputs.has_changes == 'true'
-        env:
-          HOMELAB_PATH: ${{ secrets.HOMELAB_PATH }}
-          ROLLBACK: ${{ inputs.rollback }}
-          HEALTH_CHECK_RETRIES: ${{ env.HEALTH_CHECK_RETRIES }}
-          HEALTH_CHECK_DELAY: ${{ env.HEALTH_CHECK_DELAY }}
-        run: |
-          # Copy deployment script to server
-          scp -i ~/.ssh/homelab_key -o StrictHostKeyChecking=no \
-            /tmp/deploy.sh \
-            ${{ secrets.HOMELAB_USER }}@${{ secrets.HOMELAB_HOST }}:/tmp/deploy.sh
-
-          # Execute deployment script
-          ssh -i ~/.ssh/homelab_key -o StrictHostKeyChecking=no \
-            ${{ secrets.HOMELAB_USER }}@${{ secrets.HOMELAB_HOST }} \
-            "bash /tmp/deploy.sh && rm /tmp/deploy.sh"
-
-      - name: Cleanup
-        if: always()
-        run: |
-          rm -f ~/.ssh/homelab_key
-          rm -f /tmp/deploy.sh
 
       - name: Send Success Notification
         if: success() && steps.changes.outputs.has_changes == 'true'
