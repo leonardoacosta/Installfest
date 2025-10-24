@@ -15,7 +15,8 @@ source "$LIB_DIR/backup.sh"
 source "$LIB_DIR/docker.sh"
 
 # Configuration from environment variables
-DEPLOY_PATH="${HOMELAB_PATH}"
+# Expand tilde in HOMELAB_PATH if present
+DEPLOY_PATH="${HOMELAB_PATH/#\~/$HOME}"
 BACKUP_DIR="$DEPLOY_PATH/.backups"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 BACKUP_PATH="$BACKUP_DIR/backup_$TIMESTAMP"
@@ -24,6 +25,13 @@ COMPOSE_FILE="docker-compose.yml"
 # Main deployment logic
 main() {
     log "Starting deployment to $DEPLOY_PATH"
+
+    # Validate deployment path (must be absolute)
+    if [[ ! "$DEPLOY_PATH" = /* ]]; then
+        error "DEPLOY_PATH must be an absolute path, got: $DEPLOY_PATH"
+        error "Original HOMELAB_PATH was: $HOMELAB_PATH"
+        exit 1
+    fi
 
     # Ensure deployment directory exists
     if [ ! -d "$DEPLOY_PATH" ]; then
