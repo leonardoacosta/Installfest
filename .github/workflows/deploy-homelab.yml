@@ -30,37 +30,8 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      # - name: Clean up corrupted directories
-      #   run: |
-      #     # Remove any literal ~/homelab directories from previous failed runs
-      #     WORKSPACE_DIR="/home/nyaptor/actions-runner/_work/Installfest/Installfest"
-      #     if [ -d "$WORKSPACE_DIR/~/homelab" ]; then
-      #       echo "Cleaning up corrupted ~/homelab directory..."
-      #       sudo rm -rf "$WORKSPACE_DIR/~/homelab" || true
-      #       echo "Cleanup completed"
-      #     else
-      #       echo "No corrupted directory found"
-      #     fi
-      #   continue-on-error: true
-
       - name: Checkout Repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 2 # Fetch previous commit for comparison
-
-      - name: Check for Changes
-        id: changes
-        run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.force_deploy }}" == "true" ]]; then
-            echo "Force deployment requested"
-            echo "has_changes=true" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.event_name }}" == "push" ]]; then
-            echo "Push event detected, checking for changes in homelab/"
-            echo "has_changes=true" >> $GITHUB_OUTPUT
-          else
-            echo "No changes detected in homelab directory"
-            echo "has_changes=false" >> $GITHUB_OUTPUT
-          fi
 
       - name: Deploy to Homelab
         if: steps.changes.outputs.has_changes == 'true'
