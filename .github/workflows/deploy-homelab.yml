@@ -162,6 +162,7 @@ jobs:
 
           # Main deployment logic
           main() {
+              pwd
               log "Starting deployment to $DEPLOY_PATH"
 
               # Ensure deployment directory exists
