@@ -187,27 +187,24 @@ jobs:
               echo "GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
               ls -la $GITHUB_WORKSPACE
               log "================================================"  
+
+              WORKSPACE_HOMELAB="${GITHUB_WORKSPACE}/homelab"
+
               echo "WORKSPACE_HOMELAB: $WORKSPACE_HOMELAB"
               ls -la $WORKSPACE_HOMELAB
               log "================================================"  
 
-              WORKSPACE_HOMELAB="${GITHUB_WORKSPACE}/homelab"
+              cd homelab
 
               if [ -d "$WORKSPACE_HOMELAB" ]; then
-                  log "Copying files from $WORKSPACE_HOMELAB to $DEPLOY_PATH"
-                  cp -r "$WORKSPACE_HOMELAB"/* "$DEPLOY_PATH"/
+                  log "Copying files from $WORKSPACE_HOMELAB to here"
+                  cp -r "$WORKSPACE_HOMELAB"/* .
                   log "Files copied successfully"
               else
                   error "Homelab directory not found in workspace: $WORKSPACE_HOMELAB"
                   exit 1
               fi
 
-              pwd
-              ls -la
-              log "================================================"  
-
-
-              cd homelab
 
 
               pwd
