@@ -83,10 +83,20 @@ main() {
     fi
 
     # Stop any existing containers with the same names
-    # log "Stopping any existing containers"
-    # CONTAINERS_TO_STOP="bazarr gluetun sonarr radarr prowlarr nginx-proxy-manager homeassistant vaultwarden adguardhome jellyfin homer glance qbittorrent"
-    # stop_containers $CONTAINERS_TO_STOP
+    log "Stopping any existing containers"
+    if ! docker stop $(docker ps -q); then
+        error "Failed to stop existing containers"
+        rollback
+        exit 1
+    fi
 
+    log "Removing any existing containers"
+    if ! docker rm $(docker ps -a -q); then
+        error "Failed to remove existing containers"
+        rollback
+        exit 1
+    fi
+    
     # Get list of services before update
     OLD_SERVICES=$(compose_ps --services 2>/dev/null | sort)
 

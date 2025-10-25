@@ -13,6 +13,65 @@ This stack uses Docker and is designed for Arch Linux servers. Deploy to your ho
 > - Improved Tailscale IP forwarding configuration
 > - Using optimized docker-compose with dual-network architecture
 
+## 📊 Service Directory
+
+Quick reference for all services, ports, and addresses:
+
+### Dashboard & Monitoring
+| Service | Access URL | Ports | Container IP | Description |
+|---------|-----------|-------|--------------|-------------|
+| **Glance** | http://SERVER_IP:8085 | 8085→8080 | 172.20.0.85, 172.21.0.85 | Self-hosted dashboard |
+
+### Core Infrastructure
+| Service | Access URL | Ports | Container IP | Description |
+|---------|-----------|-------|--------------|-------------|
+| **Home Assistant** | http://SERVER_IP:8123 | 8123→8123 | Host Network | Smart home automation hub |
+| **AdGuard Home** | http://SERVER_IP:82 | 82→82, 8443→443, 3000→3000 | 172.20.0.53 | DNS ad blocker *(port 53 disabled)* |
+| **Traefik** | http://SERVER_IP:80 | 80→80, 443→443 | 172.20.0.81, 172.21.0.81 | Reverse proxy & load balancer |
+
+### AI & Knowledge
+| Service | Access URL | Ports | Container IP | Description |
+|---------|-----------|-------|--------------|-------------|
+| **Ollama** | http://SERVER_IP:11434 | 11434→11434 | 172.20.0.11 | Local LLM inference server |
+| **Ollama WebUI** | http://SERVER_IP:8081 | 8081→8080 | 172.20.0.12 | Web interface for Ollama |
+
+### Media Services
+| Service | Access URL | Ports | Container IP | Description |
+|---------|-----------|-------|--------------|-------------|
+| **Jellyfin** | http://SERVER_IP:8096 | 8096→8096, 8920→8920 | 172.20.0.96, 172.21.0.96 | Media streaming server |
+
+### VPN & Security
+| Service | Access URL | Ports | Container IP | Description |
+|---------|-----------|-------|--------------|-------------|
+| **Tailscale** | - | Host Network | Host Network | Mesh VPN for remote access |
+| **Vaultwarden** | http://SERVER_IP:8222 | 8222→80, 3012→3012 | 172.20.0.22 | Self-hosted password manager |
+
+### Storage
+| Service | Access URL | Ports | Container IP | Description |
+|---------|-----------|-------|--------------|-------------|
+| **Samba** | smb://SERVER_IP | 445→445, 139→139 | 172.20.0.45 | Network file shares (SMB/CIFS) |
+
+### Media Automation - VPN Protected
+| Service | Access URL | Ports | Container IP | Description |
+|---------|-----------|-------|--------------|-------------|
+| **Gluetun** | http://SERVER_IP:8000 | 51820, 8080→8080, 9696→9696, 6789→6789, 8000→8000 | 172.21.0.2 | VPN gateway (WireGuard) |
+| **qBittorrent** | http://SERVER_IP:8080 | *via Gluetun* | via 172.21.0.2 | Torrent client *(VPN protected)* |
+| **Prowlarr** | http://SERVER_IP:9696 | *via Gluetun* | via 172.21.0.2 | Indexer manager *(VPN protected)* |
+| **NZBGet** | http://SERVER_IP:6789 | *via Gluetun* | via 172.21.0.2 | Usenet client *(VPN protected)* |
+| **Byparr** | http://SERVER_IP:8191 | *via Gluetun* | via 172.21.0.2 | Cloudflare bypass *(VPN protected)* |
+
+### Media Automation - Direct Network
+| Service | Access URL | Ports | Container IP | Description |
+|---------|-----------|-------|--------------|-------------|
+| **Radarr** | http://SERVER_IP:7878 | 7878→7878 | 172.21.0.78 | Movie collection manager |
+| **Sonarr** | http://SERVER_IP:8989 | 8989→8989 | 172.21.0.89 | TV show collection manager |
+| **Lidarr** | http://SERVER_IP:8686 | 8686→8686 | 172.21.0.86 | Music collection manager |
+| **Bazarr** | http://SERVER_IP:6767 | 6767→6767 | 172.21.0.67 | Subtitle automation |
+| **Jellyseerr** | http://SERVER_IP:5055 | 5055→5055 | 172.20.0.55, 172.21.0.55 | Media request portal |
+
+> **Note:** Replace `SERVER_IP` with your homelab server's IP address (e.g., `192.168.1.100`)
+> **VPN Protected Services:** qBittorrent, Prowlarr, NZBGet, and Byparr share Gluetun's network - all traffic routes through VPN
+
 ## 🚀 Quick Start
 
 ```bash
