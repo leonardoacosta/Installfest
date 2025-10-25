@@ -53,19 +53,23 @@ services:
       media:
         ipv4_address: 172.21.0.85
     healthcheck:
-      test:
-        [
-          "CMD",
-          "wget",
-          "--no-verbose",
-          "--tries=1",
-          "--spider",
-          "http://localhost:8080",
-        ]
-      interval: 30s
+      # test:
+      #   [
+      #     "CMD",
+      #     "wget",
+      #     "--no-verbose",
+      #     "--tries=1",
+      #     "--spider",
+      #     "http://localhost:8080",
+      #   ]
+      # interval: 30s
+      # timeout: 10s
+      # retries: 3
+      # start_period: 20s
+      test: ping -c 1 www.google.com || exit 1
+      interval: 20s
       timeout: 10s
-      retries: 3
-      start_period: 20s
+      retries: 5
     deploy:
       resources:
         limits:
@@ -175,11 +179,15 @@ services:
       media:
         ipv4_address: 172.21.0.81
     healthcheck:
-      test: ["CMD", "traefik", "healthcheck", "--ping"]
-      interval: 30s
+      test: ping -c 1 www.google.com || exit 1
+      interval: 20s
       timeout: 10s
-      retries: 3
-      start_period: 20s
+      retries: 5
+      # test: ["CMD", "traefik", "healthcheck", "--ping"]
+      # interval: 30s
+      # timeout: 10s
+      # retries: 3
+      # start_period: 20s
     deploy:
       resources:
         limits:
@@ -235,11 +243,15 @@ services:
       homelab:
         ipv4_address: 172.20.0.11
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
-      interval: 30s
+      # test: ["CMD", "curl", "http://172.20.0.11:11434"]
+      # interval: 30s
+      # timeout: 10s
+      # retries: 3
+      # start_period: 40s
+      test: ping -c 1 www.google.com || exit 1
+      interval: 20s
       timeout: 10s
-      retries: 3
-      start_period: 40s
+      retries: 5
     deploy:
       resources:
         limits:
@@ -380,11 +392,15 @@ services:
         reservations:
           memory: 128M
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80/alive"]
-      interval: 30s
+      test: ping -c 1 www.google.com || exit 1
+      interval: 20s
       timeout: 10s
-      retries: 3
-      start_period: 20s
+      retries: 5
+      # test: ["CMD", "curl", "-f", "http://localhost:80/alive"]
+      # interval: 30s
+      # timeout: 10s
+      # retries: 3
+      # start_period: 20s
 
   # ************************************
   # ********** Storage Services ********
