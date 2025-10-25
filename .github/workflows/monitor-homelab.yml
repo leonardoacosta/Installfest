@@ -33,32 +33,8 @@ jobs:
         id: check
         env:
           VERBOSE: ${{ inputs.verbose }}
-        run: |
-          # Set HOMELAB_PATH if not set
-          export HOMELAB_PATH="${HOMELAB_PATH:-$HOME/homelab}"
-
-          # Execute health check using homelab script
-          bash homelab/scripts/monitor-ci.sh health-check
-
-          # Parse results
-          source /tmp/health_status || true
-          echo "status=${status:-unknown}" >> $GITHUB_OUTPUT
-          echo "failed_services=${failed_services:-unknown}" >> $GITHUB_OUTPUT
-
-          # Clean up
-          rm -f /tmp/health_status
-
-          # Exit with appropriate code
-          if [ "${status:-unknown}" = "success" ]; then
-            echo "✅ All health checks passed"
-            exit 0
-          elif [ "${status:-unknown}" = "warning" ]; then
-            echo "⚠️ Health checks passed with warnings"
-            exit 0
-          else
-            echo "❌ Health checks failed"
-            exit 1
-          fi
+          HOMELAB_PATH: ~/homelab
+        run: bash homelab/scripts/monitor-ci.sh health-check
 
       - name: Store Health Check Results
         if: always()
@@ -71,32 +47,24 @@ jobs:
 
       - name: Update Health History
         if: always()
-        run: |
-          mkdir -p /tmp/health_history
-          echo "$(date -Iseconds),${{ steps.check.outputs.status }},${{ steps.check.outputs.failed_services }}" >> /tmp/health_history/history.csv
-
-          # Keep only last 100 entries
-          tail -n 100 /tmp/health_history/history.csv > /tmp/health_history/history.tmp
-          mv /tmp/health_history/history.tmp /tmp/health_history/history.csv
-
-          # Count consecutive failures
-          CONSECUTIVE_FAILURES=$(tail -n ${{ env.ALERT_THRESHOLD }} /tmp/health_history/history.csv | grep -c "failure" || true)
-
-          echo "consecutive_failures=$CONSECUTIVE_FAILURES" >> $GITHUB_ENV
+        env:
+          HOMELAB_PATH: ~/homelab
+          ALERT_THRESHOLD: ${{ env.ALERT_THRESHOLD }}
+        run: bash homelab/scripts/monitor-ci.sh update-history "${{ steps.check.outputs.status }}" "${{ steps.check.outputs.failed_services }}"
 
       - name: Send Alert Notification
         if: failure() && env.consecutive_failures >= env.ALERT_THRESHOLD
         uses: actions/github-script@v7
         with:
           script: |
-            const failed_services = '${{ steps.check.outputs.failed_services }}';
-            const message = `🚨 **Homelab Alert**: Multiple services are failing!\n\nFailed services: ${failed_services}\n\nPlease check your homelab server immediately.`;
+            const failed = '${{ steps.check.outputs.failed_services }}';
+            const msg = `🚨 **Homelab Alert**: Multiple services failing!\n\n**Failed:** ${failed}\n\nCheck server immediately.`;
+            const labels = 'homelab-alert,automated';
 
-            // Create an issue if it doesn't exist
             const issues = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              labels: 'homelab-alert,automated',
+              labels,
               state: 'open'
             });
 
@@ -104,17 +72,16 @@ jobs:
               await github.rest.issues.create({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                title: '🚨 Homelab Services Health Check Failed',
-                body: message,
+                title: '🚨 Homelab Health Check Failed',
+                body: msg,
                 labels: ['homelab-alert', 'automated', 'critical']
               });
             } else {
-              // Add comment to existing issue
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: issues.data[0].number,
-                body: message + `\n\n_Alert triggered at ${new Date().toISOString()}_`
+                body: `${msg}\n\n_${new Date().toISOString()}_`
               });
             }
 
@@ -123,7 +90,6 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            // Close any open alert issues if services are healthy
             const issues = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -136,9 +102,8 @@ jobs:
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: issue.number,
-                body: '✅ All services are healthy again. Closing alert.'
+                body: '✅ All services healthy. Closing alert.'
               });
-
               await github.rest.issues.update({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -159,16 +124,11 @@ jobs:
 
       - name: Collect Metrics
         id: metrics
+        env:
+          HOMELAB_PATH: ~/homelab
         run: |
-          # Set HOMELAB_PATH if not set
-          export HOMELAB_PATH="${HOMELAB_PATH:-$HOME/homelab}"
-
-          # Execute metrics collection using homelab script
-          bash homelab/scripts/monitor-ci.sh metrics > /tmp/metrics.txt 2>&1 || true
-
-          # Store metrics as artifact
-          echo "Metrics collected at $(date -Iseconds)" >> /tmp/metrics_summary.txt
-          cat /tmp/metrics.txt >> /tmp/metrics_summary.txt
+          echo "Metrics collected at $(date -Iseconds)" > /tmp/metrics_summary.txt
+          bash homelab/scripts/monitor-ci.sh metrics >> /tmp/metrics_summary.txt 2>&1 || true
 
       - name: Upload Metrics
         if: always()
@@ -180,6 +140,4 @@ jobs:
 
       - name: Cleanup
         if: always()
-        run: |
-          rm -f /tmp/metrics.txt
-          rm -f /tmp/metrics_summary.txt
+        run: rm -f /tmp/metrics_summary.txt

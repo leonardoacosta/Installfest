@@ -14,10 +14,13 @@ source "$LIB_DIR/logging.sh"
 source "$LIB_DIR/docker.sh"
 
 # Configuration from environment variables
-DEPLOY_PATH="${HOMELAB_PATH/#\~/$HOME}"
+DEPLOY_PATH="${HOMELAB_PATH:-$HOME/homelab}"
+DEPLOY_PATH="${DEPLOY_PATH/#\~/$HOME}"  # Expand tilde
 VERBOSE="${VERBOSE:-false}"
 FAILED_SERVICES=""
 ALL_HEALTHY=true
+ALERT_THRESHOLD="${ALERT_THRESHOLD:-3}"
+HEALTH_HISTORY_DIR="/tmp/health_history"
 
 # Health check function
 perform_health_check() {
@@ -172,6 +175,89 @@ collect_metrics() {
     netstat -tuln | grep LISTEN | head -20
 }
 
+# Parse and output health check results for GitHub Actions
+output_health_results() {
+    # Parse results
+    source /tmp/health_status || true
+
+    # Output for GitHub Actions
+    echo "status=${status:-unknown}" >> $GITHUB_OUTPUT
+    echo "failed_services=${failed_services:-unknown}" >> $GITHUB_OUTPUT
+
+    # Clean up
+    rm -f /tmp/health_status
+
+    # Exit with appropriate code and user-friendly message
+    if [ "${status:-unknown}" = "success" ]; then
+        echo "✅ All health checks passed"
+        exit 0
+    elif [ "${status:-unknown}" = "warning" ]; then
+        echo "⚠️ Health checks passed with warnings"
+        exit 0
+    else
+        echo "❌ Health checks failed"
+        exit 1
+    fi
+}
+
+# Update health check history
+update_health_history() {
+    local status="$1"
+    local failed_services="$2"
+
+    mkdir -p "$HEALTH_HISTORY_DIR"
+
+    # Append to history
+    echo "$(date -Iseconds),${status},${failed_services}" >> "$HEALTH_HISTORY_DIR/history.csv"
+
+    # Keep only last 100 entries
+    tail -n 100 "$HEALTH_HISTORY_DIR/history.csv" > "$HEALTH_HISTORY_DIR/history.tmp"
+    mv "$HEALTH_HISTORY_DIR/history.tmp" "$HEALTH_HISTORY_DIR/history.csv"
+
+    # Count consecutive failures
+    CONSECUTIVE_FAILURES=$(tail -n "$ALERT_THRESHOLD" "$HEALTH_HISTORY_DIR/history.csv" | grep -c "failure" || true)
+
+    # Output for GitHub Actions
+    if [ -n "${GITHUB_ENV:-}" ]; then
+        echo "consecutive_failures=$CONSECUTIVE_FAILURES" >> "$GITHUB_ENV"
+    fi
+
+    log "Consecutive failures: $CONSECUTIVE_FAILURES"
+}
+
+# Send alert notification via GitHub API
+send_alert() {
+    local failed_services="$1"
+
+    if [ -z "${GITHUB_REPOSITORY:-}" ]; then
+        warning "Not running in GitHub Actions, skipping alert"
+        return 0
+    fi
+
+    # This outputs JSON that can be consumed by github-script
+    cat > /tmp/alert_data.json << EOF
+{
+  "failed_services": "${failed_services}",
+  "timestamp": "$(date -Iseconds)",
+  "consecutive_failures": "${CONSECUTIVE_FAILURES:-0}"
+}
+EOF
+
+    log "Alert data prepared: /tmp/alert_data.json"
+}
+
+# Close alert notification via GitHub API
+close_alert() {
+    if [ -z "${GITHUB_REPOSITORY:-}" ]; then
+        warning "Not running in GitHub Actions, skipping alert closure"
+        return 0
+    fi
+
+    # Signal that alerts should be closed
+    echo "close_alerts=true" > /tmp/close_alerts_flag
+    log "Alert closure flag set"
+}
+
 # Main function
 main() {
     check_container_runtime
@@ -183,13 +269,28 @@ main() {
     case "$MODE" in
         health-check)
             perform_health_check
+            # If running in CI (GitHub Actions), output results
+            if [ -n "${GITHUB_OUTPUT:-}" ]; then
+                output_health_results
+            fi
             ;;
         metrics)
             collect_metrics
             ;;
+        update-history)
+            # Usage: monitor-ci.sh update-history <status> <failed_services>
+            update_health_history "${2:-unknown}" "${3:-}"
+            ;;
+        send-alert)
+            # Usage: monitor-ci.sh send-alert <failed_services>
+            send_alert "${2:-}"
+            ;;
+        close-alert)
+            close_alert
+            ;;
         *)
             error "Unknown mode: $MODE"
-            echo "Usage: $0 [health-check|metrics]"
+            echo "Usage: $0 [health-check|metrics|update-history|send-alert|close-alert]"
             exit 1
             ;;
     esac
