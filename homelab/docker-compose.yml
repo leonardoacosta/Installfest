@@ -45,7 +45,7 @@ services:
       - ./glance:/app/data
       - /var/run/docker.sock:/var/run/docker.sock:ro # For Docker monitoring widgets
     ports:
-      - "8085:8080"
+      - "8085:8080" # Glance web UI
     networks:
       homelab:
         ipv4_address: 172.20.0.85
@@ -119,8 +119,10 @@ services:
     environment:
       - TZ=${TZ:-America/Chicago}
     ports:
-      - "53:53/tcp"
-      - "53:53/udp"
+      # Port 53 disabled - conflicts with systemd-resolved on runner
+      # Use AdGuard via container IP (172.20.0.53) or custom DNS port
+      # - "53:53/tcp"
+      # - "53:53/udp"
       - "82:82/tcp" # Web interface (port 82 to avoid conflicts)
       - "8443:443/tcp" # HTTPS web interface
       - "3000:3000/tcp" # Initial setup
@@ -259,7 +261,7 @@ services:
     container_name: ollama-webui
     restart: unless-stopped
     ports:
-      - "8081:8080"
+      - "8081:8080" # Ollama WebUI
     environment:
       - OLLAMA_BASE_URL=http://ollama:11434
       - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY:-changeme}
@@ -431,9 +433,9 @@ services:
         ipv4_address: 172.21.0.2
     ports:
       - "${FIREWALL_VPN_INPUT_PORTS:-51820}:${FIREWALL_VPN_INPUT_PORTS:-51820}"
-      - "8080:8080" # qBittorrent
-      - "9696:9696" # Prowlarr
-      - "6789:6789" # NZBGet
+      - "8080:8080" # qBittorrent WebUI (via gluetun network)
+      - "9696:9696" # Prowlarr (via gluetun network)
+      - "6789:6789" # NZBGet (via gluetun network)
       - "8000:8000" # Gluetun HTTP control server
     volumes:
       - ./gluetun:/gluetun
