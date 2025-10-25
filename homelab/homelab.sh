@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# homelab Management Wizard
-# Complete setup, management, and troubleshooting for Docker homelab stack
-# Designed for Arch Linux with Docker
+# Homelab Management Script
+# Simplified management for Docker homelab stack
+# Version: 2.0
 
 set -e
 
@@ -10,104 +10,229 @@ set -e
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$SCRIPT_DIR"
 
-# ============= Load Library Functions =============
-source "$SCRIPT_DIR/lib/colors.sh"
-source "$SCRIPT_DIR/lib/system.sh"
-source "$SCRIPT_DIR/lib/docker.sh"
-source "$SCRIPT_DIR/lib/services.sh"
-source "$SCRIPT_DIR/lib/config.sh"
-source "$SCRIPT_DIR/lib/install.sh"
-source "$SCRIPT_DIR/lib/troubleshoot.sh"
-source "$SCRIPT_DIR/lib/services-setup.sh"
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
 
-# ============= Setup Wizard =============
-setup_wizard() {
-    print_header "Setup Wizard"
+# ============= Helper Functions =============
+print_header() {
+    echo ""
+    echo -e "${BLUE}╔════════════════════════════════════════════════╗${NC}"
+    echo -e "${BLUE}║${NC}  ${CYAN}$1${NC}"
+    echo -e "${BLUE}╚════════════════════════════════════════════════╝${NC}"
+    echo ""
+}
 
-    # Check prerequisites
-    print_info "Checking prerequisites..."
-    if ! check_container_runtime; then
-        print_error "Container runtime not found"
-        echo ""
-        read -p "Install on Arch Linux now? (y/n): " install
-        if [[ $install == "y" ]]; then
-            install_arch
-            check_container_runtime
-        else
-            return 1
-        fi
+print_info() {
+    echo -e "${CYAN}ℹ${NC} $1"
+}
+
+print_warning() {
+    echo -e "${YELLOW}⚠${NC} $1"
+}
+
+print_error() {
+    echo -e "${RED}✖${NC} $1"
+}
+
+print_success() {
+    echo -e "${GREEN}✓${NC} $1"
+}
+
+# ============= Docker Functions =============
+check_docker() {
+    if ! command -v docker &> /dev/null; then
+        print_error "Docker not found. Run: ./install-fresh.sh"
+        return 1
+    fi
+    if ! docker ps &> /dev/null; then
+        print_error "Docker daemon not running or no permissions"
+        print_info "Try: sudo systemctl start docker"
+        print_info "Or: newgrp docker (if just added to group)"
+        return 1
+    fi
+    return 0
+}
+
+# ============= Service Management =============
+start_services() {
+    print_header "Starting Services"
+    check_docker || return 1
+
+    if [ -n "$1" ]; then
+        print_info "Starting selected services: $1"
+        docker compose up -d $1
+    else
+        print_info "Starting all services..."
+        docker compose up -d
     fi
 
-    if ! check_compose; then
-        print_error "Compose tool not found"
+    print_success "Services started"
+}
+
+stop_services() {
+    print_header "Stopping Services"
+    check_docker || return 1
+
+    print_info "Stopping all services..."
+    docker compose down
+    print_success "Services stopped"
+}
+
+restart_services() {
+    print_header "Restarting Services"
+    stop_services
+    start_services "$1"
+}
+
+show_status() {
+    print_header "Service Status"
+    check_docker || return 1
+
+    echo -e "${CYAN}Running Containers:${NC}"
+    docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | head -20
+
+    echo ""
+    echo -e "${CYAN}Service Health:${NC}"
+    for container in $(docker ps --format "{{.Names}}"); do
+        health=$(docker inspect "$container" --format='{{.State.Health.Status}}' 2>/dev/null || echo "no healthcheck")
+        if [[ "$health" == "healthy" ]]; then
+            echo -e "  ${GREEN}✓${NC} $container: $health"
+        elif [[ "$health" == "no healthcheck" ]]; then
+            echo -e "  ${CYAN}-${NC} $container: running"
+        else
+            echo -e "  ${YELLOW}⚠${NC} $container: $health"
+        fi
+    done
+}
+
+show_logs() {
+    local service="${1:-}"
+    check_docker || return 1
+
+    if [ -z "$service" ]; then
+        docker compose logs -f --tail=100
+    else
+        docker compose logs -f --tail=100 "$service"
+    fi
+}
+
+show_urls() {
+    print_header "Service URLs"
+
+    echo -e "${CYAN}Core Services:${NC}"
+    echo "  Home Assistant:  http://localhost:8123"
+    echo "  AdGuard Home:    http://localhost:3000"
+    echo "  Jellyfin:        http://localhost:8096"
+    echo "  Ollama WebUI:    http://localhost:3001"
+    echo ""
+    echo -e "${CYAN}Dashboard & Management:${NC}"
+    echo "  Glance:          http://localhost:8085"
+    echo "  Traefik:         http://localhost:8080"
+    echo ""
+    echo -e "${CYAN}Security:${NC}"
+    echo "  Vaultwarden:     http://localhost:8222"
+    echo ""
+    echo -e "${CYAN}Media Stack:${NC}"
+    echo "  Radarr:          http://localhost:7878"
+    echo "  Sonarr:          http://localhost:8989"
+    echo "  Prowlarr:        http://localhost:9696"
+    echo "  Jellyseerr:      http://localhost:5055"
+    echo "  qBittorrent:     http://localhost:8090"
+}
+
+update_images() {
+    print_header "Updating Docker Images"
+    check_docker || return 1
+
+    print_info "Pulling latest images..."
+    docker compose pull
+    print_success "Images updated"
+    print_warning "Restart services to use new images"
+}
+
+cleanup_system() {
+    print_header "System Cleanup"
+    check_docker || return 1
+
+    print_warning "This will remove stopped containers and unused images"
+    read -p "Continue? (y/n): " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
         return 1
     fi
 
-    setup_environment
+    print_info "Removing stopped containers..."
+    docker container prune -f
 
-    # Setup directories
-    create_directories
+    print_info "Removing unused images..."
+    docker image prune -a -f
 
-    # Setup environment
-    setup_env_file
+    print_info "Removing unused volumes..."
+    docker volume prune -f
 
-    # Check passwords
-    if [ -f "$SCRIPT_DIR/.env" ] && grep -q "CHANGE_THIS_PASSWORD\|changeme\|password123" "$SCRIPT_DIR/.env" 2>/dev/null; then
-        print_error "Default passwords found in .env!"
-        print_warning "MUST edit .env and change passwords"
-        read -p "Open .env in editor now? (y/n): " edit_env
-        if [[ $edit_env == "y" ]]; then
-            ${EDITOR:-nano} "$SCRIPT_DIR/.env"
+    print_success "Cleanup completed"
+}
+
+backup_config() {
+    print_header "Backup Configuration"
+
+    local backup_dir="$SCRIPT_DIR/backups/$(date +%Y%m%d_%H%M%S)"
+    mkdir -p "$backup_dir"
+
+    print_info "Creating backup at: $backup_dir"
+
+    # Backup essential files
+    cp .env "$backup_dir/" 2>/dev/null || print_warning "No .env file found"
+    cp docker-compose.yml "$backup_dir/"
+
+    # Backup service configs (only if they exist and aren't too large)
+    for service in glance homeassistant adguardhome traefik vaultwarden tailscale; do
+        if [ -d "$service" ]; then
+            print_info "Backing up $service config..."
+            tar -czf "$backup_dir/$service.tar.gz" "$service" --exclude="*.log" --exclude="*.db-wal" --exclude="*.db-shm"
         fi
+    done
+
+    print_success "Backup completed: $backup_dir"
+}
+
+# ============= Quick Actions =============
+quick_deploy() {
+    print_header "Quick Deploy via GitHub Actions"
+
+    if ! command -v gh &> /dev/null; then
+        print_error "GitHub CLI not installed"
+        return 1
     fi
 
-    # Configure service-specific system requirements
-    configure_service_requirements
+    print_info "Triggering deployment workflow..."
+    gh workflow run deploy-homelab --ref main
 
-    # Service selection
-    echo ""
-    print_info "Which services to start?"
-    echo "1) All services (Core + Media Stack)"
-    echo "2) Core only (Home Assistant, AdGuard, Jellyfin, Ollama)"
-    echo "3) Custom selection"
-    read -p "Choose (1-3): " choice
-
-    case $choice in
-        1)
-            clean_restart
-            ;;
-        2)
-            start_services "homeassistant adguardhome ollama ollama-webui jellyfin samba tailscale"
-            ;;
-        3)
-            echo "Enter service names (space-separated):"
-            read services
-            start_services "$services"
-            ;;
-    esac
-
-    echo ""
-    print_success "Setup complete!"
-    show_status
+    print_success "Deployment triggered"
+    print_info "Monitor with: gh run watch"
 }
 
 # ============= Main Menu =============
-main_menu() {
+show_menu() {
     clear
-    print_header "homelab Management"
-    echo -e "${CYAN}Detected: $OS${NC}"
-    echo ""
-    echo "1)  Setup Wizard (First Time Setup)"
-    echo "2)  Configure Services (Vaultwarden, Glance)"
-    echo "3)  Clean Restart (Fix Port Conflicts)"
-    echo "4)  Start All Services"
-    echo "5)  Stop All Services"
-    echo "6)  Show Status"
-    echo "7)  View Logs"
-    echo "8)  Troubleshooting"
-    echo "9)  Cleanup (Remove Containers)"
-    echo "10) Update Images"
-    echo "11) Install (Arch Linux)"
+    print_header "🏠 Homelab Management"
+
+    echo "1)  Fresh Installation (New System)"
+    echo "2)  Start Services"
+    echo "3)  Stop Services"
+    echo "4)  Restart Services"
+    echo "5)  Show Status"
+    echo "6)  View Logs"
+    echo "7)  Show URLs"
+    echo "8)  Update Images"
+    echo "9)  Quick Deploy (GitHub Actions)"
+    echo "10) Backup Configuration"
+    echo "11) System Cleanup"
     echo "12) Exit"
     echo ""
     read -p "Choose an option: " choice
@@ -115,93 +240,115 @@ main_menu() {
 
 # ============= Main Execution =============
 main() {
-    detect_os
-    setup_environment
+    # Handle command line arguments
+    case "${1:-}" in
+        install|fresh)
+            exec "$SCRIPT_DIR/install-fresh.sh"
+            ;;
+        start)
+            start_services "${2:-}"
+            exit 0
+            ;;
+        stop)
+            stop_services
+            exit 0
+            ;;
+        restart)
+            restart_services "${2:-}"
+            exit 0
+            ;;
+        status)
+            show_status
+            exit 0
+            ;;
+        logs)
+            show_logs "${2:-}"
+            exit 0
+            ;;
+        urls)
+            show_urls
+            exit 0
+            ;;
+        update)
+            update_images
+            exit 0
+            ;;
+        backup)
+            backup_config
+            exit 0
+            ;;
+        deploy)
+            quick_deploy
+            exit 0
+            ;;
+        cleanup)
+            cleanup_system
+            exit 0
+            ;;
+        --help|-h)
+            echo "Usage: $0 [command] [options]"
+            echo ""
+            echo "Commands:"
+            echo "  install/fresh    - Run fresh installation wizard"
+            echo "  start [service]  - Start all or specific services"
+            echo "  stop             - Stop all services"
+            echo "  restart [service]- Restart services"
+            echo "  status           - Show service status"
+            echo "  logs [service]   - View logs"
+            echo "  urls             - Show service URLs"
+            echo "  update           - Update Docker images"
+            echo "  deploy           - Deploy via GitHub Actions"
+            echo "  backup           - Backup configuration"
+            echo "  cleanup          - Clean Docker system"
+            echo ""
+            echo "Interactive mode: run without arguments"
+            exit 0
+            ;;
+    esac
 
-    # Command line mode
-    if [ $# -gt 0 ]; then
-        case $1 in
-            setup|wizard)
-                setup_wizard
-                ;;
-            start)
-                check_container_runtime && check_compose
-                start_services "$2"
-                ;;
-            stop)
-                check_container_runtime && check_compose
-                stop_services
-                ;;
-            restart|clean)
-                check_container_runtime && check_compose
-                clean_restart
-                ;;
-            status)
-                check_container_runtime && check_compose
-                show_status
-                ;;
-            logs)
-                check_container_runtime && check_compose
-                show_logs "$2"
-                ;;
-            install)
-                install_arch
-                ;;
-            cleanup)
-                check_container_runtime && check_compose
-                cleanup
-                ;;
-            *)
-                echo "Usage: $0 [setup|start|stop|restart|status|logs|install|cleanup]"
-                exit 1
-                ;;
-        esac
-        exit 0
-    fi
-
-    # Interactive mode
+    # Interactive menu mode
     while true; do
-        main_menu
+        show_menu
 
         case $choice in
             1)
-                setup_wizard
+                exec "$SCRIPT_DIR/install-fresh.sh"
                 ;;
             2)
-                check_container_runtime && check_compose && service_setup_menu
+                echo "Enter services to start (leave blank for all):"
+                read services
+                start_services "$services"
                 ;;
             3)
-                check_container_runtime && check_compose && clean_restart
+                stop_services
                 ;;
             4)
-                check_container_runtime && check_compose && start_services ""
+                echo "Enter services to restart (leave blank for all):"
+                read services
+                restart_services "$services"
                 ;;
             5)
-                check_container_runtime && check_compose && stop_services
+                show_status
                 ;;
             6)
-                check_container_runtime && check_compose && show_status
-                ;;
-            7)
-                check_container_runtime && check_compose
-                echo "Enter service name (or leave blank for all):"
+                echo "Enter service name (leave blank for all):"
                 read service
                 show_logs "$service"
                 ;;
+            7)
+                show_urls
+                ;;
             8)
-                check_container_runtime && check_compose && troubleshoot
+                update_images
                 ;;
             9)
-                check_container_runtime && check_compose && cleanup
+                quick_deploy
                 ;;
             10)
-                check_container_runtime && check_compose
-                print_info "Pulling latest images..."
-                $COMPOSE_CMD pull
-                print_success "Images updated"
+                backup_config
                 ;;
             11)
-                install_arch
+                cleanup_system
                 ;;
             12)
                 print_success "Goodbye!"
@@ -219,4 +366,5 @@ main() {
     done
 }
 
+# Run main function
 main "$@"
