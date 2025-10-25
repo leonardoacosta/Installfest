@@ -24,6 +24,10 @@ COMPOSE_FILE="docker-compose.yml"
 
 # Main deployment logic
 main() {
+    check_container_runtime
+    check_compose
+
+    
     log "Starting deployment to $DEPLOY_PATH"
 
     # Validate deployment path (must be absolute)
