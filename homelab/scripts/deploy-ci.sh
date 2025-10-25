@@ -83,9 +83,9 @@ main() {
     fi
 
     # Stop any existing containers with the same names
-    log "Stopping any existing containers"
-    CONTAINERS_TO_STOP="bazarr gluetun sonarr radarr prowlarr nginx-proxy-manager homeassistant vaultwarden adguardhome jellyfin homer glance qbittorrent"
-    stop_containers $CONTAINERS_TO_STOP
+    # log "Stopping any existing containers"
+    # CONTAINERS_TO_STOP="bazarr gluetun sonarr radarr prowlarr nginx-proxy-manager homeassistant vaultwarden adguardhome jellyfin homer glance qbittorrent"
+    # stop_containers $CONTAINERS_TO_STOP
 
     # Get list of services before update
     OLD_SERVICES=$(compose_ps --services 2>/dev/null | sort)
