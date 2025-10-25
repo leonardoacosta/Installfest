@@ -34,14 +34,12 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Deploy to Homelab
-        if: steps.changes.outputs.has_changes == 'true'
         env:
           ROLLBACK: ${{ inputs.rollback || 'false' }}
           HEALTH_CHECK_RETRIES: 5
           HEALTH_CHECK_DELAY: 10
           MAX_BACKUPS: ${{ vars.MAX_BACKUPS || '5' }}
         run: |
-          # Set HOMELAB_PATH with proper expansion
           export HOMELAB_PATH="${{ vars.HOMELAB_PATH }}"
           if [ -z "$HOMELAB_PATH" ]; then
             export HOMELAB_PATH="$HOME/homelab"
