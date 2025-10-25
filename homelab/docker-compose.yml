@@ -572,7 +572,7 @@ services:
 
   # ? Bazarr - Subtitle Manager
   bazarr:
-    image: docker.io/linuxserver/bazarr:latest
+    image: linuxserver/bazarr:development:latest
     container_name: bazarr
     restart: unless-stopped
     environment:
