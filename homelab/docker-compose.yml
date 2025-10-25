@@ -243,15 +243,11 @@ services:
       homelab:
         ipv4_address: 172.20.0.11
     healthcheck:
-      # test: ["CMD", "curl", "http://172.20.0.11:11434"]
-      # interval: 30s
-      # timeout: 10s
-      # retries: 3
-      # start_period: 40s
-      test: ping -c 1 www.google.com || exit 1
-      interval: 20s
+      test: ["CMD", "ollama", "list"]
+      interval: 30s
       timeout: 10s
       retries: 5
+      start_period: 60s
     deploy:
       resources:
         limits:
