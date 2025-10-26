@@ -4,14 +4,9 @@
 
 set -uo pipefail
 
-# Get script directory
+# Get script directory and source common utilities
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-LIB_DIR="$SCRIPT_DIR/../lib"
-
-# Source homelab libraries
-source "$LIB_DIR/colors.sh"
-source "$LIB_DIR/logging.sh"
-source "$LIB_DIR/docker.sh"
+source "$SCRIPT_DIR/common-utils.sh"
 
 # Configuration from environment variables
 DEPLOY_PATH="${HOMELAB_PATH:-$HOME/homelab}"
@@ -261,7 +256,6 @@ close_alert() {
 # Main function
 main() {
     check_container_runtime
-    check_compose
 
     # Determine mode from first argument
     MODE="${1:-health-check}"

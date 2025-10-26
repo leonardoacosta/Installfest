@@ -4,15 +4,9 @@
 
 set -euo pipefail
 
-# Get script directory
+# Get script directory and source common utilities
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-LIB_DIR="$SCRIPT_DIR/../lib"
-
-# Source homelab libraries
-source "$LIB_DIR/colors.sh"
-source "$LIB_DIR/logging.sh"
-source "$LIB_DIR/backup.sh"
-source "$LIB_DIR/docker.sh"
+source "$SCRIPT_DIR/common-utils.sh"
 
 # Configuration from environment variables
 # Expand tilde in HOMELAB_PATH if present
@@ -25,9 +19,7 @@ COMPOSE_FILE="docker-compose.yml"
 # Main deployment logic
 main() {
     check_container_runtime
-    check_compose
 
-    
     log "Starting deployment to $DEPLOY_PATH"
 
     # Validate deployment path (must be absolute)
@@ -46,6 +38,7 @@ main() {
 
     # Check if rollback is requested
     if [ "${ROLLBACK:-false}" == "true" ]; then
+        cd "$DEPLOY_PATH"
         rollback
         exit $?
     fi
@@ -82,23 +75,15 @@ main() {
         exit 1
     fi
 
-    # Stop any existing containers with the same names
+    # Stop any existing containers
     log "Stopping any existing containers"
-    if ! docker stop $(docker ps -q); then
-        error "Failed to stop existing containers"
-        rollback
-        exit 1
-    fi
+    docker stop $(docker ps -q) 2>/dev/null || true
 
     log "Removing any existing containers"
-    if ! docker rm $(docker ps -a -q); then
-        error "Failed to remove existing containers"
-        rollback
-        exit 1
-    fi
-    
+    docker rm $(docker ps -a -q) 2>/dev/null || true
+
     # Get list of services before update
-    OLD_SERVICES=$(compose_ps --services 2>/dev/null | sort)
+    OLD_SERVICES=$(compose_ps --services 2>/dev/null | sort || true)
 
     # Pull latest images
     log "Pulling latest Docker images"
@@ -116,19 +101,21 @@ main() {
     NEW_SERVICES=$(compose_ps --services 2>/dev/null | sort)
 
     # Check for removed services
-    REMOVED_SERVICES=$(comm -23 <(echo "$OLD_SERVICES") <(echo "$NEW_SERVICES"))
-    if [ -n "$REMOVED_SERVICES" ]; then
-        warning "The following services were removed: $REMOVED_SERVICES"
-    fi
+    if [ -n "$OLD_SERVICES" ]; then
+        REMOVED_SERVICES=$(comm -23 <(echo "$OLD_SERVICES") <(echo "$NEW_SERVICES") 2>/dev/null || true)
+        if [ -n "$REMOVED_SERVICES" ]; then
+            warning "The following services were removed: $REMOVED_SERVICES"
+        fi
 
-    # Check for new services
-    ADDED_SERVICES=$(comm -13 <(echo "$OLD_SERVICES") <(echo "$NEW_SERVICES"))
-    if [ -n "$ADDED_SERVICES" ]; then
-        log "The following services were added: $ADDED_SERVICES"
+        # Check for new services
+        ADDED_SERVICES=$(comm -13 <(echo "$OLD_SERVICES") <(echo "$NEW_SERVICES") 2>/dev/null || true)
+        if [ -n "$ADDED_SERVICES" ]; then
+            log "The following services were added: $ADDED_SERVICES"
+        fi
     fi
 
     # Health checks for critical services
-    CRITICAL_SERVICES="nginx-proxy-manager adguardhome homeassistant"
+    CRITICAL_SERVICES="traefik adguardhome homeassistant"
 
     if ! check_critical_services $CRITICAL_SERVICES; then
         error "Some services failed health checks, rolling back"

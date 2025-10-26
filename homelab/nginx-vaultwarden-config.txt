@@ -1,9 +1,16 @@
 ==========================================================================
-NGINX PROXY MANAGER - VAULTWARDEN SSL CONFIGURATION
+[DEPRECATED] NGINX PROXY MANAGER - VAULTWARDEN SSL CONFIGURATION
 ==========================================================================
 
-This file contains the Nginx Proxy Manager configuration for Vaultwarden
-with SSL, WebSocket support, and security hardening.
+⚠️ NOTE: We have migrated from Nginx Proxy Manager to Traefik!
+For the current configuration, see: traefik-vaultwarden-config.txt
+
+This file is kept for reference and rollback purposes only.
+
+--------------------------------------------------------------------------
+
+Original NPM configuration for Vaultwarden with SSL, WebSocket support,
+and security hardening.
 
 --------------------------------------------------------------------------
 STEP 1: ADD PROXY HOST IN NPM

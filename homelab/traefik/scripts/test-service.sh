@@ -1,16 +1,24 @@
 #!/bin/bash
-
 # Script to test if a service is accessible through Traefik
 # Usage: ./test-service.sh service-name.local
 
 set -e
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+# Get script directory and try to source common utilities if available
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+COMMON_UTILS="$SCRIPT_DIR/../../scripts/common-utils.sh"
+
+# Source common utilities if available, otherwise define colors locally
+if [ -f "$COMMON_UTILS" ]; then
+    source "$COMMON_UTILS"
+else
+    # Fallback color definitions if common-utils.sh is not available
+    RED='\033[0;31m'
+    GREEN='\033[0;32m'
+    YELLOW='\033[1;33m'
+    BLUE='\033[0;34m'
+    NC='\033[0m' # No Color
+fi
 
 if [ -z "$1" ]; then
     echo "Usage: $0 domain"
