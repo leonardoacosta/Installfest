@@ -59,7 +59,7 @@ pages:
             title: Core Infrastructure
             columns: 3
             widgets:
-              - type: link
+              - type: bookmark
                 title: Home Assistant
                 url: http://homeassistant.local:8123
                 description: Smart Home Hub
@@ -67,7 +67,7 @@ pages:
                 same-tab: false
                 hide-arrow: false
 
-              - type: link
+              - type: bookmark
                 title: AdGuard Home
                 url: http://adguard.local:82
                 description: DNS Ad Blocker
@@ -75,7 +75,7 @@ pages:
                 same-tab: false
                 hide-arrow: false
 
-              - type: link
+              - type: bookmark
                 title: Traefik
                 url: http://traefik.local:8080
                 description: Reverse Proxy & Load Balancer
@@ -88,7 +88,7 @@ pages:
             title: AI & Knowledge
             columns: 2
             widgets:
-              - type: link
+              - type: bookmark
                 title: Ollama WebUI
                 url: http://ollama.local:8081
                 description: Local LLM Interface
@@ -96,7 +96,7 @@ pages:
                 same-tab: false
                 hide-arrow: false
 
-              - type: link
+              - type: bookmark
                 title: Ollama API
                 url: http://ollama.local:11434
                 description: LLM API Server
@@ -109,7 +109,7 @@ pages:
             title: Media Services
             columns: 2
             widgets:
-              - type: link
+              - type: bookmark
                 title: Jellyfin
                 url: http://jellyfin.local:8096
                 description: Media Streaming Server
@@ -117,7 +117,7 @@ pages:
                 same-tab: false
                 hide-arrow: false
 
-              - type: link
+              - type: bookmark
                 title: Jellyseerr
                 url: http://jellyseerr.local:5055
                 description: Media Request Management
@@ -130,7 +130,7 @@ pages:
             title: Security & VPN
             columns: 2
             widgets:
-              - type: link
+              - type: bookmark
                 title: Vaultwarden
                 url: http://vaultwarden.local:8222
                 description: Password Manager
@@ -138,7 +138,7 @@ pages:
                 same-tab: false
                 hide-arrow: false
 
-              - type: link
+              - type: bookmark
                 title: Tailscale Admin
                 url: https://login.tailscale.com/admin
                 description: Mesh VPN Management
@@ -167,35 +167,35 @@ pages:
             title: Media Automation
             columns: 1
             widgets:
-              - type: link
+              - type: bookmark
                 title: Radarr
                 url: http://radarr.local:7878
                 description: Movie Management
                 icon: si:radarr
                 same-tab: false
 
-              - type: link
+              - type: bookmark
                 title: Sonarr
                 url: http://sonarr.local:8989
                 description: TV Show Management
                 icon: si:sonarr
                 same-tab: false
 
-              - type: link
+              - type: bookmark
                 title: Prowlarr
                 url: http://prowlarr.local:9696
                 description: Indexer Management
                 icon: si:prowlarr
                 same-tab: false
 
-              - type: link
+              - type: bookmark
                 title: Bazarr
                 url: http://bazarr.local:6767
                 description: Subtitle Management
                 icon: si:bazarr
                 same-tab: false
 
-              - type: link
+              - type: bookmark
                 title: qBittorrent
                 url: http://qbittorrent.local:8080
                 description: Download Client
@@ -270,21 +270,21 @@ pages:
             title: Media Library
             columns: 3
             widgets:
-              - type: link
+              - type: bookmark
                 title: Movies
                 url: http://radarr.local:7878
                 description: Managed by Radarr
                 icon: si:radarr
                 same-tab: false
 
-              - type: link
+              - type: bookmark
                 title: TV Shows
                 url: http://sonarr.local:8989
                 description: Managed by Sonarr
                 icon: si:sonarr
                 same-tab: false
 
-              - type: link
+              - type: bookmark
                 title: Music
                 url: http://lidarr.local:8686
                 description: Managed by Lidarr
