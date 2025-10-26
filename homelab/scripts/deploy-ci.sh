@@ -76,8 +76,11 @@ main() {
     mkdir -p jellyfin/config jellyfin/cache
     chown -R $PUID:$PGID jellyfin/ 2>/dev/null || true
 
-    # Vaultwarden directory
+    # Vaultwarden directory with database file
     mkdir -p vaultwarden
+    if [ ! -f vaultwarden/db.sqlite3 ]; then
+        touch vaultwarden/db.sqlite3
+    fi
     chown -R $PUID:$PGID vaultwarden/ 2>/dev/null || true
 
     # Traefik directories
