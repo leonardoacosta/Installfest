@@ -194,7 +194,7 @@ pages:
       - size: full
         widgets:
           # Docker Container Management
-          - type: docker
+          - type: docker-containers
             title: All Containers
             show-header: true
             show-status: true
