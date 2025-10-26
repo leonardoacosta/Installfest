@@ -57,6 +57,15 @@ main() {
         exit $?
     fi
 
+    # Check if we can use sudo without password
+    CAN_SUDO=false
+    if sudo -n true 2>/dev/null; then
+        CAN_SUDO=true
+        log "Passwordless sudo available"
+    else
+        log "Sudo requires password or not available - attempting without sudo"
+    fi
+
     # Pre-create critical directories to avoid permission issues during copy
     log "Pre-creating service directories in deployment path"
     for dir in homeassistant/config glance/assets traefik/letsencrypt traefik/config \
@@ -64,18 +73,37 @@ main() {
                ollama ollama-webui radarr sonarr lidarr prowlarr bazarr \
                qbittorrent jellyseerr nzbget scripts traefik/dynamic; do
         if [ ! -d "$DEPLOY_PATH/$dir" ]; then
-            mkdir -p "$DEPLOY_PATH/$dir" 2>/dev/null || sudo mkdir -p "$DEPLOY_PATH/$dir" || {
-                warning "Could not create directory: $DEPLOY_PATH/$dir"
-            }
+            if [ -w "$DEPLOY_PATH" ] || [ -w "$(dirname "$DEPLOY_PATH/$dir")" ]; then
+                # We have write permission, create without sudo
+                mkdir -p "$DEPLOY_PATH/$dir" 2>/dev/null || {
+                    warning "Could not create directory: $DEPLOY_PATH/$dir"
+                }
+            elif [ "$CAN_SUDO" = true ]; then
+                # Try with sudo if available
+                sudo mkdir -p "$DEPLOY_PATH/$dir" || {
+                    warning "Could not create directory with sudo: $DEPLOY_PATH/$dir"
+                }
+            else
+                error "Cannot create directory: $DEPLOY_PATH/$dir"
+                error "Please run: sudo bash $DEPLOY_PATH/scripts/setup-runner-permissions.sh"
+                exit 1
+            fi
         fi
     done
 
     # Fix ownership of deployment directory before copying
     if [ ! -w "$DEPLOY_PATH" ]; then
-        log "Fixing ownership of deployment directory"
-        sudo chown -R $(whoami):$(whoami) "$DEPLOY_PATH" 2>/dev/null || {
-            warning "Could not change ownership - will use sudo for copy"
-        }
+        if [ "$CAN_SUDO" = true ]; then
+            log "Attempting to fix ownership of deployment directory"
+            sudo chown -R $(whoami):$(whoami) "$DEPLOY_PATH" 2>/dev/null || {
+                warning "Could not change ownership - will attempt copy anyway"
+            }
+        else
+            error "No write permission to $DEPLOY_PATH and sudo not available"
+            error "Please run on the server as root:"
+            error "  sudo bash $DEPLOY_PATH/scripts/setup-runner-permissions.sh"
+            exit 1
+        fi
     fi
 
     # Copy configurations from GitHub workspace BEFORE cd
@@ -93,22 +121,33 @@ main() {
                     error "Rsync failed"
                     exit 1
                 }
-            else
+            elif [ "$CAN_SUDO" = true ]; then
                 sudo rsync -av --no-perms --no-owner --no-group "$WORKSPACE_HOMELAB"/ "$DEPLOY_PATH"/ || {
                     error "Rsync with sudo failed"
                     exit 1
                 }
+            else
+                error "No write permission to $DEPLOY_PATH and sudo not available"
+                error "Cannot copy files. Please fix permissions first."
+                exit 1
             fi
         else
             log "Using cp for file transfer (rsync not available)"
             if [ -w "$DEPLOY_PATH" ]; then
-                cp -r "$WORKSPACE_HOMELAB"/* "$DEPLOY_PATH"/
-            else
-                log "Using sudo to copy files"
-                sudo cp -r "$WORKSPACE_HOMELAB"/* "$DEPLOY_PATH"/ || {
-                    error "Failed to copy files even with sudo"
+                cp -r "$WORKSPACE_HOMELAB"/* "$DEPLOY_PATH"/ || {
+                    error "Copy failed"
                     exit 1
                 }
+            elif [ "$CAN_SUDO" = true ]; then
+                log "Using sudo to copy files"
+                sudo cp -r "$WORKSPACE_HOMELAB"/* "$DEPLOY_PATH"/ || {
+                    error "Failed to copy files with sudo"
+                    exit 1
+                }
+            else
+                error "No write permission to $DEPLOY_PATH and sudo not available"
+                error "Cannot copy files. Please fix permissions first."
+                exit 1
             fi
         fi
         log "Files copied successfully"
