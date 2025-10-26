@@ -302,6 +302,7 @@ services:
       - JELLYFIN_PublishedServerUrl=${JELLYFIN_URL:-http://jellyfin.local}
     volumes:
       - ./jellyfin/config:/config
+      - ./jellyfin/config/logs:/logs
       - ./jellyfin/cache:/cache
       - ${MEDIA_PATH:-/data/media}:/media:ro
       - ${MEDIA_PATH2:-/data/media2}:/media2:ro

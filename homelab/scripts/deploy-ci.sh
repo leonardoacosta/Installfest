@@ -73,7 +73,7 @@ main() {
     chown -R $PUID:$PGID glance/ 2>/dev/null || true
 
     # Jellyfin directories with proper permissions
-    mkdir -p jellyfin/config jellyfin/cache jellyfin/config/logs 
+    mkdir -p jellyfin/config jellyfin/cache
     chown -R $PUID:$PGID jellyfin/ 2>/dev/null || true
 
     # Vaultwarden directory
