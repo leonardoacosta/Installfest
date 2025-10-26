@@ -58,6 +58,52 @@ main() {
 
     cd "$DEPLOY_PATH"
 
+    # Ensure service directories exist with proper permissions
+    log "Creating necessary service directories"
+
+    # Get PUID and PGID from .env file or use defaults
+    if [ -f .env ]; then
+        source .env
+    fi
+    PUID="${PUID:-501}"
+    PGID="${PGID:-20}"
+
+    # Glance assets directory
+    mkdir -p glance/assets
+    chown -R $PUID:$PGID glance/ 2>/dev/null || true
+
+    # Jellyfin directories with proper permissions
+    mkdir -p jellyfin/config jellyfin/cache
+    chown -R $PUID:$PGID jellyfin/ 2>/dev/null || true
+
+    # Vaultwarden directory
+    mkdir -p vaultwarden
+    chown -R $PUID:$PGID vaultwarden/ 2>/dev/null || true
+
+    # Traefik directories
+    mkdir -p traefik/letsencrypt traefik/config
+    chown -R $PUID:$PGID traefik/ 2>/dev/null || true
+    chown -R $PUID:$PGID traefik/letsencrypt/ 2>/dev/null || true
+    chown -R $PUID:$PGID traefik/config/ 2>/dev/null || true
+
+    # Media stack directories
+    mkdir -p radarr sonarr lidarr prowlarr bazarr qbittorrent jellyseerr
+    for dir in radarr sonarr lidarr prowlarr bazarr qbittorrent jellyseerr; do
+        chown -R $PUID:$PGID $dir/ 2>/dev/null || true
+    done
+
+    # AdGuard Home directories
+    mkdir -p adguardhome/work adguardhome/conf
+
+    # Home Assistant directory
+    mkdir -p homeassistant
+    chown -R $PUID:$PGID homeassistant/ 2>/dev/null || true
+
+    # Ollama directories
+    mkdir -p ollama ollama-webui
+
+    log "Service directories created successfully"
+
     # Create backup before deployment
     create_backup
 

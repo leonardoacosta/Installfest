@@ -9,9 +9,9 @@ global:
 
 # API and Dashboard
 api:
-  dashboard: true  # Enable the Traefik dashboard
-  debug: false     # Set to true for debugging
-  insecure: false  # Never expose dashboard without authentication
+  dashboard: true # Enable the Traefik dashboard
+  debug: false # Set to true for debugging
+  insecure: false # Never expose dashboard without authentication
 
 # Entry Points - Define ports and protocols
 entryPoints:
@@ -28,8 +28,8 @@ entryPoints:
     # Trusted IPs for X-Forwarded headers (both Docker networks)
     forwardedHeaders:
       trustedIPs:
-        - "172.20.0.0/16"  # homelab network
-        - "172.21.0.0/16"  # media network
+        - "172.20.0.0/16" # homelab network
+        - "172.21.0.0/16" # media network
         - "127.0.0.1/32"
         - "10.0.0.0/8"
 
@@ -44,7 +44,7 @@ entryPoints:
             sans:
               - "*.yourdomain.com"
       middlewares:
-        - security-headers@file  # Apply security headers globally
+        - security-headers@file # Apply security headers globally
     forwardedHeaders:
       trustedIPs:
         - "172.20.0.0/16"
@@ -60,7 +60,7 @@ entryPoints:
 certificatesResolvers:
   letsencrypt:
     acme:
-      email: "your-email@example.com"  # Change to your email
+      email: "your-email@example.com" # Change to your email
       storage: "/letsencrypt/acme.json"
       # Use HTTP-01 challenge (recommended for most homelab setups)
       httpChallenge:
@@ -78,33 +78,33 @@ providers:
   # Docker provider - reads labels from Docker containers
   docker:
     endpoint: "unix:///var/run/docker.sock"
-    exposedByDefault: false  # Only expose containers with traefik.enable=true
-    network: "homelab"       # Default network to use
-    watch: true              # Watch for Docker events in real-time
+    exposedByDefault: false # Only expose containers with traefik.enable=true
+    network: "homelab" # Default network to use
+    watch: true # Watch for Docker events in real-time
     # Constraints to filter which containers Traefik should manage
     # constraints: "Label(`traefik.enable`,`true`)"
 
   # File provider - for dynamic configuration files
   file:
     directory: "/etc/traefik/dynamic"
-    watch: true  # Automatically reload on file changes
+    watch: true # Automatically reload on file changes
 
 # Logging Configuration
 log:
-  level: "INFO"  # DEBUG, INFO, WARN, ERROR, FATAL, PANIC
+  level: "INFO" # DEBUG, INFO, WARN, ERROR, FATAL, PANIC
   filePath: "/var/log/traefik/traefik.log"
-  format: "common"  # common or json
+  format: "common" # common or json
   # Enable for detailed logs
   # level: "DEBUG"
 
 # Access Logs - HTTP request logs
 accessLog:
   filePath: "/var/log/traefik/access.log"
-  format: "common"  # common or json
+  format: "common" # common or json
   bufferingSize: 100
   filters:
     statusCodes:
-      - "400-599"  # Only log errors (remove to log all requests)
+      - "400-599" # Only log errors (remove to log all requests)
     retryAttempts: true
     minDuration: "10ms"
 
@@ -128,14 +128,13 @@ metrics:
 
 # ServersTransport - Global transport configuration
 serversTransport:
-  insecureSkipVerify: false  # Set to true if you have self-signed certificates
+  insecureSkipVerify: false # Set to true if you have self-signed certificates
   maxIdleConnsPerHost: 200
   forwardingTimeouts:
     dialTimeout: "30s"
     responseHeaderTimeout: "30s"
     idleConnTimeout: "90s"
-
 # Experimental Features (Traefik v3)
-experimental:
-  plugins: {}
-  # localPlugins: {}
+# experimental:
+# plugins: {}
+# localPlugins: {}
