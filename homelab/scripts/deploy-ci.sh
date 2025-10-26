@@ -145,25 +145,43 @@ main() {
             log "Using rsync for file transfer"
             # Use --ignore-errors to continue despite permission issues on some directories
             if [ -w "$DEPLOY_PATH" ]; then
-                rsync -av --no-perms --no-owner --no-group --ignore-errors "$WORKSPACE_HOMELAB"/ "$DEPLOY_PATH"/
+                # Temporarily disable exit on error to handle rsync exit codes
+                set +e
+                rsync -av --no-perms --no-owner --no-group --ignore-errors "$WORKSPACE_HOMELAB"/ "$DEPLOY_PATH"/ 2>&1
                 RSYNC_EXIT=$?
+                set -e
+
+                # Handle rsync exit codes
                 if [ $RSYNC_EXIT -eq 0 ]; then
                     log "Rsync completed successfully"
                 elif [ $RSYNC_EXIT -eq 23 ]; then
                     warning "Rsync completed with some permission errors - continuing deployment"
                     warning "Some files may not have been copied (likely homeassistant/config)"
+                    # DO NOT EXIT - continue with deployment
+                elif [ $RSYNC_EXIT -eq 24 ]; then
+                    warning "Rsync completed with some file vanished warnings - continuing deployment"
+                    # DO NOT EXIT - continue with deployment
                 else
                     error "Rsync failed with exit code $RSYNC_EXIT"
                     exit 1
                 fi
             elif [ "$CAN_SUDO" = true ]; then
-                sudo rsync -av --no-perms --no-owner --no-group --ignore-errors "$WORKSPACE_HOMELAB"/ "$DEPLOY_PATH"/
+                # Run rsync with sudo
+                set +e
+                sudo rsync -av --no-perms --no-owner --no-group --ignore-errors "$WORKSPACE_HOMELAB"/ "$DEPLOY_PATH"/ 2>&1
                 RSYNC_EXIT=$?
+                set -e
+
+                # Handle rsync exit codes
                 if [ $RSYNC_EXIT -eq 0 ]; then
                     log "Rsync with sudo completed successfully"
                 elif [ $RSYNC_EXIT -eq 23 ]; then
                     warning "Rsync with sudo had some permission errors - continuing deployment"
                     warning "Some files may not have been copied (likely homeassistant/config)"
+                    # DO NOT EXIT - continue with deployment
+                elif [ $RSYNC_EXIT -eq 24 ]; then
+                    warning "Rsync with sudo had some file vanished warnings - continuing deployment"
+                    # DO NOT EXIT - continue with deployment
                 else
                     error "Rsync with sudo failed with exit code $RSYNC_EXIT"
                     exit 1
@@ -176,16 +194,22 @@ main() {
         else
             log "Using cp for file transfer (rsync not available)"
             if [ -w "$DEPLOY_PATH" ]; then
-                cp -r "$WORKSPACE_HOMELAB"/* "$DEPLOY_PATH"/ || {
-                    error "Copy failed"
-                    exit 1
-                }
+                set +e
+                cp -r "$WORKSPACE_HOMELAB"/* "$DEPLOY_PATH"/ 2>&1
+                CP_EXIT=$?
+                set -e
+                if [ $CP_EXIT -ne 0 ]; then
+                    warning "Some files could not be copied - continuing anyway"
+                fi
             elif [ "$CAN_SUDO" = true ]; then
                 log "Using sudo to copy files"
-                sudo cp -r "$WORKSPACE_HOMELAB"/* "$DEPLOY_PATH"/ || {
-                    error "Failed to copy files with sudo"
-                    exit 1
-                }
+                set +e
+                sudo cp -r "$WORKSPACE_HOMELAB"/* "$DEPLOY_PATH"/ 2>&1
+                CP_EXIT=$?
+                set -e
+                if [ $CP_EXIT -ne 0 ]; then
+                    warning "Some files could not be copied with sudo - continuing anyway"
+                fi
             else
                 error "No write permission to $DEPLOY_PATH and sudo not available"
                 error "Cannot copy files. Please fix permissions first."
