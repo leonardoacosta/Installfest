@@ -13,9 +13,7 @@ logs
 logs/
 
 # Service Configuration Directories (contain sensitive data)
-homeassistant/
 adguardhome/
-jellyfin/
 tailscale/state/
 radarr/
 sonarr/
