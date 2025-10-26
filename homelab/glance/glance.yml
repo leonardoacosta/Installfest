@@ -34,22 +34,22 @@ pages:
             cache: 1m
             sites:
               - title: Home Assistant
-                url: http://172.20.0.123:8123
+                url: http://192.168.1.14:8123
                 icon: si:homeassistant
               - title: Jellyfin
-                url: http://172.20.0.96:8096
+                url: http://192.168.1.14:8096
                 icon: si:jellyfin
               - title: AdGuard Home
-                url: http://172.20.0.53:82
+                url: http://192.168.1.14:82
                 icon: si:adguard
               - title: Traefik
-                url: http://172.20.0.81:8080/api/overview
+                url: http://192.168.1.14:8080/api/overview
                 icon: si:traefik
               - title: Vaultwarden
-                url: http://172.20.0.22:80/alive
+                url: http://192.168.1.14:80/alive
                 icon: si:bitwarden
               - title: Ollama
-                url: http://172.20.0.11:11434/api/tags
+                url: http://192.168.1.14:11434/api/tags
                 icon: si:ollama
 
       - size: full
@@ -60,19 +60,19 @@ pages:
             groups:
               - links:
                   - title: Home Assistant
-                    url: http://homeassistant.local:8123
+                    url: http://192.168.1.14:8123
                     description: Smart Home Hub
                     icon: si:homeassistant
                     same-tab: false
                     hide-arrow: false
                   - title: AdGuard Home
-                    url: http://adguard.local:82
+                    url: http://192.168.1.14:82
                     description: DNS Ad Blocker
                     icon: si:adguard
                     same-tab: false
                     hide-arrow: false
                   - title: Traefik
-                    url: http://traefik.local:8080
+                    url: http://192.168.1.14:8080
                     description: Reverse Proxy & Load Balancer
                     icon: si:traefik
                     same-tab: false
@@ -84,13 +84,13 @@ pages:
             groups:
               - links:
                   - title: Ollama WebUI
-                    url: http://ollama.local:8081
+                    url: http://192.168.1.14:8081
                     description: Local LLM Interface
                     icon: si:ollama
                     same-tab: false
                     hide-arrow: false
                   - title: Ollama API
-                    url: http://ollama.local:11434
+                    url: http://192.168.1.14:11434
                     description: LLM API Server
                     icon: si:ollama
                     same-tab: false
@@ -102,13 +102,13 @@ pages:
             groups:
               - links:
                   - title: Jellyfin
-                    url: http://jellyfin.local:8096
+                    url: http://192.168.1.14:8096
                     description: Media Streaming Server
                     icon: si:jellyfin
                     same-tab: false
                     hide-arrow: false
                   - title: Jellyseerr
-                    url: http://jellyseerr.local:5055
+                    url: http://192.168.1.14:5055
                     description: Media Request Management
                     icon: si:jellyfin
                     same-tab: false
@@ -120,7 +120,7 @@ pages:
             groups:
               - links:
                   - title: Vaultwarden
-                    url: http://vaultwarden.local:8222
+                    url: http://192.168.1.14:8222
                     description: Password Manager
                     icon: si:bitwarden
                     same-tab: false
@@ -166,27 +166,27 @@ pages:
             groups:
               - links:
                   - title: Radarr
-                    url: http://radarr.local:7878
+                    url: http://192.168.1.14:7878
                     description: Movie Management
                     icon: si:radarr
                     same-tab: false
                   - title: Sonarr
-                    url: http://sonarr.local:8989
+                    url: http://192.168.1.14:8989
                     description: TV Show Management
                     icon: si:sonarr
                     same-tab: false
                   - title: Prowlarr
-                    url: http://prowlarr.local:9696
+                    url: http://192.168.1.14:9696
                     description: Indexer Management
                     icon: si:prowlarr
                     same-tab: false
                   - title: Bazarr
-                    url: http://bazarr.local:6767
+                    url: http://192.168.1.14:6767
                     description: Subtitle Management
                     icon: si:bazarr
                     same-tab: false
                   - title: qBittorrent
-                    url: http://qbittorrent.local:8080
+                    url: http://192.168.1.14:8080
                     description: Download Client
                     icon: si:qbittorrent
                     same-tab: false
@@ -296,17 +296,17 @@ pages:
             groups:
               - links:
                   - title: Movies
-                    url: http://radarr.local:7878
+                    url: http://192.168.1.14:7878
                     description: Managed by Radarr
                     icon: si:radarr
                     same-tab: false
                   - title: TV Shows
-                    url: http://sonarr.local:8989
+                    url: http://192.168.1.14:8989
                     description: Managed by Sonarr
                     icon: si:sonarr
                     same-tab: false
                   - title: Music
-                    url: http://lidarr.local:8686
+                    url: http://192.168.1.14:8686
                     description: Managed by Lidarr
                     icon: si:lidarr
                     same-tab: false
@@ -317,14 +317,14 @@ pages:
             cache: 1m
             sites:
               - title: qBittorrent
-                url: http://172.21.0.2:8080
+                url: http://192.168.1.14:8080
                 icon: si:qbittorrent
               - title: Prowlarr
-                url: http://172.21.0.2:9696
+                url: http://192.168.1.14:9696
                 icon: si:prowlarr
               - title: NZBGet
-                url: http://172.21.0.2:6789
+                url: http://192.168.1.14:6789
                 icon: si:nzbget
               - title: VPN Status
-                url: http://172.21.0.2:8000/v1/publicip
+                url: http://192.168.1.14:8000/v1/publicip
                 icon: si:wireguard
