@@ -78,10 +78,11 @@ main() {
 
     # Vaultwarden directory with database file
     mkdir -p vaultwarden
+    chown -R $PUID:$PGID vaultwarden/ 2>/dev/null || true
     if [ ! -f vaultwarden/db.sqlite3 ]; then
         touch vaultwarden/db.sqlite3
     fi
-    chown -R $PUID:$PGID vaultwarden/ 2>/dev/null || true
+    chown $PUID:$PGID vaultwarden/db.sqlite3 2>/dev/null || true
 
     # Traefik directories
     mkdir -p traefik/letsencrypt traefik/config
