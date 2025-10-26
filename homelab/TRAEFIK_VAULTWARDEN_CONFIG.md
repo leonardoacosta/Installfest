@@ -1,23 +1,37 @@
-==========================================================================
-TRAEFIK - VAULTWARDEN SSL CONFIGURATION
-==========================================================================
+# Traefik - Vaultwarden SSL Configuration
 
-This file contains the Traefik configuration for Vaultwarden with SSL,
-WebSocket support, and security hardening.
+> Complete configuration guide for Vaultwarden with SSL, WebSocket support, and security hardening using Traefik reverse proxy.
 
-NOTE: We've switched from Nginx Proxy Manager to Traefik for better
-container-native configuration and dynamic service discovery.
+## Table of Contents
+- [Overview](#overview)
+- [Configuration Method](#configuration-method)
+- [Docker Compose Configuration](#docker-compose-configuration)
+- [Traefik Static Configuration](#traefik-static-configuration)
+- [Key Differences from Nginx Proxy Manager](#key-differences-from-nginx-proxy-manager)
+- [Environment Variables](#environment-variables)
+- [Deployment](#deployment)
+- [Testing & Troubleshooting](#testing--troubleshooting)
+- [Security Best Practices](#security-best-practices)
+- [Migration from NPM](#migration-from-npm)
 
---------------------------------------------------------------------------
-CONFIGURATION METHOD: DOCKER LABELS
---------------------------------------------------------------------------
+## Overview
 
-Traefik uses Docker labels on the Vaultwarden container for configuration.
-This means all proxy settings are defined in docker-compose.yml.
+This configuration provides:
+- ✅ Automatic SSL/TLS certificates via Let's Encrypt
+- ✅ WebSocket support for real-time sync
+- ✅ Security headers and rate limiting
+- ✅ Container-native configuration via Docker labels
+- ✅ Dynamic service discovery
 
---------------------------------------------------------------------------
-VAULTWARDEN SERVICE IN DOCKER-COMPOSE.YML
---------------------------------------------------------------------------
+> **Note**: We've switched from Nginx Proxy Manager to Traefik for better container-native configuration and dynamic service discovery.
+
+## Configuration Method
+
+Traefik uses **Docker labels** on the Vaultwarden container for configuration. All proxy settings are defined directly in `docker-compose.yml`.
+
+## Docker Compose Configuration
+
+### Vaultwarden Service
 
 ```yaml
 vaultwarden:
@@ -90,11 +104,9 @@ vaultwarden:
     - "traefik.http.routers.vaultwarden-http.middlewares=redirect-to-https"
 ```
 
---------------------------------------------------------------------------
-TRAEFIK CONFIGURATION (STATIC)
---------------------------------------------------------------------------
+## Traefik Static Configuration
 
-Ensure your Traefik service has these configurations:
+### Traefik Service
 
 ```yaml
 traefik:
@@ -139,35 +151,19 @@ traefik:
     - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
 ```
 
---------------------------------------------------------------------------
-KEY DIFFERENCES FROM NGINX PROXY MANAGER
---------------------------------------------------------------------------
+## Key Differences from Nginx Proxy Manager
 
-1. **Configuration Location**
-   - NPM: Web UI configuration
-   - Traefik: Docker labels in docker-compose.yml
+| Feature | Nginx Proxy Manager | Traefik |
+|---------|-------------------|---------|
+| **Configuration Location** | Web UI | Docker labels in docker-compose.yml |
+| **SSL Certificates** | Managed through UI | Automatic via Let's Encrypt resolver |
+| **WebSocket Support** | Checkbox in UI | Separate router for WebSocket path |
+| **Security Headers** | Advanced tab custom config | Middleware labels |
+| **Rate Limiting** | nginx limit_req directives | RateLimit middleware |
 
-2. **SSL Certificates**
-   - NPM: Managed through UI
-   - Traefik: Automatic via Let's Encrypt resolver
+## Environment Variables
 
-3. **WebSocket Support**
-   - NPM: Checkbox in UI
-   - Traefik: Separate router for WebSocket path
-
-4. **Security Headers**
-   - NPM: Advanced tab custom config
-   - Traefik: Middleware labels
-
-5. **Rate Limiting**
-   - NPM: nginx limit_req directives
-   - Traefik: RateLimit middleware
-
---------------------------------------------------------------------------
-ENVIRONMENT VARIABLES (.env)
---------------------------------------------------------------------------
-
-Required variables for Traefik + Vaultwarden:
+### Required `.env` Configuration
 
 ```bash
 # Domain configuration
@@ -185,11 +181,12 @@ VAULTWARDEN_SMTP_USERNAME=your-email@example.com
 VAULTWARDEN_SMTP_PASSWORD=your-app-password
 ```
 
---------------------------------------------------------------------------
-DEPLOYMENT STEPS
---------------------------------------------------------------------------
+## Deployment
+
+### Step-by-Step Deployment
 
 1. **Update .env file** with your domain and configuration
+
 2. **Deploy services**:
    ```bash
    cd /path/to/homelab
@@ -210,9 +207,9 @@ DEPLOYMENT STEPS
    curl -I https://vault.yourdomain.com
    ```
 
---------------------------------------------------------------------------
-TESTING WEBSOCKET CONNECTION
---------------------------------------------------------------------------
+## Testing & Troubleshooting
+
+### Testing WebSocket Connection
 
 1. Open browser developer tools (F12)
 2. Go to Network tab
@@ -221,11 +218,10 @@ TESTING WEBSOCKET CONNECTION
 5. Should see WebSocket connection to `wss://vault.yourdomain.com/notifications/hub`
 6. Status should be "101 Switching Protocols"
 
---------------------------------------------------------------------------
-TROUBLESHOOTING
---------------------------------------------------------------------------
+### Common Issues
 
-**Issue: Certificate not generating**
+#### Certificate not generating
+
 ```bash
 # Check Traefik logs
 docker logs traefik | grep -i acme
@@ -237,7 +233,8 @@ dig vault.yourdomain.com
 ls -la ./traefik/letsencrypt/acme.json
 ```
 
-**Issue: WebSocket not connecting**
+#### WebSocket not connecting
+
 ```bash
 # Test WebSocket endpoint
 curl -i -N \
@@ -249,7 +246,8 @@ curl -i -N \
 docker exec traefik wget -O- http://localhost:8080/api/http/routers | grep vaultwarden
 ```
 
-**Issue: 502 Bad Gateway**
+#### 502 Bad Gateway
+
 ```bash
 # Verify Vaultwarden is running
 docker ps | grep vaultwarden
@@ -261,23 +259,25 @@ docker exec traefik ping vaultwarden
 docker network inspect homelab | grep vaultwarden
 ```
 
-**Issue: Rate limiting too strict**
+#### Rate limiting too strict
+
 Adjust these labels:
 ```yaml
 - "traefik.http.middlewares.vaultwarden-ratelimit.ratelimit.average=100"
 - "traefik.http.middlewares.vaultwarden-ratelimit.ratelimit.burst=50"
 ```
 
---------------------------------------------------------------------------
-TRAEFIK DASHBOARD ACCESS
---------------------------------------------------------------------------
+## Traefik Dashboard
 
-Access Traefik dashboard for monitoring:
-- URL: http://YOUR_SERVER_IP:8080
+### Access Dashboard
+
+- **URL**: `http://YOUR_SERVER_IP:8080`
 - Shows all routers, services, and middlewares
 - Real-time view of routing rules
 
-To secure the dashboard, add authentication:
+### Secure the Dashboard
+
+Add authentication:
 ```yaml
 labels:
   - "traefik.http.routers.traefik.rule=Host(`traefik.${DOMAIN}`)"
@@ -291,9 +291,44 @@ Generate password hash:
 htpasswd -nB admin | sed -e 's/\$/\$\$/g'
 ```
 
---------------------------------------------------------------------------
-ADVANTAGES OF TRAEFIK OVER NPM
---------------------------------------------------------------------------
+## Security Best Practices
+
+### 1. Hide Version Headers
+```yaml
+- "traefik.http.middlewares.security.headers.customResponseHeaders.Server="
+```
+
+### 2. IP Whitelisting for Admin
+```yaml
+- "traefik.http.middlewares.admin-whitelist.ipwhitelist.sourcerange=192.168.1.0/24,10.0.0.0/8"
+```
+
+### 3. GeoIP Blocking
+```yaml
+- "traefik.http.middlewares.geoblock.plugin.geoblock.allowedCountries=US,CA"
+```
+
+### 4. Request Size Limits
+```yaml
+- "traefik.http.middlewares.limit.buffering.maxRequestBodyBytes=525000000"  # 525MB for Vaultwarden
+```
+
+## Migration from NPM
+
+### Migration Checklist
+
+- [ ] Export NPM proxy host configurations for reference
+- [ ] Update docker-compose.yml with Traefik labels
+- [ ] Update .env with DOMAIN and ACME_EMAIL
+- [ ] Stop NPM: `docker-compose stop nginx-proxy-manager`
+- [ ] Start Traefik: `docker-compose up -d traefik`
+- [ ] Update DNS records if needed (point to Traefik)
+- [ ] Test each service through Traefik
+- [ ] Verify SSL certificates are issued
+- [ ] Test WebSocket connections
+- [ ] Remove NPM container when confirmed working
+
+## Advantages of Traefik over NPM
 
 1. **Container-Native**: Configuration via labels, no separate UI needed
 2. **Dynamic Updates**: Changes apply without restart
@@ -303,24 +338,7 @@ ADVANTAGES OF TRAEFIK OVER NPM
 6. **Metrics Built-in**: Prometheus metrics endpoint available
 7. **Multiple Providers**: Docker, File, Kubernetes, Consul, etc.
 
---------------------------------------------------------------------------
-MIGRATION CHECKLIST FROM NPM
---------------------------------------------------------------------------
-
-☐ Export NPM proxy host configurations for reference
-☐ Update docker-compose.yml with Traefik labels
-☐ Update .env with DOMAIN and ACME_EMAIL
-☐ Stop NPM: `docker-compose stop nginx-proxy-manager`
-☐ Start Traefik: `docker-compose up -d traefik`
-☐ Update DNS records if needed (point to Traefik)
-☐ Test each service through Traefik
-☐ Verify SSL certificates are issued
-☐ Test WebSocket connections
-☐ Remove NPM container when confirmed working
-
---------------------------------------------------------------------------
-BACKUP CONSIDERATIONS
---------------------------------------------------------------------------
+## Backup Considerations
 
 Important Traefik files to backup:
 ```bash
@@ -331,9 +349,26 @@ tar -czf traefik-backup-$(date +%Y%m%d).tar.gz \
   docker-compose.yml
 ```
 
---------------------------------------------------------------------------
-MONITORING WITH GLANCE
---------------------------------------------------------------------------
+## Local Development / Testing
+
+For local testing without real domain:
+
+1. **Use Traefik's self-signed certificate**:
+   ```yaml
+   - "--entrypoints.websecure.http.tls=true"
+   ```
+
+2. **Add to /etc/hosts**:
+   ```
+   127.0.0.1 vault.local
+   ```
+
+3. **Configure with `.local` domain**:
+   ```yaml
+   - "traefik.http.routers.vaultwarden.rule=Host(`vault.local`)"
+   ```
+
+## Monitoring with Glance
 
 Add Traefik monitoring to Glance dashboard:
 
@@ -350,56 +385,8 @@ Add Traefik monitoring to Glance dashboard:
     - middleware_count
 ```
 
---------------------------------------------------------------------------
-LOCAL DEVELOPMENT / TESTING
---------------------------------------------------------------------------
+## Additional Resources
 
-For local testing without real domain:
-
-1. Use Traefik's self-signed certificate:
-```yaml
-- "--entrypoints.websecure.http.tls=true"
-```
-
-2. Add to /etc/hosts:
-```
-127.0.0.1 vault.local
-```
-
-3. Configure with `.local` domain:
-```yaml
-- "traefik.http.routers.vaultwarden.rule=Host(`vault.local`)"
-```
-
---------------------------------------------------------------------------
-SECURITY BEST PRACTICES WITH TRAEFIK
---------------------------------------------------------------------------
-
-1. **Hide Version Headers**:
-```yaml
-- "traefik.http.middlewares.security.headers.customResponseHeaders.Server="
-```
-
-2. **IP Whitelisting for Admin**:
-```yaml
-- "traefik.http.middlewares.admin-whitelist.ipwhitelist.sourcerange=192.168.1.0/24,10.0.0.0/8"
-```
-
-3. **GeoIP Blocking**:
-```yaml
-- "traefik.http.middlewares.geoblock.plugin.geoblock.allowedCountries=US,CA"
-```
-
-4. **Request Size Limits**:
-```yaml
-- "traefik.http.middlewares.limit.buffering.maxRequestBodyBytes=525000000"  # 525MB for Vaultwarden
-```
-
-==========================================================================
-END OF TRAEFIK CONFIGURATION GUIDE
-==========================================================================
-
-For more information:
-- Traefik Documentation: https://doc.traefik.io/traefik/
-- Vaultwarden Wiki: https://github.com/dani-garcia/vaultwarden/wiki
-- Traefik + Docker: https://doc.traefik.io/traefik/providers/docker/
+- [Traefik Documentation](https://doc.traefik.io/traefik/)
+- [Vaultwarden Wiki](https://github.com/dani-garcia/vaultwarden/wiki)
+- [Traefik + Docker Guide](https://doc.traefik.io/traefik/providers/docker/)

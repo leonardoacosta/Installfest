@@ -104,7 +104,7 @@ services:
     volumes:
       - ./homeassistant:/config
       - /etc/localtime:/etc/localtime:ro
-      - ./nginx-proxy-manager/letsencrypt:/etc/letsencrypt:ro
+      # - ./nginx-proxy-manager/letsencrypt:/etc/letsencrypt:ro  # No longer using NPM
     ports:
       - "8123:8123"
     networks:

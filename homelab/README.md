@@ -1,47 +1,80 @@
 # Homelab Stack
 
-Complete Docker-based homelab management for Arch Linux with mandatory configuration wizard.
+Complete Docker-based homelab solution for remote server deployment with automated setup, Traefik reverse proxy, and comprehensive security hardening.
 
-## 📁 Structure
+> ⚠️ **SECURITY WARNING**: Default configuration exposes 27+ ports. **Must configure Traefik routes** before production deployment. See [Security Considerations](#-security-considerations) for critical hardening steps.
+
+## 📁 Project Structure
 
 ```
 homelab/
-├── homelab.sh             # Single management script (setup + management)
-├── docker-compose.yml     # Service definitions
-├── .env                   # Generated during setup (DO NOT CREATE MANUALLY)
-├── .setup_state          # Tracks setup progress
-└── [service directories]  # Auto-created during setup
+├── homelab.sh                 # Main management script
+├── docker-compose.yml         # Service definitions
+├── .env                       # Environment variables (auto-generated)
+├── .env.example              # Template for environment variables
+├── TRAEFIK_VAULTWARDEN_CONFIG.md  # Traefik configuration guide
+│
+├── scripts/                   # Utility scripts
+│   ├── common-utils.sh       # Shared functions for all scripts
+│   ├── deploy-ci.sh          # CI/CD deployment script
+│   ├── monitor-ci.sh         # Service monitoring script
+│   └── fix-permissions.sh    # Permission fixing utility
+│
+├── traefik/                   # Traefik configuration
+│   ├── traefik.yml           # Static configuration
+│   ├── dynamic/              # Dynamic configurations
+│   │   ├── middlewares.yml   # Security middlewares
+│   │   ├── tls.yml          # TLS configuration
+│   │   └── gluetun-routers.yml  # VPN service routes
+│   └── scripts/              # Traefik utilities
+│       └── test-service.sh   # Service connectivity test
+│
+├── glance/                    # Dashboard configuration
+│   ├── glance.yml           # Dashboard layout & widgets
+│   └── assets/              # Static assets
+│
+├── docs/                      # Documentation
+│   ├── SECURITY_AUDIT.md    # Security analysis
+│   ├── TRAEFIK_MIGRATION_GUIDE.md  # Migration from NPM
+│   └── [service guides]      # Service-specific docs
+│
+└── [service directories]      # Auto-created data directories
+    ├── vaultwarden/          # Password manager data
+    ├── jellyfin/             # Media server data
+    ├── homeassistant/        # Smart home config
+    └── ...                   # Other service data
 ```
 
-## 🚀 Getting Started
+## 🚀 Quick Start
 
-### First Run - Automatic Setup
+### Prerequisites
+
+- **Linux Server** (Ubuntu 22.04+, Debian 12+, or Arch)
+- **Docker** 24.0+ with Docker Compose v2
+- **Domain** pointed to server IP
+- **Ports** 80/443 accessible from internet
+
+### Installation
 
 ```bash
+# Clone repository
+git clone https://github.com/yourusername/homelab.git
+cd homelab
+
+# Run setup wizard
 ./homelab.sh
+
+# The script will:
+# 1. Install Docker & dependencies
+# 2. Configure all services (mandatory)
+# 3. Setup GitHub Actions runner
+# 4. Deploy services
+# 5. Configure SSH & Bluetooth
 ```
 
-**That's it!** The script will:
-1. ✅ Detect fresh installation and start setup wizard
-2. ✅ Install all prerequisites (Docker, git, GitHub CLI, etc.)
-3. ✅ Setup GitHub Actions runner for deployments
-4. ✅ Create directory structure
-5. ✅ **REQUIRE** all configurations (no skips allowed):
-   - System settings (timezone, domain)
-   - Service passwords (all mandatory, 8+ characters)
-   - VPN configuration (for secure media downloads)
-   - Email/SMTP (for password recovery)
-   - Tailscale auth (for remote access)
-   - Storage paths
-6. ✅ Deploy all services via Docker Compose
-7. ✅ Configure SSH and Bluetooth
-
-### After Setup - Management
-
-Once configured, run `./homelab.sh` for the management menu:
+## 🎯 Management Commands
 
 ```bash
-# Command line usage
 ./homelab.sh start              # Start all services
 ./homelab.sh start jellyfin     # Start specific service
 ./homelab.sh stop               # Stop all services
@@ -50,177 +83,322 @@ Once configured, run `./homelab.sh` for the management menu:
 ./homelab.sh logs [service]     # View logs
 ./homelab.sh urls               # Show service URLs
 ./homelab.sh update             # Update Docker images
-./homelab.sh deploy             # Deploy via GitHub Actions
 ./homelab.sh backup             # Backup configuration
 ./homelab.sh cleanup            # Clean Docker system
-./homelab.sh setup              # Re-run complete setup (WARNING: resets everything)
+./homelab.sh deploy             # Deploy via GitHub Actions
+./homelab.sh setup              # Re-run setup (⚠️ RESETS EVERYTHING)
 ```
 
-## 🔒 Mandatory Configuration
-
-**This homelab enforces complete configuration** - you cannot skip any step:
-
-### Required During Setup:
-- **System**: Timezone, domain name
-- **Passwords**: All service passwords (minimum 8 characters)
-- **VPN**: Provider credentials for secure media downloading
-- **Email**: SMTP configuration for password recovery
-- **Tailscale**: Auth key for mesh VPN access
-- **Storage**: Media and download paths
-
-### Why Mandatory?
-- **Security**: No default passwords allowed
-- **Reliability**: All services properly configured
-- **Integration**: Services can communicate correctly
-- **Recovery**: Email required for password resets
-
-## 🏠 Services Included
+## 🏠 Services
 
 ### Core Infrastructure
-- **Home Assistant** (8123) - Smart home automation
-- **AdGuard Home** (3000) - DNS filtering & ad blocking
-- **Jellyfin** (8096) - Media streaming server
-- **Ollama** (11434) + WebUI (3001) - Local AI/LLM
+| Service | Port | Purpose | Access |
+|---------|------|---------|--------|
+| **Glance** | 8085 | Dashboard & monitoring | `http://<IP>:8085` |
+| **Home Assistant** | 8123 | Smart home automation | `http://<IP>:8123` |
+| **AdGuard Home** | 82 | DNS ad blocking | `http://<IP>:82` |
+| **Traefik** | 80/443 | Reverse proxy with SSL | `https://traefik.<domain>` |
 
-### Management & Security
-- **Glance** (8085) - Service dashboard
-- **Traefik** (8080) - Reverse proxy with SSL
-- **Vaultwarden** (8222) - Password manager
-- **Tailscale** - Mesh VPN for remote access
+### AI & Knowledge
+| Service | Port | Purpose | Access |
+|---------|------|---------|--------|
+| **Ollama** | 11434 | Local LLM API | `http://<IP>:11434` |
+| **Ollama WebUI** | 8081 | Web interface for Ollama | `http://<IP>:8081` |
 
-### Media Automation
-- **Radarr** (7878) - Movie management
-- **Sonarr** (8989) - TV show management
-- **Prowlarr** (9696) - Indexer management
-- **Lidarr** (8686) - Music management
-- **Bazarr** (6767) - Subtitle management
-- **Jellyseerr** (5055) - Media requests
-- **qBittorrent** (8090) - Download client (VPN-protected)
+### Media Services
+| Service | Port | Purpose | Access |
+|---------|------|---------|--------|
+| **Jellyfin** | 8096 | Media streaming server | `http://<IP>:8096` |
+| **Jellyseerr** | 5055 | Media request management | `http://<IP>:5055` |
 
-### Network Services
-- **Gluetun** - VPN gateway for media services
-- **Samba** (445) - Network file shares
+### Security & VPN
+| Service | Port | Purpose | Access |
+|---------|------|---------|--------|
+| **Vaultwarden** | 8222 | Password manager | `http://<IP>:8222` |
+| **Tailscale** | - | Mesh VPN | Via Tailscale app |
+
+### Media Automation (Arr Stack)
+| Service | Port | Purpose | Access |
+|---------|------|---------|--------|
+| **Radarr** | 7878 | Movie management | `http://<IP>:7878` |
+| **Sonarr** | 8989 | TV show management | `http://<IP>:8989` |
+| **Lidarr** | 8686 | Music management | `http://<IP>:8686` |
+| **Bazarr** | 6767 | Subtitle management | `http://<IP>:6767` |
+| **Prowlarr** | 9696 | Indexer management | `http://<IP>:9696` |
+
+### Download Services (VPN-Protected)
+| Service | Port | Purpose | Access |
+|---------|------|---------|--------|
+| **qBittorrent** | 8080 | Torrent client | `http://<IP>:8080` |
+| **NZBGet** | 6789 | Usenet downloader | `http://<IP>:6789` |
+| **Gluetun** | 8000 | VPN gateway control | `http://<IP>:8000` |
+
+### File Sharing
+| Service | Port | Purpose | Access |
+|---------|------|---------|--------|
+| **Samba** | 445/139 | Network file shares | `smb://<IP>` |
 
 ## 📊 Network Architecture
 
-The stack uses two isolated Docker networks:
-
-- **Homelab Network** (172.20.0.0/16) - Core services
-- **Media Network** (172.21.0.0/16) - VPN-protected media services
-
-All torrent/usenet traffic routes through Gluetun VPN with kill switch enabled.
-
-## 🔧 Common Operations
-
-### View Service URLs
-```bash
-./homelab.sh urls
+```
+┌─────────────────────────────────────────────────────────┐
+│                   Internet Gateway                       │
+└────────────┬────────────────────┬───────────────────────┘
+             │                    │
+             ▼                    ▼
+     ┌──────────────┐      ┌──────────────┐
+     │   Traefik    │      │  Tailscale   │
+     │  80/443      │      │   (VPN)      │
+     └──────┬───────┘      └──────────────┘
+             │
+  ┌──────────┴───────────────────────────┐
+  │     Homelab Network (172.20.0.0/16)  │
+  ├──────────────────────────────────────┤
+  │ • Home Assistant  • Glance           │
+  │ • AdGuard Home    • Jellyfin         │
+  │ • Vaultwarden     • Ollama           │
+  │ • Traefik         • Jellyseerr       │
+  └──────────────────────────────────────┘
+             │
+  ┌──────────┴───────────────────────────┐
+  │     Media Network (172.21.0.0/16)     │
+  │         (VPN Protected)               │
+  ├──────────────────────────────────────┤
+  │ • Gluetun (VPN)   • Radarr           │
+  │ • qBittorrent     • Sonarr           │
+  │ • Prowlarr        • Lidarr           │
+  │ • NZBGet          • Bazarr           │
+  └──────────────────────────────────────┘
 ```
 
-### Monitor Services
-```bash
-./homelab.sh status
+## 🔒 Security Considerations
+
+### Critical Security Steps
+
+#### 1. Configure Traefik Routes (PRIORITY)
+
+Add labels to services in `docker-compose.yml`:
+
+```yaml
+jellyfin:
+  labels:
+    - "traefik.enable=true"
+    - "traefik.http.routers.jellyfin.rule=Host(`jellyfin.${DOMAIN}`)"
+    - "traefik.http.routers.jellyfin.entrypoints=websecure"
+    - "traefik.http.routers.jellyfin.tls.certresolver=letsencrypt"
+    - "traefik.http.services.jellyfin.loadbalancer.server.port=8096"
 ```
 
-### View Logs
-```bash
-./homelab.sh logs          # All services
-./homelab.sh logs jellyfin # Specific service
-```
-
-### Update Services
-```bash
-./homelab.sh update         # Pull latest images
-./homelab.sh restart        # Apply updates
-```
-
-### Backup Configuration
-```bash
-./homelab.sh backup
-```
-Backups stored in `backups/[timestamp]/`
-
-### Re-run Setup
-```bash
-./homelab.sh setup
-```
-⚠️ **WARNING**: This resets everything and starts fresh!
-
-## 🚀 GitHub Actions Deployment
-
-After setup, deploy updates via GitHub Actions:
+#### 2. Update Environment Variables
 
 ```bash
-./homelab.sh deploy
-# Or: gh workflow run deploy-homelab
+# Required in .env
+DOMAIN=your-domain.com
+CF_API_EMAIL=your@email.com
+CF_API_KEY=your-cloudflare-key
+VAULTWARDEN_ADMIN_TOKEN=$(openssl rand -base64 48)
 ```
 
-Monitor with: `gh run watch`
+#### 3. Generate Secure Passwords
+
+```bash
+# Traefik dashboard password
+htpasswd -nb admin YourPassword | sed -e s/\\$/\\$\\$/g
+# Add to traefik/dynamic/middlewares.yml
+```
+
+#### 4. Configure Firewall
+
+```bash
+sudo ufw default deny incoming
+sudo ufw allow 22/tcp    # SSH
+sudo ufw allow 80/tcp    # HTTP
+sudo ufw allow 443/tcp   # HTTPS
+sudo ufw allow 51820/udp # WireGuard
+sudo ufw enable
+```
+
+#### 5. Close Unnecessary Ports
+
+After Traefik configuration, comment out port exposures in `docker-compose.yml`:
+
+```yaml
+# ports:
+#   - "8096:8096"  # Now handled by Traefik
+```
+
+### Security Checklist
+
+- [ ] All services behind Traefik with HTTPS
+- [ ] Strong passwords (no defaults)
+- [ ] Firewall configured
+- [ ] VPN for admin access
+- [ ] Regular backups enabled
+- [ ] Monitoring configured
+
+## 🚀 Deployment
+
+### GitHub Actions Setup
+
+1. **Add GitHub Secrets**:
+   ```
+   HOMELAB_PATH=/path/to/homelab
+   RUNNER_TOKEN=<github-runner-token>
+   ```
+
+2. **Deploy Updates**:
+   ```bash
+   ./homelab.sh deploy
+   # Or manually:
+   git push origin main
+   ```
+
+### Manual Deployment
+
+```bash
+ssh user@<server-ip>
+cd /path/to/homelab
+git pull
+docker compose up -d
+```
+
+## 📝 Configuration Files
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `.env` | Environment variables (auto-generated) |
+| `.env.example` | Template with all required variables |
+| `docker-compose.yml` | Service definitions |
+| `traefik/traefik.yml` | Traefik static configuration |
+| `glance/glance.yml` | Dashboard configuration |
+
+### Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `homelab.sh` | Main management script |
+| `scripts/common-utils.sh` | Shared utility functions |
+| `scripts/deploy-ci.sh` | CI/CD deployment |
+| `scripts/monitor-ci.sh` | Service health monitoring |
+| `scripts/fix-permissions.sh` | Fix directory permissions |
 
 ## 🔧 Troubleshooting
 
-### Docker Permission Issues
+### Common Issues
+
+#### Service Won't Start
 ```bash
-sudo usermod -aG docker $USER
-newgrp docker
-./homelab.sh  # Re-run
+./homelab.sh logs <service>
+docker compose ps <service>
 ```
 
-### Port Conflicts
+#### Permission Errors
 ```bash
+./scripts/fix-permissions.sh
+# Or manually:
+sudo chown -R $(id -u):$(id -g) <service-dir>
+```
+
+#### Port Conflicts
+```bash
+sudo lsof -i :<port>
 ./homelab.sh restart
 ```
 
-### Service Not Starting
+#### Traefik Certificate Issues
 ```bash
-./homelab.sh logs [service_name]
+docker logs traefik | grep -i acme
+# Check DNS: dig <domain>
 ```
 
-### Reset Specific Service
+## 🗄️ Backup & Recovery
+
+### Backup
 ```bash
-docker compose down [service]
-rm -rf ./[service]/*
-./homelab.sh start [service]
+./homelab.sh backup
+# Creates: backups/backup_YYYYMMDD_HHMMSS/
 ```
 
-## 🛡️ Security Notes
+### Restore
+```bash
+# Stop services
+./homelab.sh stop
 
-- **No Default Passwords**: Setup wizard enforces unique passwords
-- **VPN Protection**: All media downloads route through VPN
-- **Kill Switch**: Downloads stop if VPN disconnects
-- **HTTPS Ready**: Traefik configured for SSL certificates
-- **Remote Access**: Tailscale mesh VPN for secure access
+# Restore data
+cp -r backups/backup_*/. .
+
+# Start services
+./homelab.sh start
+```
 
 ## 📋 System Requirements
 
-- **OS**: Arch Linux (required)
-- **RAM**: 4GB minimum, 8GB+ recommended
-- **Storage**: 20GB minimum for services
-- **Network**: Internet connection required for setup
-- **CPU**: x86_64 architecture
+### Minimum
+- **CPU**: 4 cores
+- **RAM**: 8GB
+- **Storage**: 50GB SSD
+- **Network**: 100Mbps
 
-## 🔄 State Management
+### Recommended
+- **CPU**: 8+ cores
+- **RAM**: 16GB+
+- **Storage**: 500GB+ SSD
+- **Network**: 1Gbps
 
-The script tracks setup progress in `.setup_state`:
-- Resumes from interruptions automatically
-- Prevents re-running completed steps
-- Delete to force complete re-setup
+## 🔄 Updates & Maintenance
 
-## 📝 Important Files
+### Update Services
+```bash
+./homelab.sh update
+./homelab.sh restart
+```
 
-- `homelab.sh` - Main script (DO NOT EDIT)
-- `.env` - Configuration (generated, contains passwords)
-- `.setup_state` - Progress tracking
-- `docker-compose.yml` - Service definitions
-- `backups/` - Configuration backups
+### Clean Docker System
+```bash
+./homelab.sh cleanup
+```
 
-## 🆘 Support
+### Monitor Health
+```bash
+./homelab.sh status
+docker system df
+```
 
-1. Check logs: `./homelab.sh logs [service]`
-2. View status: `./homelab.sh status`
-3. Restart services: `./homelab.sh restart`
-4. Last resort: `./homelab.sh setup` (complete reset)
+## 📚 Documentation
+
+### Detailed Guides
+- [Traefik Configuration](TRAEFIK_VAULTWARDEN_CONFIG.md)
+- [Security Audit](docs/SECURITY_AUDIT.md)
+- [Service Documentation](docs/SERVICES.md)
+- [Migration from NPM](docs/TRAEFIK_MIGRATION_GUIDE.md)
+
+### Quick Links
+- [Traefik Dashboard](https://traefik.yourdomain.com)
+- [Glance Dashboard](http://server-ip:8085)
+- [Portainer](https://portainer.yourdomain.com) (if configured)
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create feature branch
+3. Commit changes
+4. Push to branch
+5. Open pull request
 
 ## 📄 License
 
-MIT - See individual service licenses for details.
+MIT License - See LICENSE file for details
+
+## ⚠️ Important Notes
+
+1. **Security First**: Configure Traefik routes before exposing to internet
+2. **No Default Passwords**: All passwords must be set during setup
+3. **Regular Backups**: Enable automated backups for critical data
+4. **Monitor Logs**: Check logs regularly for issues
+5. **Update Regularly**: Keep services and OS updated
+
+---
+
+**Need Help?** Check [troubleshooting](#-troubleshooting) or open an issue on GitHub.

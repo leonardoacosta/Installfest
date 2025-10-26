@@ -34,7 +34,7 @@ pages:
             cache: 1m
             sites:
               - title: Home Assistant
-                url: http://192.168.1.14:8123
+                url: http://192.168.1.14:8123/lovelace/0
                 icon: si:homeassistant
               - title: Jellyfin
                 url: http://192.168.1.14:8096
