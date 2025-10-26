@@ -233,36 +233,149 @@ Advanced mmWave presence detection with zone configuration.
 
 ## 📊 Network Architecture
 
+```mermaid
+graph TB
+    %% External Connections
+    Internet[("🌐 Internet")]
+    Router["🔒 Router/Firewall"]
+
+    %% Host Network Services
+    subgraph HostNet["Host Network"]
+        Tailscale["🔐 Tailscale VPN Mesh<br/>Advertises: 172.20.0.0/16, 172.21.0.0/16"]
+    end
+
+    %% Traefik Entry Point
+    subgraph TraefikProxy["Reverse Proxy"]
+        Traefik["⚡ Traefik<br/>:80/:443<br/>172.20.0.81 / 172.21.0.81"]
+    end
+
+    %% Homelab Network
+    subgraph HomelabNet["🏠 Homelab Network (172.20.0.0/16)"]
+        HA["🏡 Home Assistant<br/>172.20.0.123:8123<br/>(Privileged)"]
+        AdGuard["🛡️ AdGuard Home<br/>172.20.0.53:82<br/>(DNS Filtering)"]
+        Ollama["🤖 Ollama<br/>172.20.0.11:11434"]
+        OllamaUI["💬 Ollama WebUI<br/>172.20.0.12:8081"]
+        Vault["🔐 Vaultwarden<br/>172.20.0.22:8222"]
+        Samba["📁 Samba<br/>172.20.0.45:445"]
+
+        %% Cross-network services (homelab side)
+        GlanceH["📊 Glance<br/>172.20.0.85:8085"]
+        JellyfinH["🎬 Jellyfin<br/>172.20.0.96:8096"]
+        JellyseerrH["🎭 Jellyseerr<br/>172.20.0.55:5055"]
+    end
+
+    %% Media Network
+    subgraph MediaNet["🎬 Media Network (172.21.0.0/16)"]
+        %% VPN Protected Services
+        subgraph VPNProtected["🔒 VPN Protected (via Gluetun)"]
+            Gluetun["🛡️ Gluetun VPN<br/>172.21.0.2"]
+            qBit["📥 qBittorrent<br/>:8080"]
+            Prowlarr["🔍 Prowlarr<br/>:9696"]
+            NZBGet["📰 NZBGet<br/>:6789"]
+            Byparr["☁️ Byparr"]
+        end
+
+        %% Arr Stack
+        Radarr["🎬 Radarr<br/>172.21.0.78:7878"]
+        Sonarr["📺 Sonarr<br/>172.21.0.89:8989"]
+        Lidarr["🎵 Lidarr<br/>172.21.0.86:8686"]
+        Bazarr["💬 Bazarr<br/>172.21.0.67:6767"]
+
+        %% Cross-network services (media side)
+        GlanceM["📊 Glance<br/>172.21.0.85"]
+        JellyfinM["🎬 Jellyfin<br/>172.21.0.96"]
+        JellyseerrM["🎭 Jellyseerr<br/>172.21.0.55"]
+    end
+
+    %% Connections
+    Internet --> Router
+    Router --> Traefik
+    Router --> Tailscale
+
+    Tailscale -.->|"Remote Access"| HomelabNet
+    Tailscale -.->|"Remote Access"| MediaNet
+
+    Traefik --> HomelabNet
+    Traefik --> MediaNet
+
+    %% Service Dependencies
+    OllamaUI -->|"Depends on"| Ollama
+
+    %% VPN Dependencies
+    Gluetun --> qBit
+    Gluetun --> Prowlarr
+    Gluetun --> NZBGet
+    Gluetun --> Byparr
+
+    %% Media Flow
+    JellyseerrH -.->|"Requests"| Sonarr
+    JellyseerrH -.->|"Requests"| Radarr
+    JellyseerrH -.->|"Requests"| Lidarr
+
+    Sonarr -->|"Search"| Prowlarr
+    Radarr -->|"Search"| Prowlarr
+    Lidarr -->|"Search"| Prowlarr
+
+    Prowlarr -->|"Download"| qBit
+    Prowlarr -->|"Download"| NZBGet
+
+    JellyfinH -.->|"Streams Media"| Internet
+
+    %% Cross-Network Bridge Services
+    GlanceH <==>|"Dual-Homed"| GlanceM
+    JellyfinH <==>|"Dual-Homed"| JellyfinM
+    JellyseerrH <==>|"Dual-Homed"| JellyseerrM
+
+    %% Styling
+    classDef external fill:#ff6b6b,stroke:#c92a2a,stroke-width:3px,color:#fff
+    classDef homelab fill:#4dabf7,stroke:#1864ab,stroke-width:2px,color:#fff
+    classDef media fill:#69db7c,stroke:#2b8a3e,stroke-width:2px,color:#fff
+    classDef vpn fill:#ffd43b,stroke:#fab005,stroke-width:2px,color:#000
+    classDef cross fill:#cc5de8,stroke:#862e9c,stroke-width:2px,color:#fff
+    classDef proxy fill:#ff922b,stroke:#e8590c,stroke-width:3px,color:#fff
+
+    class Internet,Router external
+    class HA,AdGuard,Ollama,OllamaUI,Vault,Samba homelab
+    class Radarr,Sonarr,Lidarr,Bazarr media
+    class Gluetun,qBit,Prowlarr,NZBGet,Byparr,Tailscale vpn
+    class GlanceH,GlanceM,JellyfinH,JellyfinM,JellyseerrH,JellyseerrM cross
+    class Traefik proxy
 ```
-┌─────────────────────────────────────────────────────────┐
-│                   Internet Gateway                       │
-└────────────┬────────────────────┬───────────────────────┘
-             │                    │
-             ▼                    ▼
-     ┌──────────────┐      ┌──────────────┐
-     │   Traefik    │      │  Tailscale   │
-     │  80/443      │      │   (VPN)      │
-     └──────┬───────┘      └──────────────┘
-             │
-  ┌──────────┴───────────────────────────┐
-  │     Homelab Network (172.20.0.0/16)  │
-  ├──────────────────────────────────────┤
-  │ • Home Assistant  • Glance           │
-  │ • AdGuard Home    • Jellyfin         │
-  │ • Vaultwarden     • Ollama           │
-  │ • Traefik         • Jellyseerr       │
-  └──────────────────────────────────────┘
-             │
-  ┌──────────┴───────────────────────────┐
-  │     Media Network (172.21.0.0/16)     │
-  │         (VPN Protected)               │
-  ├──────────────────────────────────────┤
-  │ • Gluetun (VPN)   • Radarr           │
-  │ • qBittorrent     • Sonarr           │
-  │ • Prowlarr        • Lidarr           │
-  │ • NZBGet          • Bazarr           │
-  └──────────────────────────────────────┘
-```
+
+### Network Details
+
+#### 🏠 **Homelab Network (172.20.0.0/16)**
+Core infrastructure and home automation services:
+- **Subnet:** 172.20.0.0/16 (65,534 IPs)
+- **Gateway:** 172.20.0.1
+- **Bridge:** br-homelab
+- **Services:** Home automation, DNS, AI, password management, file sharing
+
+#### 🎬 **Media Network (172.21.0.0/16)**
+Media management and download services:
+- **Subnet:** 172.21.0.0/16 (65,534 IPs)
+- **Gateway:** 172.21.0.1
+- **Bridge:** br-media
+- **VPN Protection:** All download services route through Gluetun
+
+#### 🔗 **Cross-Network Services**
+Services with dual network connectivity:
+- **Traefik:** Reverse proxy for both networks
+- **Glance:** Dashboard monitoring both networks
+- **Jellyfin:** Media server accessible from both networks
+- **Jellyseerr:** Media requests bridge
+
+#### 🔒 **VPN Dependencies**
+Services using Gluetun's network (`network_mode: service:gluetun`):
+- qBittorrent (Torrent client)
+- Prowlarr (Indexer manager)
+- NZBGet (Usenet client)
+- Byparr (Cloudflare bypass)
+
+#### 📡 **External Access**
+- **Traefik:** HTTPS ingress on ports 80/443
+- **Tailscale:** Mesh VPN advertising both Docker networks
+- **Gluetun:** Outbound VPN for media downloads
 
 ## 🔒 Security Considerations
 

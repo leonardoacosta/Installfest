@@ -66,17 +66,46 @@ main() {
         log "Sudo requires password or not available - attempting without sudo"
     fi
 
-    # Pre-create critical directories to avoid permission issues during copy
-    log "Pre-creating service directories in deployment path"
+    # Fix permissions on existing directories and create missing ones
+    log "Ensuring service directories with proper permissions"
+
+    # First, try to fix permissions on the main directory if it exists
+    if [ -d "$DEPLOY_PATH/homeassistant" ] && [ ! -w "$DEPLOY_PATH/homeassistant" ]; then
+        log "Fixing permissions on existing homeassistant directory"
+        if [ "$CAN_SUDO" = true ]; then
+            sudo chmod -R 755 "$DEPLOY_PATH/homeassistant" 2>/dev/null || true
+            sudo chown -R $(whoami):$(whoami) "$DEPLOY_PATH/homeassistant" 2>/dev/null || true
+        fi
+    fi
+
+    # Now create all required directories
     for dir in homeassistant/config glance/assets traefik/letsencrypt traefik/config \
                jellyfin/config vaultwarden adguardhome/work adguardhome/conf \
                ollama ollama-webui radarr sonarr lidarr prowlarr bazarr \
                qbittorrent jellyseerr nzbget scripts traefik/dynamic; do
+
+        # Check if parent directory exists but isn't writable
+        PARENT_DIR="$(dirname "$DEPLOY_PATH/$dir")"
+        if [ -d "$PARENT_DIR" ] && [ ! -w "$PARENT_DIR" ]; then
+            if [ "$CAN_SUDO" = true ]; then
+                log "Fixing permissions on $PARENT_DIR"
+                sudo chmod 755 "$PARENT_DIR" 2>/dev/null || true
+                sudo chown -R $(whoami):$(whoami) "$PARENT_DIR" 2>/dev/null || true
+            fi
+        fi
+
+        # Now create the directory if it doesn't exist
         if [ ! -d "$DEPLOY_PATH/$dir" ]; then
-            if [ -w "$DEPLOY_PATH" ] || [ -w "$(dirname "$DEPLOY_PATH/$dir")" ]; then
+            if [ -w "$DEPLOY_PATH" ] || [ -w "$PARENT_DIR" ]; then
                 # We have write permission, create without sudo
                 mkdir -p "$DEPLOY_PATH/$dir" 2>/dev/null || {
-                    warning "Could not create directory: $DEPLOY_PATH/$dir"
+                    if [ "$CAN_SUDO" = true ]; then
+                        sudo mkdir -p "$DEPLOY_PATH/$dir" 2>/dev/null || {
+                            warning "Could not create directory: $DEPLOY_PATH/$dir"
+                        }
+                    else
+                        warning "Could not create directory: $DEPLOY_PATH/$dir"
+                    fi
                 }
             elif [ "$CAN_SUDO" = true ]; then
                 # Try with sudo if available
@@ -84,9 +113,7 @@ main() {
                     warning "Could not create directory with sudo: $DEPLOY_PATH/$dir"
                 }
             else
-                error "Cannot create directory: $DEPLOY_PATH/$dir"
-                error "Please run: sudo bash $DEPLOY_PATH/scripts/setup-runner-permissions.sh"
-                exit 1
+                warning "Cannot create directory: $DEPLOY_PATH/$dir - will continue anyway"
             fi
         fi
     done
@@ -116,16 +143,31 @@ main() {
         # Use rsync for better permission handling, fall back to cp if rsync not available
         if command -v rsync &> /dev/null; then
             log "Using rsync for file transfer"
+            # Use --ignore-errors to continue despite permission issues on some directories
             if [ -w "$DEPLOY_PATH" ]; then
-                rsync -av --no-perms --no-owner --no-group "$WORKSPACE_HOMELAB"/ "$DEPLOY_PATH"/ || {
-                    error "Rsync failed"
+                rsync -av --no-perms --no-owner --no-group --ignore-errors "$WORKSPACE_HOMELAB"/ "$DEPLOY_PATH"/
+                RSYNC_EXIT=$?
+                if [ $RSYNC_EXIT -eq 0 ]; then
+                    log "Rsync completed successfully"
+                elif [ $RSYNC_EXIT -eq 23 ]; then
+                    warning "Rsync completed with some permission errors - continuing deployment"
+                    warning "Some files may not have been copied (likely homeassistant/config)"
+                else
+                    error "Rsync failed with exit code $RSYNC_EXIT"
                     exit 1
-                }
+                fi
             elif [ "$CAN_SUDO" = true ]; then
-                sudo rsync -av --no-perms --no-owner --no-group "$WORKSPACE_HOMELAB"/ "$DEPLOY_PATH"/ || {
-                    error "Rsync with sudo failed"
+                sudo rsync -av --no-perms --no-owner --no-group --ignore-errors "$WORKSPACE_HOMELAB"/ "$DEPLOY_PATH"/
+                RSYNC_EXIT=$?
+                if [ $RSYNC_EXIT -eq 0 ]; then
+                    log "Rsync with sudo completed successfully"
+                elif [ $RSYNC_EXIT -eq 23 ]; then
+                    warning "Rsync with sudo had some permission errors - continuing deployment"
+                    warning "Some files may not have been copied (likely homeassistant/config)"
+                else
+                    error "Rsync with sudo failed with exit code $RSYNC_EXIT"
                     exit 1
-                }
+                fi
             else
                 error "No write permission to $DEPLOY_PATH and sudo not available"
                 error "Cannot copy files. Please fix permissions first."
@@ -200,14 +242,27 @@ main() {
     mkdir -p adguardhome/work adguardhome/conf
 
     # Home Assistant directory and subdirectories
-    mkdir -p homeassistant/config
-    if [ -w homeassistant ]; then
-        chown -R $PUID:$PGID homeassistant/ 2>/dev/null || true
-    else
-        log "Warning: Cannot change ownership of homeassistant directory - using sudo"
-        sudo mkdir -p homeassistant/config 2>/dev/null || mkdir -p homeassistant/config
-        sudo chown -R $PUID:$PGID homeassistant/ 2>/dev/null || true
+    # Special handling for homeassistant since it often has permission issues
+    if [ -d homeassistant ] && [ ! -w homeassistant ]; then
+        log "Warning: homeassistant directory exists but not writable"
+        # Try to fix with sudo if available
+        if sudo -n true 2>/dev/null; then
+            sudo chmod 755 homeassistant 2>/dev/null || true
+            sudo chown -R $PUID:$PGID homeassistant/ 2>/dev/null || true
+        fi
     fi
+
+    mkdir -p homeassistant/config 2>/dev/null || {
+        # Try with sudo if regular mkdir failed
+        if sudo -n true 2>/dev/null; then
+            sudo mkdir -p homeassistant/config 2>/dev/null || {
+                warning "Could not create homeassistant/config even with sudo - continuing anyway"
+            }
+            sudo chown -R $PUID:$PGID homeassistant/ 2>/dev/null || true
+        else
+            warning "Could not create homeassistant/config and sudo not available - continuing"
+        fi
+    }
 
     # Ollama directories
     mkdir -p ollama ollama-webui
