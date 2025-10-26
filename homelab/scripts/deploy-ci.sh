@@ -29,11 +29,25 @@ main() {
         exit 1
     fi
 
-    # Ensure deployment directory exists
+    # Ensure deployment directory exists with proper permissions
     if [ ! -d "$DEPLOY_PATH" ]; then
-        error "Deployment directory does not exist: $DEPLOY_PATH"
+        log "Deployment directory does not exist: $DEPLOY_PATH"
         log "Creating deployment directory..."
-        mkdir -p "$DEPLOY_PATH"
+        # Try to create directory, use sudo if necessary
+        mkdir -p "$DEPLOY_PATH" 2>/dev/null || sudo mkdir -p "$DEPLOY_PATH" || {
+            error "Cannot create deployment directory: $DEPLOY_PATH"
+            error "Please ensure the parent directory exists and you have permissions"
+            exit 1
+        }
+    fi
+
+    # Ensure we own the deployment directory or have write access
+    if [ ! -w "$DEPLOY_PATH" ]; then
+        log "Attempting to fix permissions for $DEPLOY_PATH"
+        sudo chown -R $(whoami):$(whoami) "$DEPLOY_PATH" 2>/dev/null || {
+            warning "Cannot change ownership of $DEPLOY_PATH"
+            warning "Will attempt to use sudo for file operations"
+        }
     fi
 
     # Check if rollback is requested
@@ -43,13 +57,60 @@ main() {
         exit $?
     fi
 
+    # Pre-create critical directories to avoid permission issues during copy
+    log "Pre-creating service directories in deployment path"
+    for dir in homeassistant/config glance/assets traefik/letsencrypt traefik/config \
+               jellyfin/config vaultwarden adguardhome/work adguardhome/conf \
+               ollama ollama-webui radarr sonarr lidarr prowlarr bazarr \
+               qbittorrent jellyseerr nzbget scripts traefik/dynamic; do
+        if [ ! -d "$DEPLOY_PATH/$dir" ]; then
+            mkdir -p "$DEPLOY_PATH/$dir" 2>/dev/null || sudo mkdir -p "$DEPLOY_PATH/$dir" || {
+                warning "Could not create directory: $DEPLOY_PATH/$dir"
+            }
+        fi
+    done
+
+    # Fix ownership of deployment directory before copying
+    if [ ! -w "$DEPLOY_PATH" ]; then
+        log "Fixing ownership of deployment directory"
+        sudo chown -R $(whoami):$(whoami) "$DEPLOY_PATH" 2>/dev/null || {
+            warning "Could not change ownership - will use sudo for copy"
+        }
+    fi
+
     # Copy configurations from GitHub workspace BEFORE cd
     log "Copying configurations from GitHub workspace"
     WORKSPACE_HOMELAB="${GITHUB_WORKSPACE}/homelab"
 
     if [ -d "$WORKSPACE_HOMELAB" ]; then
         log "Copying files from $WORKSPACE_HOMELAB to $DEPLOY_PATH"
-        cp -r "$WORKSPACE_HOMELAB"/* "$DEPLOY_PATH"/
+
+        # Use rsync for better permission handling, fall back to cp if rsync not available
+        if command -v rsync &> /dev/null; then
+            log "Using rsync for file transfer"
+            if [ -w "$DEPLOY_PATH" ]; then
+                rsync -av --no-perms --no-owner --no-group "$WORKSPACE_HOMELAB"/ "$DEPLOY_PATH"/ || {
+                    error "Rsync failed"
+                    exit 1
+                }
+            else
+                sudo rsync -av --no-perms --no-owner --no-group "$WORKSPACE_HOMELAB"/ "$DEPLOY_PATH"/ || {
+                    error "Rsync with sudo failed"
+                    exit 1
+                }
+            fi
+        else
+            log "Using cp for file transfer (rsync not available)"
+            if [ -w "$DEPLOY_PATH" ]; then
+                cp -r "$WORKSPACE_HOMELAB"/* "$DEPLOY_PATH"/
+            else
+                log "Using sudo to copy files"
+                sudo cp -r "$WORKSPACE_HOMELAB"/* "$DEPLOY_PATH"/ || {
+                    error "Failed to copy files even with sudo"
+                    exit 1
+                }
+            fi
+        fi
         log "Files copied successfully"
     else
         error "Homelab directory not found in workspace: $WORKSPACE_HOMELAB"
@@ -99,9 +160,15 @@ main() {
     # AdGuard Home directories
     mkdir -p adguardhome/work adguardhome/conf
 
-    # Home Assistant directory
-    mkdir -p homeassistant
-    chown -R $PUID:$PGID homeassistant/ 2>/dev/null || true
+    # Home Assistant directory and subdirectories
+    mkdir -p homeassistant/config
+    if [ -w homeassistant ]; then
+        chown -R $PUID:$PGID homeassistant/ 2>/dev/null || true
+    else
+        log "Warning: Cannot change ownership of homeassistant directory - using sudo"
+        sudo mkdir -p homeassistant/config 2>/dev/null || mkdir -p homeassistant/config
+        sudo chown -R $PUID:$PGID homeassistant/ 2>/dev/null || true
+    fi
 
     # Ollama directories
     mkdir -p ollama ollama-webui
