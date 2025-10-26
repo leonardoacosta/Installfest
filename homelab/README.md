@@ -16,9 +16,10 @@ homelab/
 │
 ├── scripts/                   # Utility scripts
 │   ├── common-utils.sh       # Shared functions for all scripts
-│   ├── deploy-ci.sh          # CI/CD deployment script
+│   ├── deploy-ci.sh          # CI/CD deployment script with HACS auto-install
 │   ├── monitor-ci.sh         # Service monitoring script
-│   └── fix-permissions.sh    # Permission fixing utility
+│   ├── fix-permissions.sh    # Permission fixing utility
+│   └── setup-hacs.sh         # HACS installer for Home Assistant
 │
 ├── traefik/                   # Traefik configuration
 │   ├── traefik.yml           # Static configuration
@@ -28,6 +29,10 @@ homelab/
 │   │   └── gluetun-routers.yml  # VPN service routes
 │   └── scripts/              # Traefik utilities
 │       └── test-service.sh   # Service connectivity test
+│
+├── homeassistant/             # Home Assistant configuration
+│   └── config/               # Configuration files
+│       └── mtr1-zones.yaml   # MTR-1 zone visualization template
 │
 ├── glance/                    # Dashboard configuration
 │   ├── glance.yml           # Dashboard layout & widgets
@@ -137,6 +142,94 @@ cd homelab
 | Service | Port | Purpose | Access |
 |---------|------|---------|--------|
 | **Samba** | 445/139 | Network file shares | `smb://<IP>` |
+
+## 🏠 Home Assistant Integrations
+
+### HACS (Home Assistant Community Store)
+
+HACS provides access to community integrations, themes, and cards not available in the official Home Assistant add-on store.
+
+#### Automatic Installation
+
+HACS is automatically installed during deployment:
+
+```bash
+# Installed automatically via deploy-ci.sh
+# Or manually install:
+./scripts/setup-hacs.sh
+```
+
+#### Manual Setup (First Time Only)
+
+1. **Access Home Assistant**: http://192.168.1.14:8123
+2. **Clear Browser Cache**: Ctrl+F5 or Cmd+Shift+R
+3. **Add Integration**: Settings → Devices & Services → Add Integration
+4. **Search for HACS**: Type "HACS" in the search box
+5. **GitHub Authentication**:
+   - Copy the provided device code
+   - Visit: https://github.com/login/device
+   - Enter the device code
+   - Authorize HACS
+
+#### Installing Community Components
+
+After HACS setup:
+- **Frontend Cards**: HACS → Frontend → Explore & Download
+- **Integrations**: HACS → Integrations → Explore & Download
+- **Themes**: HACS → Frontend → Themes
+
+### Apollo MTR-1 Presence Detection
+
+Advanced mmWave presence detection with zone configuration.
+
+#### Prerequisites
+
+1. Install HACS (see above)
+2. Install Plotly Graph Card:
+   ```
+   HACS → Frontend → Search "Plotly" → Install
+   ```
+3. Restart Home Assistant
+
+#### Zone Configuration
+
+1. **Configure MTR-1 Device**:
+   - Settings → Devices & Services → ESPHome
+   - Select your MTR-1 device (e.g., `apollo_r_mtr_1_c64a28`)
+   - Configure zones in Configuration section:
+     ```
+     Zone 1: Living Room
+     X: -3000 to 3000 mm
+     Y: 0 to 4000 mm
+
+     Zone 2: Kitchen
+     X: -3000 to 0 mm
+     Y: 4000 to 7000 mm
+
+     Zone 3: Entrance
+     X: 0 to 3000 mm
+     Y: 4000 to 7000 mm
+     ```
+
+2. **Add Visualization Card**:
+   - Edit Dashboard → Add Card → Manual
+   - Copy configuration from: `homeassistant/config/mtr1-zones.yaml`
+   - Replace `apollo_r_mtr_1_XXXXXX` with your device name
+
+#### Zone Parameters
+
+| Parameter | Range | Notes |
+|-----------|-------|-------|
+| X-axis | -7000 to 7000 mm | Horizontal detection range |
+| Y-axis | 0 to 7000 mm | Vertical detection range |
+| Zone Type | Detection/Filter/Disabled | Detection mode for presence |
+| Multi-Target | Up to 3 targets | Enable for multiple person tracking |
+
+#### Troubleshooting MTR-1
+
+- **No Detection**: Check zone configuration doesn't overlap
+- **False Positives**: Use filter zones to exclude areas
+- **Imperial Units**: 1 inch = 25.4 mm for conversion
 
 ## 📊 Network Architecture
 
@@ -280,9 +373,10 @@ docker compose up -d
 |--------|---------|
 | `homelab.sh` | Main management script |
 | `scripts/common-utils.sh` | Shared utility functions |
-| `scripts/deploy-ci.sh` | CI/CD deployment |
+| `scripts/deploy-ci.sh` | CI/CD deployment with HACS auto-install |
 | `scripts/monitor-ci.sh` | Service health monitoring |
 | `scripts/fix-permissions.sh` | Fix directory permissions |
+| `scripts/setup-hacs.sh` | HACS installation for Home Assistant |
 
 ## 🔧 Troubleshooting
 

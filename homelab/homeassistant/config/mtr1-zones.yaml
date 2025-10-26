@@ -1,0 +1,200 @@
+# MTR-1 Zone Configuration Template for Home Assistant
+# Apollo Automation MTR-1 Presence Detection Sensor
+#
+# This file contains Plotly graph card configurations for MTR-1 zone visualization
+# Replace 'apollo_r_mtr_1_XXXXXX' with your actual device name
+#
+# Installation Requirements:
+# 1. HACS must be installed
+# 2. Install Plotly Graph Card from HACS (Frontend section)
+# 3. Add this card to your dashboard as a Manual card
+
+# Example MTR-1 Zone Visualization Card
+type: custom:plotly-graph
+title: MTR-1 Presence Detection Zones
+refresh_interval: 1
+hours_to_show: 0.01
+layout:
+  height: 430
+  margin:
+    l: 50
+    r: 20
+    t: 20
+    b: 40
+  showlegend: true
+  xaxis:
+    dtick: 1000
+    gridcolor: '#283742'
+    zerolinecolor: '#383838'
+    range:
+      - -7000
+      - 7000
+    fixedrange: true
+  yaxis:
+    dtick: 1000
+    gridcolor: '#283742'
+    zerolinecolor: '#383838'
+    range:
+      - 0
+      - 7000
+    scaleanchor: x
+    scaleratio: 1
+    fixedrange: true
+  dragmode: false
+config:
+  scrollZoom: false
+
+entities:
+  # Zone 1 - Example: Living Room Couch Area
+  - entity: ''
+    name: Zone 1 - Living Room
+    mode: lines
+    fill: toself
+    fillcolor: rgba(255, 0, 0, 0.1)
+    line:
+      color: rgba(255, 0, 0, 0.4)
+      shape: line
+      width: 2
+    x:
+      - $ex hass.states["number.apollo_r_mtr_1_XXXXXX_target_1_x_begin"].state
+      - $ex hass.states["number.apollo_r_mtr_1_XXXXXX_target_1_x_end"].state
+      - $ex hass.states["number.apollo_r_mtr_1_XXXXXX_target_1_x_end"].state
+      - $ex hass.states["number.apollo_r_mtr_1_XXXXXX_target_1_x_begin"].state
+      - $ex hass.states["number.apollo_r_mtr_1_XXXXXX_target_1_x_begin"].state
+    'y':
+      - $ex hass.states["number.apollo_r_mtr_1_XXXXXX_target_1_y_begin"].state
+      - $ex hass.states["number.apollo_r_mtr_1_XXXXXX_target_1_y_begin"].state
+      - $ex hass.states["number.apollo_r_mtr_1_XXXXXX_target_1_y_end"].state
+      - $ex hass.states["number.apollo_r_mtr_1_XXXXXX_target_1_y_end"].state
+      - $ex hass.states["number.apollo_r_mtr_1_XXXXXX_target_1_y_begin"].state
+
+  # Zone 2 - Example: Kitchen Area
+  - entity: ''
+    name: Zone 2 - Kitchen
+    mode: lines
+    fill: toself
+    fillcolor: rgba(0, 255, 0, 0.1)
+    line:
+      color: rgba(0, 255, 0, 0.4)
+      shape: line
+      width: 2
+    x:
+      - $ex hass.states["number.apollo_r_mtr_1_XXXXXX_target_2_x_begin"].state
+      - $ex hass.states["number.apollo_r_mtr_1_XXXXXX_target_2_x_end"].state
+      - $ex hass.states["number.apollo_r_mtr_1_XXXXXX_target_2_x_end"].state
+      - $ex hass.states["number.apollo_r_mtr_1_XXXXXX_target_2_x_begin"].state
+      - $ex hass.states["number.apollo_r_mtr_1_XXXXXX_target_2_x_begin"].state
+    'y':
+      - $ex hass.states["number.apollo_r_mtr_1_XXXXXX_target_2_y_begin"].state
+      - $ex hass.states["number.apollo_r_mtr_1_XXXXXX_target_2_y_begin"].state
+      - $ex hass.states["number.apollo_r_mtr_1_XXXXXX_target_2_y_end"].state
+      - $ex hass.states["number.apollo_r_mtr_1_XXXXXX_target_2_y_end"].state
+      - $ex hass.states["number.apollo_r_mtr_1_XXXXXX_target_2_y_begin"].state
+
+  # Zone 3 - Example: Entrance/Hallway
+  - entity: ''
+    name: Zone 3 - Entrance
+    mode: lines
+    fill: toself
+    fillcolor: rgba(0, 0, 255, 0.1)
+    line:
+      color: rgba(0, 0, 255, 0.4)
+      shape: line
+      width: 2
+    x:
+      - $ex hass.states["number.apollo_r_mtr_1_XXXXXX_target_3_x_begin"].state
+      - $ex hass.states["number.apollo_r_mtr_1_XXXXXX_target_3_x_end"].state
+      - $ex hass.states["number.apollo_r_mtr_1_XXXXXX_target_3_x_end"].state
+      - $ex hass.states["number.apollo_r_mtr_1_XXXXXX_target_3_x_begin"].state
+      - $ex hass.states["number.apollo_r_mtr_1_XXXXXX_target_3_x_begin"].state
+    'y':
+      - $ex hass.states["number.apollo_r_mtr_1_XXXXXX_target_3_y_begin"].state
+      - $ex hass.states["number.apollo_r_mtr_1_XXXXXX_target_3_y_begin"].state
+      - $ex hass.states["number.apollo_r_mtr_1_XXXXXX_target_3_y_end"].state
+      - $ex hass.states["number.apollo_r_mtr_1_XXXXXX_target_3_y_end"].state
+      - $ex hass.states["number.apollo_r_mtr_1_XXXXXX_target_3_y_begin"].state
+
+  # Target 1 Position (Active Detection)
+  - entity: ''
+    name: Target 1
+    mode: markers
+    marker:
+      color: red
+      size:
+        - 12
+    x:
+      - >-
+        $ex hass.states["sensor.apollo_r_mtr_1_XXXXXX_target_1_x"].state
+        if (hass.states["sensor.apollo_r_mtr_1_XXXXXX_target_1_x"].state !=
+        'unavailable') else null
+    'y':
+      - >-
+        $ex hass.states["sensor.apollo_r_mtr_1_XXXXXX_target_1_y"].state
+        if (hass.states["sensor.apollo_r_mtr_1_XXXXXX_target_1_y"].state !=
+        'unavailable') else null
+
+  # Target 2 Position (if Multi-Target enabled)
+  - entity: ''
+    name: Target 2
+    mode: markers
+    marker:
+      color: green
+      size:
+        - 12
+    x:
+      - >-
+        $ex hass.states["sensor.apollo_r_mtr_1_XXXXXX_target_2_x"].state
+        if (hass.states["sensor.apollo_r_mtr_1_XXXXXX_target_2_x"].state !=
+        'unavailable') else null
+    'y':
+      - >-
+        $ex hass.states["sensor.apollo_r_mtr_1_XXXXXX_target_2_y"].state
+        if (hass.states["sensor.apollo_r_mtr_1_XXXXXX_target_2_y"].state !=
+        'unavailable') else null
+
+  # Target 3 Position (if Multi-Target enabled)
+  - entity: ''
+    name: Target 3
+    mode: markers
+    marker:
+      color: blue
+      size:
+        - 12
+    x:
+      - >-
+        $ex hass.states["sensor.apollo_r_mtr_1_XXXXXX_target_3_x"].state
+        if (hass.states["sensor.apollo_r_mtr_1_XXXXXX_target_3_x"].state !=
+        'unavailable') else null
+    'y':
+      - >-
+        $ex hass.states["sensor.apollo_r_mtr_1_XXXXXX_target_3_y"].state
+        if (hass.states["sensor.apollo_r_mtr_1_XXXXXX_target_3_y"].state !=
+        'unavailable') else null
+
+# Zone Configuration Instructions:
+#
+# 1. Find your MTR-1 device name:
+#    - Go to Settings > Devices & Services > ESPHome
+#    - Look for your MTR-1 device (e.g., apollo_r_mtr_1_c64a28)
+#
+# 2. Replace all instances of 'apollo_r_mtr_1_XXXXXX' with your device name
+#
+# 3. Configure zones in ESPHome integration:
+#    - Click on your MTR-1 device
+#    - Scroll to Configuration section
+#    - Set X and Y coordinates for each zone:
+#      * X range: -7000mm to 7000mm
+#      * Y range: 0mm to 7000mm
+#      * X1 must be < X2, Y1 must be < Y2
+#      * Zones cannot overlap
+#
+# 4. Zone Types:
+#    - Disabled: Zone is inactive
+#    - Detection: Detects targets in this zone
+#    - Filter: Excludes this zone from detection
+#
+# 5. Enable Multi-Target Tracking for detecting up to 3 targets simultaneously
+#
+# 6. For imperial units, convert measurements:
+#    - 1 inch = 25.4 mm
+#    - Configure sensor settings to display in your preferred units
