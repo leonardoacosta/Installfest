@@ -55,96 +55,82 @@ pages:
       - size: full
         widgets:
           # Core Services
-          - type: group
+          - type: bookmarks
             title: Core Infrastructure
-            columns: 3
-            widgets:
-              - type: bookmark
-                title: Home Assistant
-                url: http://homeassistant.local:8123
-                description: Smart Home Hub
-                icon: si:homeassistant
-                same-tab: false
-                hide-arrow: false
-
-              - type: bookmark
-                title: AdGuard Home
-                url: http://adguard.local:82
-                description: DNS Ad Blocker
-                icon: si:adguard
-                same-tab: false
-                hide-arrow: false
-
-              - type: bookmark
-                title: Traefik
-                url: http://traefik.local:8080
-                description: Reverse Proxy & Load Balancer
-                icon: si:traefik
-                same-tab: false
-                hide-arrow: false
+            groups:
+              - links:
+                  - title: Home Assistant
+                    url: http://homeassistant.local:8123
+                    description: Smart Home Hub
+                    icon: si:homeassistant
+                    same-tab: false
+                    hide-arrow: false
+                  - title: AdGuard Home
+                    url: http://adguard.local:82
+                    description: DNS Ad Blocker
+                    icon: si:adguard
+                    same-tab: false
+                    hide-arrow: false
+                  - title: Traefik
+                    url: http://traefik.local:8080
+                    description: Reverse Proxy & Load Balancer
+                    icon: si:traefik
+                    same-tab: false
+                    hide-arrow: false
 
           # AI & Knowledge
-          - type: group
+          - type: bookmarks
             title: AI & Knowledge
-            columns: 2
-            widgets:
-              - type: bookmark
-                title: Ollama WebUI
-                url: http://ollama.local:8081
-                description: Local LLM Interface
-                icon: si:ollama
-                same-tab: false
-                hide-arrow: false
-
-              - type: bookmark
-                title: Ollama API
-                url: http://ollama.local:11434
-                description: LLM API Server
-                icon: si:ollama
-                same-tab: false
-                hide-arrow: false
+            groups:
+              - links:
+                  - title: Ollama WebUI
+                    url: http://ollama.local:8081
+                    description: Local LLM Interface
+                    icon: si:ollama
+                    same-tab: false
+                    hide-arrow: false
+                  - title: Ollama API
+                    url: http://ollama.local:11434
+                    description: LLM API Server
+                    icon: si:ollama
+                    same-tab: false
+                    hide-arrow: false
 
           # Media Services
-          - type: group
+          - type: bookmarks
             title: Media Services
-            columns: 2
-            widgets:
-              - type: bookmark
-                title: Jellyfin
-                url: http://jellyfin.local:8096
-                description: Media Streaming Server
-                icon: si:jellyfin
-                same-tab: false
-                hide-arrow: false
-
-              - type: bookmark
-                title: Jellyseerr
-                url: http://jellyseerr.local:5055
-                description: Media Request Management
-                icon: si:jellyfin
-                same-tab: false
-                hide-arrow: false
+            groups:
+              - links:
+                  - title: Jellyfin
+                    url: http://jellyfin.local:8096
+                    description: Media Streaming Server
+                    icon: si:jellyfin
+                    same-tab: false
+                    hide-arrow: false
+                  - title: Jellyseerr
+                    url: http://jellyseerr.local:5055
+                    description: Media Request Management
+                    icon: si:jellyfin
+                    same-tab: false
+                    hide-arrow: false
 
           # Security
-          - type: group
+          - type: bookmarks
             title: Security & VPN
-            columns: 2
-            widgets:
-              - type: bookmark
-                title: Vaultwarden
-                url: http://vaultwarden.local:8222
-                description: Password Manager
-                icon: si:bitwarden
-                same-tab: false
-                hide-arrow: false
-
-              - type: bookmark
-                title: Tailscale Admin
-                url: https://login.tailscale.com/admin
-                description: Mesh VPN Management
-                icon: si:tailscale
-                same-tab: false
-                hide-arrow: false
+            groups:
+              - links:
+                  - title: Vaultwarden
+                    url: http://vaultwarden.local:8222
+                    description: Password Manager
+                    icon: si:bitwarden
+                    same-tab: false
+                    hide-arrow: false
+                  - title: Tailscale Admin
+                    url: https://login.tailscale.com/admin
+                    description: Mesh VPN Management
+                    icon: si:tailscale
+                    same-tab: false
+                    hide-arrow: false
 
       - size: small
         widgets:
@@ -163,44 +149,35 @@ pages:
               - ollama-webui
 
           # Media Stack Services
-          - type: group
+          - type: bookmarks
             title: Media Automation
-            columns: 1
-            widgets:
-              - type: bookmark
-                title: Radarr
-                url: http://radarr.local:7878
-                description: Movie Management
-                icon: si:radarr
-                same-tab: false
-
-              - type: bookmark
-                title: Sonarr
-                url: http://sonarr.local:8989
-                description: TV Show Management
-                icon: si:sonarr
-                same-tab: false
-
-              - type: bookmark
-                title: Prowlarr
-                url: http://prowlarr.local:9696
-                description: Indexer Management
-                icon: si:prowlarr
-                same-tab: false
-
-              - type: bookmark
-                title: Bazarr
-                url: http://bazarr.local:6767
-                description: Subtitle Management
-                icon: si:bazarr
-                same-tab: false
-
-              - type: bookmark
-                title: qBittorrent
-                url: http://qbittorrent.local:8080
-                description: Download Client
-                icon: si:qbittorrent
-                same-tab: false
+            groups:
+              - links:
+                  - title: Radarr
+                    url: http://radarr.local:7878
+                    description: Movie Management
+                    icon: si:radarr
+                    same-tab: false
+                  - title: Sonarr
+                    url: http://sonarr.local:8989
+                    description: TV Show Management
+                    icon: si:sonarr
+                    same-tab: false
+                  - title: Prowlarr
+                    url: http://prowlarr.local:9696
+                    description: Indexer Management
+                    icon: si:prowlarr
+                    same-tab: false
+                  - title: Bazarr
+                    url: http://bazarr.local:6767
+                    description: Subtitle Management
+                    icon: si:bazarr
+                    same-tab: false
+                  - title: qBittorrent
+                    url: http://qbittorrent.local:8080
+                    description: Download Client
+                    icon: si:qbittorrent
+                    same-tab: false
 
   # Additional Pages
   - name: System
@@ -266,30 +243,25 @@ pages:
       - size: full
         widgets:
           # Media Library Stats
-          - type: group
+          - type: bookmarks
             title: Media Library
-            columns: 3
-            widgets:
-              - type: bookmark
-                title: Movies
-                url: http://radarr.local:7878
-                description: Managed by Radarr
-                icon: si:radarr
-                same-tab: false
-
-              - type: bookmark
-                title: TV Shows
-                url: http://sonarr.local:8989
-                description: Managed by Sonarr
-                icon: si:sonarr
-                same-tab: false
-
-              - type: bookmark
-                title: Music
-                url: http://lidarr.local:8686
-                description: Managed by Lidarr
-                icon: si:lidarr
-                same-tab: false
+            groups:
+              - links:
+                  - title: Movies
+                    url: http://radarr.local:7878
+                    description: Managed by Radarr
+                    icon: si:radarr
+                    same-tab: false
+                  - title: TV Shows
+                    url: http://sonarr.local:8989
+                    description: Managed by Sonarr
+                    icon: si:sonarr
+                    same-tab: false
+                  - title: Music
+                    url: http://lidarr.local:8686
+                    description: Managed by Lidarr
+                    icon: si:lidarr
+                    same-tab: false
 
           # Download Status
           - type: monitor
