@@ -208,30 +208,67 @@ pages:
           # Docker Container Management
           - type: docker-containers
             title: All Containers
-            show-header: true
-            show-status: true
-            show-stats: true
             containers:
-              - glance
-              - homeassistant
-              - adguardhome
-              - traefik
-              - ollama
-              - ollama-webui
-              - jellyfin
-              - tailscale
-              - vaultwarden
-              - samba
-              - gluetun
-              - qbittorrent
-              - prowlarr
-              - radarr
-              - sonarr
-              - lidarr
-              - bazarr
-              - jellyseerr
-              - byparr
-              - nzbget
+              glance:
+                name: Glance Dashboard
+                icon: si:dashboard
+              homeassistant:
+                name: Home Assistant
+                icon: si:homeassistant
+              adguardhome:
+                name: AdGuard Home
+                icon: si:adguard
+              traefik:
+                name: Traefik
+                icon: si:traefik
+              ollama:
+                name: Ollama
+                icon: si:ollama
+              ollama-webui:
+                name: Ollama WebUI
+                icon: si:ollama
+              jellyfin:
+                name: Jellyfin
+                icon: si:jellyfin
+              tailscale:
+                name: Tailscale
+                icon: si:tailscale
+              vaultwarden:
+                name: Vaultwarden
+                icon: si:bitwarden
+              samba:
+                name: Samba
+                icon: si:samba
+              gluetun:
+                name: Gluetun VPN
+                icon: si:wireguard
+              qbittorrent:
+                name: qBittorrent
+                icon: si:qbittorrent
+              prowlarr:
+                name: Prowlarr
+                icon: si:prowlarr
+              radarr:
+                name: Radarr
+                icon: si:radarr
+              sonarr:
+                name: Sonarr
+                icon: si:sonarr
+              lidarr:
+                name: Lidarr
+                icon: si:lidarr
+              bazarr:
+                name: Bazarr
+                icon: si:bazarr
+              jellyseerr:
+                name: Jellyseerr
+                icon: si:jellyfin
+              byparr:
+                name: Byparr
+                icon: si:jellyfin
+              nzbget:
+                name: NZBGet
+                icon: si:nzbget
 
           # Network Status
           - type: monitor
