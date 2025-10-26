@@ -137,16 +137,28 @@ pages:
           # Docker Stats
           - type: docker-containers
             title: Container Stats
-            show-header: true
-            show-status: true
             containers:
-              - homeassistant
-              - jellyfin
-              - adguardhome
-              - traefik
-              - vaultwarden
-              - ollama
-              - ollama-webui
+              homeassistant:
+                name: Home Assistant
+                icon: si:homeassistant
+              jellyfin:
+                name: Jellyfin
+                icon: si:jellyfin
+              adguardhome:
+                name: AdGuard Home
+                icon: si:adguard
+              traefik:
+                name: Traefik
+                icon: si:traefik
+              vaultwarden:
+                name: Vaultwarden
+                icon: si:bitwarden
+              ollama:
+                name: Ollama
+                icon: si:ollama
+              ollama-webui:
+                name: Ollama WebUI
+                icon: si:ollama
 
           # Media Stack Services
           - type: bookmarks
