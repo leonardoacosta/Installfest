@@ -26,7 +26,7 @@ pages:
       - size: small
         widgets:
           - type: weather
-            location: Dallas, Texas # Update with your location
+            location: Dallas, TX, United States # More specific location format
             units: imperial # or 'metric'
 
           - type: monitor
@@ -34,22 +34,22 @@ pages:
             cache: 1m
             sites:
               - title: Home Assistant
-                url: http://192.168.1.14:8123/lovelace/0
+                url: http://homeassistant:8123/api/
                 icon: si:homeassistant
               - title: Jellyfin
-                url: http://192.168.1.14:8096
+                url: http://jellyfin:8096/health
                 icon: si:jellyfin
               - title: AdGuard Home
-                url: http://192.168.1.14:82
+                url: http://adguardhome:80/control/status
                 icon: si:adguard
               - title: Traefik
-                url: http://192.168.1.14:8080/api/overview
+                url: http://traefik:8080/api/overview
                 icon: si:traefik
               - title: Vaultwarden
-                url: http://192.168.1.14:80/alive
+                url: http://vaultwarden:80/alive
                 icon: si:bitwarden
               - title: Ollama
-                url: http://192.168.1.14:11434/api/tags
+                url: http://ollama:11434/api/tags
                 icon: si:ollama
 
       - size: full

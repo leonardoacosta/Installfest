@@ -49,7 +49,7 @@ homelab/
 
 ### Prerequisites
 
-- **Linux Server** (Ubuntu 22.04+, Debian 12+, or Arch)
+- **Omarchy Server** (Arch Base)
 - **Docker** 24.0+ with Docker Compose v2
 - **Domain** pointed to server IP
 - **Ports** 80/443 accessible from internet
