@@ -3,11 +3,11 @@
 # Organized by function with proper network access considerations
 
 theme:
-  background-color: 0 0 6        # Dark background (HSL: hue=0, saturation=0%, lightness=6%)
-  contrast-multiplier: 1.2        # Slightly increased contrast
-  primary-color: 259 65 90        # Purple accent (HSL: hue=259, saturation=65%, lightness=90%)
-  positive-color: 142 71 45       # Green for up status (HSL: hue=142, saturation=71%, lightness=45%)
-  negative-color: 0 71 60         # Red for down status (HSL: hue=0, saturation=71%, lightness=60%)
+  background-color: 0 0 6 # Dark background (HSL: hue=0, saturation=0%, lightness=6%)
+  contrast-multiplier: 1.2 # Slightly increased contrast
+  primary-color: 259 65 90 # Purple accent (HSL: hue=259, saturation=65%, lightness=90%)
+  positive-color: 142 71 45 # Green for up status (HSL: hue=142, saturation=71%, lightness=45%)
+  negative-color: 0 71 60 # Red for down status (HSL: hue=0, saturation=71%, lightness=60%)
 
 branding:
   logo-url: "https://raw.githubusercontent.com/glanceapp/glance/main/docs/static/images/logo.svg"
@@ -135,7 +135,7 @@ pages:
       - size: small
         widgets:
           # Docker Stats
-          - type: docker
+          - type: docker-containers
             title: Container Stats
             show-header: true
             show-status: true
