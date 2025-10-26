@@ -186,11 +186,10 @@ pages:
       - size: small
         widgets:
           # System Resources
-          - type: resources
-            title: System Resources
-            cpu: true
-            memory: true
-            disk: /
+          - type: server-stats
+            servers:
+              - type: local
+                name: Services
 
       - size: full
         widgets:
