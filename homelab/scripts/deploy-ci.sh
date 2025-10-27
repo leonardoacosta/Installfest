@@ -239,8 +239,16 @@ main() {
     chown -R $PUID:$PGID glance/ 2>/dev/null || true
 
     # Jellyfin directories with proper permissions
-    mkdir -p jellyfin/config jellyfin/cache
-    chown -R $PUID:$PGID jellyfin/ 2>/dev/null || true
+    mkdir -p jellyfin/config jellyfin/cache jellyfin/config/logs
+    # Try to set ownership, if that fails, make it world-writable
+    if ! chown -R $PUID:$PGID jellyfin/ 2>/dev/null; then
+        # Can't change ownership, make it writable by everyone
+        chmod -R 777 jellyfin/ 2>/dev/null || true
+        warning "Could not set jellyfin ownership - using permissive permissions"
+    else
+        # Successfully changed ownership, set standard permissions
+        chmod -R 755 jellyfin/ 2>/dev/null || true
+    fi
 
     # Vaultwarden now uses Docker volume, no directory needed
     # Docker volumes handle permissions automatically

@@ -38,7 +38,7 @@ services:
     image: glanceapp/glance:latest
     container_name: glance
     restart: unless-stopped
-    user: "${PUID:-1000}:${PGID:-1000}"
+    # user: "${PUID:-1000}:${PGID:-1000}"  # Disabled to allow Docker socket access
     environment:
       - TZ=${TZ:-America/Chicago}
     volumes:
@@ -54,19 +54,6 @@ services:
       media:
         ipv4_address: 172.21.0.85
     healthcheck:
-      # test:
-      #   [
-      #     "CMD",
-      #     "wget",
-      #     "--no-verbose",
-      #     "--tries=1",
-      #     "--spider",
-      #     "http://localhost:8080",
-      #   ]
-      # interval: 30s
-      # timeout: 10s
-      # retries: 3
-      # start_period: 20s
       test: ping -c 1 www.google.com || exit 1
       interval: 20s
       timeout: 10s
@@ -104,7 +91,6 @@ services:
     volumes:
       - ./homeassistant:/config
       - /etc/localtime:/etc/localtime:ro
-      # - ./nginx-proxy-manager/letsencrypt:/etc/letsencrypt:ro  # No longer using NPM
     ports:
       - "8123:8123"
     networks:
@@ -308,7 +294,7 @@ services:
     image: docker.io/jellyfin/jellyfin:10.10.7
     container_name: jellyfin
     restart: unless-stopped
-    user: "${PUID:-1000}:${PGID:-1000}"
+    # user: "${PUID:-1000}:${PGID:-1000}"  # Disabled to avoid permission issues
     environment:
       - TZ=${TZ:-America/Chicago}
       - JELLYFIN_PublishedServerUrl=${JELLYFIN_URL:-http://jellyfin.local}
