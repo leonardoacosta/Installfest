@@ -16,6 +16,10 @@ env:
   ALERT_THRESHOLD: 3 # Number of consecutive failures before alert
   CHECK_TIMEOUT: 30 # Timeout for each health check in seconds
 
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   health-check:
     name: Check Homelab Services
@@ -38,7 +42,7 @@ jobs:
 
       - name: Store Health Check Results
         if: always()
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: /tmp/health_history
           key: health-history-${{ github.run_number }}
@@ -132,7 +136,7 @@ jobs:
 
       - name: Upload Metrics
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: homelab-metrics-${{ github.run_number }}
           path: /tmp/metrics_summary.txt

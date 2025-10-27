@@ -25,7 +25,7 @@ perform_health_check() {
     cd "$DEPLOY_PATH" 2>/dev/null || {
         error "Cannot access deployment directory: $DEPLOY_PATH"
         echo "status=failure" >> /tmp/health_status
-        echo "failed_services=deployment_directory" >> /tmp/health_status
+        echo "failed_services=\"deployment_directory\"" >> /tmp/health_status
         exit 1
     }
 
@@ -33,7 +33,7 @@ perform_health_check() {
     if [ ! -f "docker-compose.yml" ]; then
         error "docker-compose.yml not found"
         echo "status=failure" >> /tmp/health_status
-        echo "failed_services=docker_compose_missing" >> /tmp/health_status
+        echo "failed_services=\"docker_compose_missing\"" >> /tmp/health_status
         exit 1
     fi
 
@@ -42,7 +42,7 @@ perform_health_check() {
     if ! docker info &>/dev/null; then
         error "Docker daemon is not running"
         echo "status=failure" >> /tmp/health_status
-        echo "failed_services=docker_daemon" >> /tmp/health_status
+        echo "failed_services=\"docker_daemon\"" >> /tmp/health_status
         exit 1
     fi
 
@@ -52,7 +52,7 @@ perform_health_check() {
     if [ -z "$SERVICES" ]; then
         warning "No services found"
         echo "status=warning" >> /tmp/health_status
-        echo "failed_services=no_services" >> /tmp/health_status
+        echo "failed_services=\"no_services\"" >> /tmp/health_status
         exit 0
     fi
 
@@ -137,7 +137,8 @@ perform_health_check() {
         log "All services are healthy!"
     else
         echo "status=failure" >> /tmp/health_status
-        echo "failed_services=${FAILED_SERVICES# }" >> /tmp/health_status
+        # Quote the value to handle special characters
+        echo "failed_services=\"${FAILED_SERVICES# }\"" >> /tmp/health_status
         echo "Failed services:${FAILED_SERVICES}"
     fi
 }
