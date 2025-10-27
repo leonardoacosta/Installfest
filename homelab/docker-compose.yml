@@ -365,7 +365,7 @@ services:
     image: docker.io/vaultwarden/server:1.32.5
     container_name: vaultwarden
     restart: unless-stopped
-    user: "${PUID:-1000}:${PGID:-1000}"
+    # user: "${PUID:-1000}:${PGID:-1000}"  # Removed to avoid permission issues
     environment:
       - TZ=${TZ:-America/New_York}
       - DOMAIN=${VAULTWARDEN_DOMAIN:-https://vault.local}

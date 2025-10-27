@@ -244,11 +244,15 @@ main() {
 
     # Vaultwarden directory with database file
     mkdir -p vaultwarden
-    chown -R $PUID:$PGID vaultwarden/ 2>/dev/null || true
-    # if [ ! -f vaultwarden/db.sqlite3 ]; then
-    #     touch vaultwarden/db.sqlite3
-    # fi
-    # chown $PUID:$PGID vaultwarden/db.sqlite3 2>/dev/null || true
+    # Try to set ownership, if that fails, make it world-writable
+    if ! chown -R $PUID:$PGID vaultwarden/ 2>/dev/null; then
+        # Can't change ownership, make it writable by everyone
+        chmod -R 777 vaultwarden/ 2>/dev/null || true
+        warning "Could not set vaultwarden ownership - using permissive permissions"
+    else
+        # Successfully changed ownership, set standard permissions
+        chmod -R 755 vaultwarden/ 2>/dev/null || true
+    fi
 
     # Traefik directories
     mkdir -p traefik/letsencrypt traefik/config
