@@ -80,7 +80,7 @@ main() {
 
     # Now create all required directories
     for dir in homeassistant/config glance/assets traefik/letsencrypt traefik/config \
-               jellyfin/config vaultwarden adguardhome/work adguardhome/conf \
+               jellyfin/config adguardhome/work adguardhome/conf \
                ollama ollama-webui radarr sonarr lidarr prowlarr bazarr \
                qbittorrent jellyseerr nzbget scripts traefik/dynamic; do
 
@@ -242,17 +242,8 @@ main() {
     mkdir -p jellyfin/config jellyfin/cache
     chown -R $PUID:$PGID jellyfin/ 2>/dev/null || true
 
-    # Vaultwarden directory with database file
-    mkdir -p vaultwarden
-    # Try to set ownership, if that fails, make it world-writable
-    if ! chown -R $PUID:$PGID vaultwarden/ 2>/dev/null; then
-        # Can't change ownership, make it writable by everyone
-        chmod -R 777 vaultwarden/ 2>/dev/null || true
-        warning "Could not set vaultwarden ownership - using permissive permissions"
-    else
-        # Successfully changed ownership, set standard permissions
-        chmod -R 755 vaultwarden/ 2>/dev/null || true
-    fi
+    # Vaultwarden now uses Docker volume, no directory needed
+    # Docker volumes handle permissions automatically
 
     # Traefik directories
     mkdir -p traefik/letsencrypt traefik/config
