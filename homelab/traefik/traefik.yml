@@ -86,9 +86,9 @@ providers:
     # constraints: "Label(`traefik.enable`,`true`)"
 
   # File provider - for dynamic configuration files
-  file:
-    directory: "/etc/traefik/dynamic"
-    watch: true # Automatically reload on file changes
+  # file:
+  #   directory: "/etc/traefik/dynamic"
+  #   watch: true # Automatically reload on file changes
 
 # Logging Configuration
 log:
