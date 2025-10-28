@@ -102,7 +102,7 @@ services:
       # - "53:53/tcp"
       # - "53:53/udp"
       # - "81:80/tcp" # Web interface (port 82 to avoid conflicts)
-      - "82:80/tcp" # Web interface (port 82 to avoid conflicts)
+      # - "82:80/tcp" # Web interface (port 82 to avoid conflicts)
       - "8443:443/tcp" # HTTPS web interface
       - "3000:3000/tcp" # Initial setup
       - "853:853/tcp" # DNS-over-TLS
@@ -117,7 +117,7 @@ services:
     cap_add:
       - NET_BIND_SERVICE
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:82 || exit 1"]
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
