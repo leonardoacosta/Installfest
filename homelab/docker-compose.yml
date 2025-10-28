@@ -138,10 +138,6 @@ services:
     image: traefik:v3.3
     container_name: traefik
     restart: unless-stopped
-    command:
-      - "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--entrypoints.web.address=:80"
     ports:
       - "80:80"
       - "443:443"

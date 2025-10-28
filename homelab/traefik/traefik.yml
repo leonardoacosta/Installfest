@@ -83,7 +83,7 @@ providers:
     network: "homelab" # Default network to use
     watch: true # Watch for Docker events in real-time
     # Constraints to filter which containers Traefik should manage
-    constraints: "Label(`traefik.enable`,`true`)"
+    # constraints: "Label(`traefik.enable`,`true`)"
 
   # File provider - for dynamic configuration files
   file:
