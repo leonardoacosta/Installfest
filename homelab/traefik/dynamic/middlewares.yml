@@ -1,6 +1,3 @@
-# Traefik v3 Dynamic Configuration - Middlewares
-# This file defines reusable middlewares for security, authentication, and request modification
-
 http:
   middlewares:
     # ============================================
@@ -26,7 +23,7 @@ http:
         # Custom headers
         customResponseHeaders:
           X-Robots-Tag: "noindex,nofollow,nosnippet,noarchive,notranslate,noimageindex"
-          server: ""  # Hide server information
+          server: "" # Hide server information
 
     # ============================================
     # Basic Authentication (Dashboard & Admin)
@@ -55,19 +52,19 @@ http:
     # ============================================
     rate-limit-general:
       rateLimit:
-        average: 100      # Average requests per second
+        average: 100 # Average requests per second
         period: 1s
-        burst: 50         # Allow burst of 50 requests
+        burst: 50 # Allow burst of 50 requests
 
     rate-limit-strict:
       rateLimit:
-        average: 10       # Stricter limit for sensitive endpoints
+        average: 10 # Stricter limit for sensitive endpoints
         period: 1s
         burst: 5
 
     rate-limit-auth:
       rateLimit:
-        average: 5        # Very strict for authentication endpoints
+        average: 5 # Very strict for authentication endpoints
         period: 1m
         burst: 2
 
@@ -88,10 +85,10 @@ http:
       ipWhiteList:
         sourceRange:
           - "127.0.0.1/32"
-          - "172.20.0.0/24"   # homelab network
-          - "172.21.0.0/24"   # media network
-          - "10.0.0.0/8"      # Private network range
-          - "192.168.0.0/16"  # Private network range
+          - "172.20.0.0/24" # homelab network
+          - "172.21.0.0/24" # media network
+          - "10.0.0.0/8" # Private network range
+          - "192.168.0.0/16" # Private network range
 
     # ============================================
     # Redirect Schemes
@@ -132,8 +129,8 @@ http:
     # ============================================
     buffering:
       buffering:
-        maxRequestBodyBytes: 10485760  # 10MB
-        memRequestBodyBytes: 2097152   # 2MB
+        maxRequestBodyBytes: 10485760 # 10MB
+        memRequestBodyBytes: 2097152 # 2MB
         maxResponseBodyBytes: 10485760
         memResponseBodyBytes: 2097152
         retryExpression: "IsNetworkError() && Attempts() <= 2"
@@ -150,7 +147,7 @@ http:
           - "DELETE"
           - "OPTIONS"
         accessControlAllowOriginList:
-          - "*"  # Change to specific domains in production
+          - "*" # Change to specific domains in production
         accessControlAllowHeaders:
           - "Content-Type"
           - "Authorization"
@@ -223,7 +220,6 @@ http:
 # ============================================
 tcp:
   middlewares: {}
-
 # ============================================
 # UDP Middlewares (not supported in Traefik)
 # ============================================
