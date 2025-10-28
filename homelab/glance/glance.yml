@@ -36,18 +36,23 @@ pages:
               - title: Home Assistant
                 url: http://172.20.0.123:8123/api/
                 icon: si:homeassistant
+
               - title: Jellyfin
                 url: http://172.20.0.96:8096/health
                 icon: si:jellyfin
+              
               - title: AdGuard Home
                 url: http://172.20.0.53:80/control/status
                 icon: si:adguard
+              
               - title: Traefik
                 url: http://172.20.0.81:8080/ping
                 icon: si:traefik
+              
               - title: Vaultwarden
                 url: http://172.20.0.22:80/alive
                 icon: si:bitwarden
+              
               - title: Ollama
                 url: http://172.20.0.34:11434/api/tags
                 icon: si:ollama
@@ -65,12 +70,14 @@ pages:
                     icon: si:homeassistant
                     same-tab: false
                     hide-arrow: false
+
                   - title: AdGuard Home
                     url: http://192.168.1.14:82
                     description: DNS Ad Blocker
                     icon: si:adguard
                     same-tab: false
                     hide-arrow: false
+                  
                   - title: Traefik
                     url: http://192.168.1.14:8080
                     description: Reverse Proxy & Load Balancer
@@ -89,6 +96,7 @@ pages:
                     icon: si:ollama
                     same-tab: false
                     hide-arrow: false
+
                   - title: Ollama API
                     url: http://192.168.1.14:11434
                     description: LLM API Server
@@ -107,6 +115,7 @@ pages:
                     icon: si:jellyfin
                     same-tab: false
                     hide-arrow: false
+
                   - title: Jellyseerr
                     url: http://192.168.1.14:5055
                     description: Media Request Management
@@ -125,6 +134,7 @@ pages:
                     icon: si:bitwarden
                     same-tab: false
                     hide-arrow: false
+
                   - title: Tailscale Admin
                     url: https://login.tailscale.com/admin
                     description: Mesh VPN Management
@@ -170,21 +180,25 @@ pages:
                     description: Movie Management
                     icon: si:radarr
                     same-tab: false
+
                   - title: Sonarr
                     url: http://192.168.1.14:8989
                     description: TV Show Management
                     icon: si:sonarr
                     same-tab: false
+                  
                   - title: Prowlarr
                     url: http://192.168.1.14:9696
                     description: Indexer Management
                     icon: si:prowlarr
                     same-tab: false
+                  
                   - title: Bazarr
                     url: http://192.168.1.14:6767
                     description: Subtitle Management
                     icon: si:bazarr
                     same-tab: false
+                  
                   - title: qBittorrent
                     url: http://192.168.1.14:8080
                     description: Download Client
@@ -278,9 +292,11 @@ pages:
               - title: Homelab Network Gateway
                 url: http://172.20.0.1
                 icon: si:docker
+              
               - title: Media Network Gateway
                 url: http://172.21.0.1
                 icon: si:docker
+
               - title: VPN Connection (Gluetun)
                 url: http://172.21.0.2:8000/v1/publicip
                 icon: si:wireguard
