@@ -6,7 +6,7 @@ global:
 api:
   dashboard: true # Enable the Traefik dashboard
   debug: false # Set to true for debugging
-  insecure: false # Never expose dashboard without authentication
+  insecure: true # Never expose dashboard without authentication
 
 # Entry Points - Define ports and protocols
 entryPoints:
@@ -50,8 +50,8 @@ entryPoints:
     #     - "192.168.0.0/16" # private network
 
   # Traefik Dashboard Entry Point (Internal only)
-  traefik:
-    address: ":8080"
+  # traefik:
+  #   address: ":8080"
 
 # Certificate Resolvers - Let's Encrypt Configuration
 certificatesResolvers:
