@@ -156,7 +156,7 @@ services:
     ports:
       - "80:80" # HTTP
       - "443:443" # HTTPS
-      # - "8080:8080" # Dashboard (use Traefik routing instead)
+      - "8080:8080" # Dashboard (use Traefik routing instead)
     environment:
       - TZ=${TZ:-America/Chicago}
       # Cloudflare DNS Challenge (uncomment if using DNS challenge)
@@ -371,7 +371,7 @@ services:
       - ICON_CACHE_TTL=2592000
       - ICON_CACHE_NEGTTL=259200
     volumes:
-      - ./vaultwarden:/data
+      - vaultwarden_data:/data
     ports:
       - "8222:80"
       - "3012:3012"
@@ -667,4 +667,6 @@ volumes:
   ollama_data:
     driver: local
   ollama_webui_data:
+    driver: local
+  vaultwarden_data:
     driver: local
