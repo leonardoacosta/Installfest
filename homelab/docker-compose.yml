@@ -80,7 +80,8 @@ services:
     # devices:
     #   - /dev/ttyUSB0:/dev/ttyUSB0
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8123 || exit 1"]
+      test:
+        ["CMD-SHELL", "wget -q --spider http://localhost:80/health || exit 1"]
       interval: 30s
       timeout: 15s
       retries: 10
