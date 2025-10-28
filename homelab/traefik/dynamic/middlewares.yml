@@ -35,7 +35,7 @@ http:
         users:
           # Default: admin/admin - CHANGE THIS!
           # Generated with: echo $(htpasswd -nb admin admin) | sed -e s/\\$/\\$\\$/g
-          - "admin:$apr1$H6uskkkW$IgXLP6ewTrSuBkTrqE8wj/"
+          - "${TRAEFIK_ADMIN_PASSWORD}:${TRAEFIK_ADMIN_PASSWORD_HASH}"
         realm: "Traefik Dashboard"
         removeHeader: true
 
@@ -44,7 +44,7 @@ http:
       basicAuth:
         users:
           # Generated with: echo $(htpasswd -nb admin SecurePassword123!) | sed -e s/\\$/\\$\\$/g
-          - "admin:$apr1$H6uskkkW$IgXLP6ewTrSuBkTrqE8wj/"
+          - "${TRAEFIK_ADMIN_PASSWORD}:${TRAEFIK_ADMIN_PASSWORD_HASH}"
         realm: "Admin Area"
 
     # ============================================
