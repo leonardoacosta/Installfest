@@ -101,7 +101,7 @@ services:
       # Use AdGuard via container IP (172.20.0.53) or custom DNS port
       # - "53:53/tcp"
       # - "53:53/udp"
-      - "80:80/tcp" # Web interface (port 82 to avoid conflicts)
+      - "80:81/tcp" # Web interface (port 82 to avoid conflicts)
       - "82:82/tcp" # Web interface (port 82 to avoid conflicts)
       - "8443:443/tcp" # HTTPS web interface
       - "3000:3000/tcp" # Initial setup
