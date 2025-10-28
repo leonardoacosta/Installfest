@@ -53,6 +53,14 @@ services:
       retries: 5
     security_opt:
       - no-new-privileges:true
+    labels:
+      - "traefik.enable=false" # Disable if using Traefik
+      - "com.centurylinklabs.watchtower.enable=true" # Auto-update
+      - "homepage.group=Infrastructure"
+      - "homepage.name=Glance"
+      - "homepage.icon=glance"
+      - "homepage.href=http://glance.local:8085"
+      - "homepage.description=Homelab Dashboard"
 
   # ************************************
   # ********** Core Infrastructure *****
@@ -122,6 +130,8 @@ services:
       timeout: 10s
       retries: 5
       start_period: 60s
+    labels:
+      - "traefik.enable=true"
 
   # ? Traefik - Reverse Proxy
   traefik:
@@ -153,6 +163,31 @@ services:
       start_period: 20s
     security_opt:
       - no-new-privileges:true
+    labels:
+      # Enable Traefik for the dashboard
+      - "traefik.enable=true"
+
+      # Dashboard Router
+      - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.${DOMAIN:-local}`)"
+      - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
+      - "traefik.http.routers.traefik-dashboard.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.traefik-dashboard.service=api@internal"
+      - "traefik.http.routers.traefik-dashboard.middlewares=dashboard-auth@file"
+
+      # API Router (for health checks)
+      - "traefik.http.routers.traefik-api.rule=Host(`traefik.${DOMAIN:-local}`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.traefik-api.entrypoints=websecure"
+      - "traefik.http.routers.traefik-api.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.traefik-api.service=api@internal"
+      - "traefik.http.routers.traefik-api.middlewares=dashboard-auth@file"
+
+      # Metadata
+      - "com.centurylinklabs.watchtower.enable=true"
+      - "homepage.group=Infrastructure"
+      - "homepage.name=Traefik"
+      - "homepage.icon=traefik"
+      - "homepage.href=https://traefik.${DOMAIN:-local}"
+      - "homepage.description=Reverse Proxy & Load Balancer"
 
   # ? Vaultwarden - Password Manager
   vaultwarden:
