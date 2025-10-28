@@ -34,22 +34,22 @@ pages:
             cache: 1m
             sites:
               - title: Home Assistant
-                url: http://homeassistant:8123/api/
+                url: http://172.20.0.123:8123/api/
                 icon: si:homeassistant
               - title: Jellyfin
-                url: http://jellyfin:8096/health
+                url: http://172.20.0.96:8096/health
                 icon: si:jellyfin
               - title: AdGuard Home
-                url: http://adguardhome:80/control/status
+                url: http://172.20.0.53:80/control/status
                 icon: si:adguard
               - title: Traefik
-                url: http://traefik:8080/ping
+                url: http://172.20.0.81:8080/ping
                 icon: si:traefik
               - title: Vaultwarden
-                url: http://vaultwarden:80/alive
+                url: http://172.20.0.22:80/alive
                 icon: si:bitwarden
               - title: Ollama
-                url: http://ollama:11434/api/tags
+                url: http://172.20.0.34:11434/api/tags
                 icon: si:ollama
 
       - size: full

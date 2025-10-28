@@ -88,8 +88,8 @@ http:
       ipWhiteList:
         sourceRange:
           - "127.0.0.1/32"
-          - "172.20.0.0/16"   # homelab network
-          - "172.21.0.0/16"   # media network
+          - "172.20.0.0/24"   # homelab network
+          - "172.21.0.0/24"   # media network
           - "10.0.0.0/8"      # Private network range
           - "192.168.0.0/16"  # Private network range
 
