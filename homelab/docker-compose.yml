@@ -145,9 +145,8 @@ services:
       media:
         ipv4_address: 172.21.0.81
     healthcheck:
-      # test: ["CMD", "traefik", "healthcheck", "--ping"]
-      test:
-        ["CMD-SHELL", "wget -q --spider http://localhost:80/health || exit 1"]
+      # Using traefik's built-in healthcheck command
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
       interval: 30s
       timeout: 10s
       retries: 3

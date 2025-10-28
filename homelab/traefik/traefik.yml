@@ -73,6 +73,10 @@ certificatesResolvers:
       #     - "1.1.1.1:53"
       #     - "8.8.8.8:53"
 
+# Ping - Healthcheck endpoint
+ping:
+  entryPoint: traefik
+
 # Providers - Where Traefik gets its dynamic configuration
 providers:
   # Docker provider - reads labels from Docker containers
@@ -128,7 +132,7 @@ metrics:
 
 # ServersTransport - Global transport configuration
 serversTransport:
-  insecureSkipVerify: false # Set to true if you have self-signed certificates
+  insecureSkipVerify: true # Set to true for self-signed certificates and internal connections
   maxIdleConnsPerHost: 200
   forwardingTimeouts:
     dialTimeout: "30s"
