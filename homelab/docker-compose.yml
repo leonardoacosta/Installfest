@@ -97,7 +97,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.homeassistant.entrypoints=websecure"
       - "traefik.http.routers.homeassistant.tls=true"
-      - "traefik.http.routers.homeassistant.service=homeassistant@internal"
+      - "traefik.http.services.homeassistant.loadbalancer.server.port=8123"
 
   # ? AdGuard Home - DNS Ad Blocker
   adguardhome:
@@ -139,7 +139,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.adguardhome.entrypoints=websecure"
       - "traefik.http.routers.adguardhome.tls=true"
-      - "traefik.http.routers.adguardhome.service=adguardhome@internal"
+      - "traefik.http.services.adguardhome.loadbalancer.server.port=3000"
 
   # ? Traefik - Reverse Proxy
   traefik:
@@ -241,7 +241,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.vaultwarden.entrypoints=websecure"
       - "traefik.http.routers.vaultwarden.tls=true"
-      - "traefik.http.routers.vaultwarden.service=vaultwarden@internal"
+      - "traefik.http.services.vaultwarden.loadbalancer.server.port=80"
 
   # ************************************
   # ********** AI & Knowledge **********
@@ -312,7 +312,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.ollama-webui.entrypoints=websecure"
       - "traefik.http.routers.ollama-webui.tls=true"
-      - "traefik.http.routers.ollama-webui.service=ollama-webui@internal"
+      - "traefik.http.services.ollama-webui.loadbalancer.server.port=8080"
 
   # ************************************
   # ********** VPN & Security **********
@@ -375,7 +375,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.samba.entrypoints=websecure"
       - "traefik.http.routers.samba.tls=true"
-      - "traefik.http.routers.samba.service=samba@internal"
+      - "traefik.http.services.samba.loadbalancer.server.port=445"
 
   # ************************************
   # ********** Media Stack Services ****
@@ -452,7 +452,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.jellyfin.entrypoints=websecure"
       - "traefik.http.routers.jellyfin.tls=true"
-      - "traefik.http.routers.jellyfin.service=jellyfin@internal"
+      - "traefik.http.services.jellyfin.loadbalancer.server.port=8096"
 
   # ? Radarr - Movie Manager
   radarr:
@@ -476,7 +476,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.radarr.entrypoints=websecure"
       - "traefik.http.routers.radarr.tls=true"
-      - "traefik.http.routers.radarr.service=radarr@internal"
+      - "traefik.http.services.radarr.loadbalancer.server.port=7878"
 
   # ? Sonarr - TV Show Manager
   sonarr:
@@ -500,7 +500,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.sonarr.entrypoints=websecure"
       - "traefik.http.routers.sonarr.tls=true"
-      - "traefik.http.routers.sonarr.service=sonarr@internal"
+      - "traefik.http.services.sonarr.loadbalancer.server.port=8989"
 
   # ? Lidarr - Music Manager
   lidarr:
@@ -524,7 +524,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.lidarr.entrypoints=websecure"
       - "traefik.http.routers.lidarr.tls=true"
-      - "traefik.http.routers.lidarr.service=lidarr@internal"
+      - "traefik.http.services.lidarr.loadbalancer.server.port=8686"
 
   # ? Bazarr - Subtitle Manager
   bazarr:
@@ -547,7 +547,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.bazarr.entrypoints=websecure"
       - "traefik.http.routers.bazarr.tls=true"
-      - "traefik.http.routers.bazarr.service=bazarr@internal"
+      - "traefik.http.services.bazarr.loadbalancer.server.port=6767"
 
   # ? Jellyseerr - Media Request Management
   jellyseerr:
@@ -569,7 +569,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.jellyseerr.entrypoints=websecure"
       - "traefik.http.routers.jellyseerr.tls=true"
-      - "traefik.http.routers.jellyseerr.service=jellyseerr@internal"
+      - "traefik.http.services.jellyseerr.loadbalancer.server.port=5055"
 
   # ? Prowlarr - Indexer Manager
   prowlarr:
@@ -590,7 +590,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.prowlarr.entrypoints=websecure"
       - "traefik.http.routers.prowlarr.tls=true"
-      - "traefik.http.routers.prowlarr.service=prowlarr@internal"
+      - "traefik.http.services.prowlarr.loadbalancer.server.port=9696"
 
   # ? qBittorrent - Torrent Client
   qbittorrent:
@@ -617,7 +617,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.qbittorrent.entrypoints=websecure"
       - "traefik.http.routers.qbittorrent.tls=true"
-      - "traefik.http.routers.qbittorrent.service=qbittorrent@internal"
+      - "traefik.http.services.qbittorrent.loadbalancer.server.port=8080"
 
   # ? NZBGet - Usenet Client
   nzbget:
@@ -639,7 +639,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.nzbget.entrypoints=websecure"
       - "traefik.http.routers.nzbget.tls=true"
-      - "traefik.http.routers.nzbget.service=nzbget@internal"
+      - "traefik.http.services.nzbget.loadbalancer.server.port=6789"
 volumes:
   ollama_data:
   ollama_webui_data:
