@@ -182,14 +182,14 @@ services:
       - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
       - "traefik.http.routers.traefik-dashboard.tls.certresolver=letsencrypt"
       - "traefik.http.routers.traefik-dashboard.service=api@internal"
-      - "traefik.http.routers.traefik-dashboard.middlewares=dashboard-auth@file"
+      # - "traefik.http.routers.traefik-dashboard.middlewares=dashboard-auth@file"
 
       # # API Router (for health checks)
       # - "traefik.http.routers.traefik-api.rule=Host(`traefik.${DOMAIN:-local}`) && PathPrefix(`/api`)"
       - "traefik.http.routers.traefik-api.entrypoints=websecure"
       - "traefik.http.routers.traefik-api.tls.certresolver=letsencrypt"
       - "traefik.http.routers.traefik-api.service=api@internal"
-      - "traefik.http.routers.traefik-api.middlewares=dashboard-auth@file"
+      # - "traefik.http.routers.traefik-api.middlewares=dashboard-auth@file"
 
       # # Metadata
       - "com.centurylinklabs.watchtower.enable=true"
