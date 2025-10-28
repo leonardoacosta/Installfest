@@ -129,11 +129,7 @@ services:
     cap_add:
       - NET_BIND_SERVICE
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "wget -q --spider https://adguard.${DOMAIN:-local} || exit 1",
-        ]
+      test: ["CMD-SHELL", "curl -f http://localhost:82 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
