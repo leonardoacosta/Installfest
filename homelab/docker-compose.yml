@@ -653,8 +653,6 @@ services:
       gluetun:
         condition: service_healthy
         restart: true
-    ports:
-      - "8000:8080" # Web interface
     network_mode: service:gluetun
     security_opt:
       - no-new-privileges:true
