@@ -621,8 +621,6 @@ services:
     depends_on:
       gluetun:
         condition: service_healthy
-    ports:
-      - "9696:9696" # Web interface
     network_mode: service:gluetun
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://localhost:9696 || exit 1"]
@@ -682,8 +680,6 @@ services:
     depends_on:
       gluetun:
         condition: service_healthy
-    ports:
-      - "6789:6789" # Web interface
     network_mode: service:gluetun
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://localhost:6789 || exit 1"]
