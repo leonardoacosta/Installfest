@@ -87,7 +87,7 @@ providers:
 
   # File provider - for dynamic configuration files
   file:
-    directory: "/etc/traefik/dynamic"
+    directory: "/dynamic"
     watch: true # Automatically reload on file changes
 
 # Logging Configuration
