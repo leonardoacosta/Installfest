@@ -371,7 +371,7 @@ services:
       - ICON_CACHE_TTL=2592000
       - ICON_CACHE_NEGTTL=259200
     volumes:
-      - vaultwarden_data:/data
+      - ./vaultwarden:/data
     ports:
       - "8222:80"
       - "3012:3012"
@@ -667,6 +667,4 @@ volumes:
   ollama_data:
     driver: local
   ollama_webui_data:
-    driver: local
-  vaultwarden_data:
     driver: local
