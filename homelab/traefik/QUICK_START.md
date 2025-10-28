@@ -1,13 +1,10 @@
-# Traefik v3 - Quick Start Guide
+<!-- # Traefik v3 - Quick Start Guide
 
 ## 🚀 Fast Track Migration (30 minutes)
 
 ### Step 1: Backup & Prepare (3 minutes)
 ```bash
 cd /Users/leonardoacosta/Personal/Installfest/homelab
-
-# Backup nginx-proxy-manager
-tar -czf npm-backup-$(date +%Y%m%d).tar.gz nginx-proxy-manager/
 
 # Copy environment file
 cp .env.traefik .env
@@ -30,8 +27,8 @@ LETSENCRYPT_EMAIL=your-email@example.com  # Your email
 cd traefik/scripts
 
 # Generate password (replace YourPassword)
-./generate-password.sh admin YourPassword
-
+./generate-password.sh admin YourPassword -->
+<!-- 
 # Copy the output line and edit middlewares
 nano ../dynamic/middlewares.yml
 
@@ -49,8 +46,8 @@ docker-compose rm -f nginx-proxy-manager
 # Verify ports released
 sudo lsof -i :80
 sudo lsof -i :443
-```
-
+``` -->
+<!-- 
 ### Step 5: Deploy Traefik (2 minutes)
 ```bash
 # Backup original compose file
@@ -70,7 +67,7 @@ Look for:
 - ✅ "Configuration loaded from file"
 - ✅ "Server listening on :80"
 - ✅ "Server listening on :443"
-- ❌ No error messages
+- ❌ No error messages -->
 
 ### Step 6: Configure DNS (5 minutes)
 

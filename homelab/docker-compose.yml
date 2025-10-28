@@ -130,7 +130,7 @@ services:
     cap_add:
       - NET_BIND_SERVICE
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000 || exit 1"]
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:82 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -139,9 +139,10 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.adguardhome.entrypoints=websecure"
       - "traefik.http.routers.adguardhome.tls=true"
-      - "traefik.http.services.adguardhome.loadbalancer.server.port=3000"
+      - "traefik.http.services.adguardhome.loadbalancer.server.port=82"
 
   # ? Traefik - Reverse Proxy
+
   traefik:
     image: traefik:v3.3
     container_name: traefik
@@ -178,17 +179,17 @@ services:
       - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_DASHBOARD_USER}:${TRAEFIK_DASHBOARD_PASSWORD}"
 
       # Dashboard Router
-      # - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.${DOMAIN:-local}`)"
       - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
       - "traefik.http.routers.traefik-dashboard.tls.certresolver=letsencrypt"
       - "traefik.http.routers.traefik-dashboard.service=api@internal"
+      # - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.${DOMAIN:-local}`)"
       # - "traefik.http.routers.traefik-dashboard.middlewares=dashboard-auth@file"
 
       # # API Router (for health checks)
-      # - "traefik.http.routers.traefik-api.rule=Host(`traefik.${DOMAIN:-local}`) && PathPrefix(`/api`)"
       - "traefik.http.routers.traefik-api.entrypoints=websecure"
       - "traefik.http.routers.traefik-api.tls.certresolver=letsencrypt"
       - "traefik.http.routers.traefik-api.service=api@internal"
+      # - "traefik.http.routers.traefik-api.rule=Host(`traefik.${DOMAIN:-local}`) && PathPrefix(`/api`)"
       # - "traefik.http.routers.traefik-api.middlewares=dashboard-auth@file"
 
       # # Metadata
@@ -217,13 +218,13 @@ services:
       - LOG_LEVEL=${VAULTWARDEN_LOG_LEVEL:-warn}
       - EXTENDED_LOGGING=true
       - SHOW_PASSWORD_HINT=false
-      - DATABASE_URL=sqlite://db.sqlite3
+      - DATABASE_URL=sqlite://data/db.sqlite3
       - DATABASE_MAX_CONNS=10
       - IP_HEADER=X-Real-IP
       - ICON_CACHE_TTL=2592000
       - ICON_CACHE_NEGTTL=259200
     volumes:
-      - vaultwarden_data:/data
+      - ./vaultwarden/data:/data
     ports:
       - "8222:80"
       - "3012:3012"
@@ -312,7 +313,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.ollama-webui.entrypoints=websecure"
       - "traefik.http.routers.ollama-webui.tls=true"
-      - "traefik.http.services.ollama-webui.loadbalancer.server.port=8080"
+      - "traefik.http.services.ollama-webui.loadbalancer.server.port=8081"
 
   # ************************************
   # ********** VPN & Security **********
@@ -349,9 +350,6 @@ services:
     image: ghcr.io/servercontainers/samba:latest
     container_name: samba
     restart: unless-stopped
-    ports:
-      - "445:445"
-      - "139:139"
     environment:
       - TZ=${TZ:-America/New_York}
       - USERID=${PUID:-1000}
@@ -363,9 +361,17 @@ services:
     volumes:
       - ${NAS_PATH:-/data}:/media
       # - ${BACKUP_PATH:-/backup}:/backup
+    ports:
+      - "445:445"
+      - "139:139"
     networks:
       homelab:
         ipv4_address: 172.20.0.45
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:445 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
     cap_add:
       - SYS_ADMIN
       - DAC_READ_SEARCH
@@ -392,7 +398,9 @@ services:
       media:
         ipv4_address: 172.21.0.2
     ports:
-      - "8000:8000"
+      - "8888:8888/tcp" # HTTP proxy
+      - "8388:8388/tcp" # Shadowsocks
+      - "8388:8388/udp" # Shadowsocks
     volumes:
       - ./gluetun:/gluetun
     environment:
@@ -416,14 +424,14 @@ services:
       - HTTP_CONTROL_SERVER_ADDRESS=:8000
       - HTTP_CONTROL_SERVER_LOG=on
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:8000 || exit 1"]
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8888 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
 
   # ? Jellyfin - Media Server
   jellyfin:
-    image: docker.io/jellyfin/jellyfin:10.10.7
+    image: lscr.io/linuxserver/jellyfin:latest
     container_name: jellyfin
     restart: unless-stopped
     environment:
@@ -435,10 +443,10 @@ services:
       - ${MEDIA_PATH:-/data/media}:/media:ro
       - ${MEDIA_PATH2:-/data/media2}:/media2:ro
     ports:
-      - "8096:8096"
-      - "8920:8920"
-      - "7359:7359/udp"
-      - "1900:1900/udp"
+      - "8096:8096" # Web interface
+      - "8920:8920" # HTTPS web interface
+      - "7359:7359/udp" # Client discovery - Allows clients to discover Jellyfin on the local network
+      - "1900:1900/udp" # DLNA - Service discovery used by DNLA and clients
     networks:
       homelab:
         ipv4_address: 172.20.0.96
@@ -446,8 +454,11 @@ services:
         ipv4_address: 172.21.0.96
     # devices:
     #   - /dev/dri:/dev/dri  # Intel QuickSync
-    # group_add:
-    #   - "989"  # render group for hardware acceleration
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8096 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.jellyfin.entrypoints=websecure"
@@ -468,10 +479,15 @@ services:
       - ${MEDIA_PATH:-/data/media}:/media
       - ${DOWNLOADS_PATH:-/data/downloads}:/downloads
     ports:
-      - "7878:7878"
+      - "7878:7878" # Web interface
     networks:
       media:
         ipv4_address: 172.21.0.78
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:7878 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.radarr.entrypoints=websecure"
@@ -492,10 +508,15 @@ services:
       - ${MEDIA_PATH:-/data/media}:/media
       - ${DOWNLOADS_PATH:-/data/downloads}:/downloads
     ports:
-      - "8989:8989"
+      - "8989:8989" # Web interface
     networks:
       media:
         ipv4_address: 172.21.0.89
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8989 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.sonarr.entrypoints=websecure"
@@ -516,10 +537,15 @@ services:
       - ${MEDIA_PATH:-/data/media}:/media
       - ${DOWNLOADS_PATH:-/data/downloads}:/downloads
     ports:
-      - "8686:8686"
+      - "8686:8686" # Web interface
     networks:
       media:
         ipv4_address: 172.21.0.86
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8686 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.lidarr.entrypoints=websecure"
@@ -539,10 +565,15 @@ services:
       - ./bazarr:/config
       - ${MEDIA_PATH:-/data/media}:/media
     ports:
-      - "6767:6767"
+      - "6767:6767" # Web interface
     networks:
       media:
         ipv4_address: 172.21.0.67
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:6767 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.bazarr.entrypoints=websecure"
@@ -559,12 +590,17 @@ services:
     volumes:
       - ./jellyseerr:/app/config
     ports:
-      - "5055:5055"
+      - "5055:5055" # Web interface
     networks:
       homelab:
         ipv4_address: 172.20.0.55
       media:
         ipv4_address: 172.21.0.55
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:5055 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.jellyseerr.entrypoints=websecure"
@@ -585,7 +621,14 @@ services:
     depends_on:
       gluetun:
         condition: service_healthy
+    ports:
+      - "9696:9696" # Web interface
     network_mode: service:gluetun
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:9696 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.prowlarr.entrypoints=websecure"
@@ -610,9 +653,16 @@ services:
       gluetun:
         condition: service_healthy
         restart: true
+    ports:
+      - "8080:8080" # Web interface
     network_mode: service:gluetun
     security_opt:
       - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.qbittorrent.entrypoints=websecure"
@@ -634,7 +684,14 @@ services:
     depends_on:
       gluetun:
         condition: service_healthy
+    ports:
+      - "6789:6789" # Web interface
     network_mode: service:gluetun
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:6789 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.nzbget.entrypoints=websecure"
