@@ -365,7 +365,7 @@ services:
       - LOG_LEVEL=${VAULTWARDEN_LOG_LEVEL:-warn}
       - EXTENDED_LOGGING=true
       - SHOW_PASSWORD_HINT=false
-      - DATABASE_URL=sqlite://data/db.sqlite3
+      - DATABASE_URL=sqlite://db.sqlite3
       - DATABASE_MAX_CONNS=10
       - IP_HEADER=X-Real-IP
       - ICON_CACHE_TTL=2592000
