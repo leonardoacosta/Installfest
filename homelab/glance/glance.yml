@@ -22,12 +22,6 @@ server:
 pages:
   - name: Home
     slug: home
-
-    head-widgets:
-      - type: weather
-        location: Dallas, Texas, United States # More specific location format
-        units: imperial # or 'metric'
-
     columns:
       - size: full
         widgets:
@@ -95,60 +89,6 @@ pages:
                     same-tab: false
                     hide-arrow: false
 
-          # Security
-          - type: bookmarks
-            title: Security & VPN
-            groups:
-              - links:
-                  - title: Vaultwarden
-                    url: https://vaultwarden.local
-                    description: Password Manager
-                    icon: si:bitwarden
-                    same-tab: false
-                    hide-arrow: false
-
-                  - title: Tailscale Admin
-                    url: https://login.tailscale.com/admin
-                    description: Mesh VPN Management
-                    icon: si:tailscale
-                    same-tab: false
-                    hide-arrow: false
-
-      - size: small
-        widgets:
-          # Docker Stats
-          - type: docker-containers
-            title: Container Stats
-            containers:
-              homeassistant:
-                name: Home Assistant
-                icon: si:homeassistant
-                url: https://homeassistant.local
-              jellyfin:
-                name: Jellyfin
-                icon: si:jellyfin
-                url: https://jellyfin.local
-              adguardhome:
-                name: AdGuard Home
-                icon: si:adguard
-                url: https://adguard.local
-              traefik:
-                name: Traefik
-                icon: si:traefik
-                url: https://traefik.local
-              vaultwarden:
-                name: Vaultwarden
-                icon: si:bitwarden
-                url: https://vaultwarden.local
-              ollama:
-                name: Ollama
-                icon: si:ollama
-                url: https://ollama.local
-              ollama-webui:
-                name: Ollama WebUI
-                icon: si:ollama
-                url: https://ollama-webui.local
-
           # Media Stack Services
           - type: bookmarks
             title: Media Automation
@@ -183,6 +123,71 @@ pages:
                     description: Download Client
                     icon: si:qbittorrent
                     same-tab: false
+
+          # Security
+          - type: bookmarks
+            title: Security & VPN
+            groups:
+              - links:
+                  - title: Vaultwarden
+                    url: https://vaultwarden.local
+                    description: Password Manager
+                    icon: si:bitwarden
+                    same-tab: false
+                    hide-arrow: false
+
+                  - title: Tailscale Admin
+                    url: https://login.tailscale.com/admin
+                    description: Mesh VPN Management
+                    icon: si:tailscale
+                    same-tab: false
+                    hide-arrow: false
+
+      - size: small
+        widgets:
+          - type: weather
+            location: Dallas, Texas, United States # More specific location format
+            units: imperial # or 'metric'
+
+          # Docker Stats
+          - type: docker-containers
+            title: Container Stats
+            containers:
+              homeassistant:
+                name: Home Assistant
+                icon: si:homeassistant
+                url: https://homeassistant.local
+                description: Smart Home Hub
+              jellyfin:
+                name: Jellyfin
+                icon: si:jellyfin
+                url: https://jellyfin.local
+                description: Media Streaming Server
+              adguardhome:
+                name: AdGuard Home
+                icon: si:adguard
+                url: https://adguard.local
+                description: DNS Ad Blocker
+              traefik:
+                name: Traefik
+                icon: si:traefik
+                url: https://traefik.local
+                description: Reverse Proxy & Load Balancer
+              vaultwarden:
+                name: Vaultwarden
+                icon: si:bitwarden
+                url: https://vaultwarden.local
+                description: Password Manager
+              ollama:
+                name: Ollama
+                icon: si:ollama
+                url: https://ollama.local
+                description: LLM API Server
+              ollama-webui:
+                name: Ollama WebUI
+                icon: si:ollama
+                url: https://ollama-webui.local
+                description: Local LLM Interface
 
   - name: Youtube
     slug: youtube

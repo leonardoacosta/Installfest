@@ -1,0 +1,82 @@
+# AI and Knowledge Services
+# Large Language Models, AI tools, and knowledge management
+
+services:
+  # ? Ollama - Local LLM Server
+  ollama:
+    image: docker.io/ollama/ollama:0.5.4
+    container_name: ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ../ollama/data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+      - OLLAMA_ORIGINS=*
+      - OLLAMA_NUM_PARALLEL=${OLLAMA_PARALLEL:-2}
+      - OLLAMA_MAX_LOADED_MODELS=${OLLAMA_MAX_MODELS:-2}
+      - OLLAMA_KEEP_ALIVE=${OLLAMA_KEEP_ALIVE:-5m}
+    networks:
+      homelab:
+        ipv4_address: 172.20.0.11
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: "4.0"
+          memory: 8G
+        reservations:
+          memory: 2G
+    # Uncomment for GPU support
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  # ? Ollama WebUI - Interface for Ollama
+  ollama-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: ollama-webui
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY:-changeme}
+      - WEBUI_AUTH=${WEBUI_AUTH:-true}
+      - ENABLE_SIGNUP=${ENABLE_SIGNUP:-true}
+    volumes:
+      - ../ollama-webui/data:/app/backend/data
+    depends_on:
+      ollama:
+        condition: service_healthy
+        restart: true
+    networks:
+      homelab:
+        ipv4_address: 172.20.0.12
+    security_opt:
+      - no-new-privileges:true
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=homelab"
+      - "traefik.http.routers.ollama-webui.rule=Host(`ollama.${DOMAIN:-local}`) || Host(`ai.${DOMAIN:-local}`)"
+      - "traefik.http.routers.ollama-webui.entrypoints=websecure"
+      - "traefik.http.routers.ollama-webui.tls=true"
+      - "traefik.http.routers.ollama-webui.tls.certresolver=letsencrypt"
+      - "traefik.http.services.ollama-webui.loadbalancer.server.port=8080"
+
+  # Additional AI services can be added here:
+  # - Stable Diffusion WebUI
+  # - ComfyUI
+  # - LocalAI
+  # - Text Generation WebUI
+  # - etc.

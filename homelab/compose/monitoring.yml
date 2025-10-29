@@ -1,0 +1,51 @@
+# Monitoring and Dashboard Services
+# System monitoring, dashboards, and observability tools
+
+services:
+  # ? Glance - Self-Hosted Dashboard
+  glance:
+    image: glanceapp/glance:latest
+    container_name: glance
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ:-America/Chicago}
+    volumes:
+      - ../glance:/app/data
+      - ../glance:/app/config
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - "8085:8080"
+    networks:
+      homelab:
+        ipv4_address: 172.20.0.85
+      media:
+        ipv4_address: 172.21.0.85
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080 || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+    security_opt:
+      - no-new-privileges:true
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=homelab"
+      - "traefik.http.routers.glance.rule=Host(`glance.${DOMAIN:-local}`)"
+      - "traefik.http.routers.glance.entrypoints=websecure"
+      - "traefik.http.routers.glance.tls=true"
+      - "traefik.http.routers.glance.tls.certresolver=letsencrypt"
+      - "traefik.http.services.glance.loadbalancer.server.port=8080"
+      - "traefik.http.routers.glance.middlewares=homelab-general@file"
+      - "com.centurylinklabs.watchtower.enable=true"
+      - "homepage.group=Infrastructure"
+      - "homepage.name=Glance"
+      - "homepage.icon=glance"
+      - "homepage.href=https://glance.${DOMAIN:-local}"
+      - "homepage.description=Homelab Dashboard"
+
+  # Additional monitoring services can be added here:
+  # - Prometheus
+  # - Grafana
+  # - Uptime Kuma
+  # - Netdata
+  # - etc.
