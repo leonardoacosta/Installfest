@@ -25,7 +25,7 @@ pages:
 
     head-widgets:
       - type: weather
-        location: Dallas, TX, United States # More specific location format
+        location: Dallas, Texas, United States # More specific location format
         units: imperial # or 'metric'
 
     columns:
@@ -123,24 +123,31 @@ pages:
               homeassistant:
                 name: Home Assistant
                 icon: si:homeassistant
+                url: https://homeassistant.local
               jellyfin:
                 name: Jellyfin
                 icon: si:jellyfin
+                url: https://jellyfin.local
               adguardhome:
                 name: AdGuard Home
                 icon: si:adguard
+                url: https://adguard.local
               traefik:
                 name: Traefik
                 icon: si:traefik
+                url: https://traefik.local
               vaultwarden:
                 name: Vaultwarden
                 icon: si:bitwarden
+                url: https://vaultwarden.local
               ollama:
                 name: Ollama
                 icon: si:ollama
+                url: https://ollama.local
               ollama-webui:
                 name: Ollama WebUI
                 icon: si:ollama
+                url: https://ollama-webui.local
 
           # Media Stack Services
           - type: bookmarks
@@ -148,41 +155,42 @@ pages:
             groups:
               - links:
                   - title: Radarr
-                    url: http://192.168.1.14:7878
+                    url: https://radarr.local
                     description: Movie Management
                     icon: si:radarr
                     same-tab: false
 
                   - title: Sonarr
-                    url: http://192.168.1.14:8989
+                    url: https://sonarr.local
                     description: TV Show Management
                     icon: si:sonarr
                     same-tab: false
 
                   - title: Prowlarr
-                    url: http://192.168.1.14:9696
+                    url: https://prowlarr.local
                     description: Indexer Management
                     icon: si:prowlarr
                     same-tab: false
 
                   - title: Bazarr
-                    url: http://192.168.1.14:6767
+                    url: https://bazarr.local
                     description: Subtitle Management
                     icon: si:bazarr
                     same-tab: false
 
                   - title: qBittorrent
-                    url: http://192.168.1.14:8080
+                    url: https://qbittorrent.local
                     description: Download Client
                     icon: si:qbittorrent
                     same-tab: false
 
-  - name: Videos
-    slug: videos
+  - name: Youtube
+    slug: youtube
     columns:
       - size: full
         widgets:
           - type: videos
+            title: Tech News
             channels:
               - UCXuqSBlHAE6Xw-yeJA0Tunw
               - UCBJycsmduvYEL83R_U4JriQ
