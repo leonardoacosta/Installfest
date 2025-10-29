@@ -24,11 +24,10 @@ pages:
     slug: home
 
     head-widgets:
-      - size: small
-        widgets:
-          - type: weather
-            location: Dallas, TX, United States # More specific location format
-            units: imperial # or 'metric'
+      widgets:
+        - type: weather
+          location: Dallas, TX, United States # More specific location format
+          units: imperial # or 'metric'
 
     columns:
       - size: full
@@ -178,6 +177,17 @@ pages:
                     description: Download Client
                     icon: si:qbittorrent
                     same-tab: false
+
+  - name: Videos
+    slug: videos
+    columns:
+      - size: full
+        widgets:
+          - type: videos
+            channels:
+              - UCXuqSBlHAE6Xw-yeJA0Tunw
+              - UCBJycsmduvYEL83R_U4JriQ
+              - UCHnyfMqiRRG1u-2MsSQLbXA
 
   # Additional Pages
   - name: System
