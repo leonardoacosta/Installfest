@@ -26,7 +26,7 @@ services:
   # ***********************************
   # ********** Dashboard & Monitoring *
   # ***********************************
-  # Glance - Self-Hosted Dashboard
+  # ? Glance - Self-Hosted Dashboard
   glance:
     image: glanceapp/glance:latest
     container_name: glance
@@ -34,10 +34,11 @@ services:
     environment:
       - TZ=${TZ:-America/Chicago}
     volumes:
-      - ./glance/data:/app/data
-      - ./glance/config:/app/config
+      - ./glance:/app/data
+      - ./glance:/app/config
       - /var/run/docker.sock:/var/run/docker.sock:ro
     ports:
+      # - outer:inner
       - "8085:8080"
     networks:
       homelab:

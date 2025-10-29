@@ -150,9 +150,9 @@ serversTransport:
 #     gzip: true
 
 # Experimental Features (Traefik v3)
-experimental:
-  # HTTP/3 support
-  http3: true
+# experimental:
+#   # HTTP/3 support
+#   http3: true
 
 # Host Resolver - For better local network resolution
 hostResolver:
