@@ -29,6 +29,9 @@ entryPoints:
     #     - "10.0.0.0/8" # private network
     #     - "192.168.0.0/16" # private network
 
+  # HTTP Entry Point (Port 80)
+  http:
+    address: ":8080"
   # HTTPS Entry Point (Port 443)
   websecure:
     address: ":443"

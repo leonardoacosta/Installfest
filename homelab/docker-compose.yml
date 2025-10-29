@@ -85,9 +85,9 @@ services:
     cap_add:
       - NET_ADMIN
       - NET_RAW
-    # networks:
-    #   homelab:
-    #     ipv4_address: 172.20.0.123
+    networks:
+      homelab:
+        ipv4_address: 172.20.0.123
     security_opt:
       - seccomp:unconfined
       - apparmor:unconfined
@@ -101,8 +101,8 @@ services:
       start_period: 120s
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.homeassistant.entrypoints=websecure"
-      - "traefik.http.routers.homeassistant.tls=true"
+      - "traefik.http.routers.homeassistant.entrypoints=8080"
+      # - "traefik.http.routers.homeassistant.tls=true"
       - "traefik.http.services.homeassistant.loadbalancer.server.port=8123"
 
   # ? AdGuard Home - DNS Ad Blocker
