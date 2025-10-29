@@ -1,23 +1,23 @@
 name: Deploy to Homelab
 
-# on:
-#   push:
-#     branches: [main]
-#     paths:
-#       - "homelab/**"
-#       - ".github/workflows/deploy-homelab.yml"
-#   workflow_dispatch:
-#     inputs:
-#       force_deploy:
-#         description: "Force deployment even without changes"
-#         required: false
-#         type: boolean
-#         default: false
-#       rollback:
-#         description: "Rollback to previous version"
-#         required: false
-#         type: boolean
-#         default: false
+on:
+  push:
+    branches: [dev]
+    paths:
+      - "homelab/**"
+      - ".github/workflows/deploy-homelab.yml"
+  workflow_dispatch:
+    inputs:
+      force_deploy:
+        description: "Force deployment even without changes"
+        required: false
+        type: boolean
+        default: false
+      rollback:
+        description: "Rollback to previous version"
+        required: false
+        type: boolean
+        default: false
 
 env:
   DEPLOYMENT_TIMEOUT: 300

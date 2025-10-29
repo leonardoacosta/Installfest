@@ -240,34 +240,22 @@ services:
       - ./vaultwarden/data:/data
     ports:
       - "8222:80"
-      - "3012:3012" # WebSocket port
+      - "3012:3012"
     networks:
       homelab:
         ipv4_address: 172.20.0.22
     security_opt:
       - no-new-privileges:true
     healthcheck:
-      test:
-        ["CMD-SHELL", "wget -q --spider http://localhost:80/alive || exit 1"]
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:80/alive"]
       interval: 30s
       timeout: 10s
       retries: 3
     labels:
       - "traefik.enable=true"
-      - "traefik.docker.network=homelab"
-      # HTTP Router
-      - "traefik.http.routers.vaultwarden.rule=Host(`vault.${DOMAIN:-local}`) || Host(`vaultwarden.${DOMAIN:-local}`)"
       - "traefik.http.routers.vaultwarden.entrypoints=websecure"
       - "traefik.http.routers.vaultwarden.tls=true"
-      - "traefik.http.routers.vaultwarden.tls.certresolver=letsencrypt"
       - "traefik.http.services.vaultwarden.loadbalancer.server.port=80"
-      - "traefik.http.routers.vaultwarden.middlewares=vaultwarden-headers@file"
-      # WebSocket Router
-      - "traefik.http.routers.vaultwarden-ws.rule=Host(`vault.${DOMAIN:-local}`) && Path(`/notifications/hub`)"
-      - "traefik.http.routers.vaultwarden-ws.entrypoints=websecure"
-      - "traefik.http.routers.vaultwarden-ws.tls=true"
-      - "traefik.http.routers.vaultwarden-ws.tls.certresolver=letsencrypt"
-      - "traefik.http.services.vaultwarden-ws.loadbalancer.server.port=3012"
 
   # ************************************
   # ********** AI & Knowledge **********
@@ -408,10 +396,14 @@ services:
     cap_add:
       - SYS_ADMIN
       - DAC_READ_SEARCH
+      - CAP_NET_ADMIN
     security_opt:
       - no-new-privileges:true
     labels:
       - "traefik.enable=true"
+      - "traefik.http.routers.samba.entrypoints=websecure"
+      - "traefik.http.routers.samba.tls=true"
+      - "traefik.http.services.samba.loadbalancer.server.port=445"
 
   # ************************************
   # ********** Media Stack Services ****
@@ -428,14 +420,14 @@ services:
       media:
         ipv4_address: 172.21.0.2
     ports:
-      # VPN service ports
+      # Gluetun built-in services
       - "8888:8888/tcp" # HTTP proxy
       - "8388:8388/tcp" # Shadowsocks
       - "8388:8388/udp" # Shadowsocks
-      # Service ports for containers using network_mode: service:gluetun
-      - "9696:9696" # Prowlarr
-      - "8080:8080" # qBittorrent WebUI
-      - "6789:6789" # NZBGet
+      # Services running through VPN
+      - "9696:9696" # Prowlarr Web UI
+      - "8090:8080" # qBittorrent Web UI (mapped to 8090 to avoid conflicts)
+      - "6789:6789" # NZBGet Web UI
     volumes:
       - ./gluetun:/gluetun
     environment:

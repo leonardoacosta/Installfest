@@ -1,7 +1,3 @@
-# Traefik v3 Dynamic Configuration - Gluetun Services
-# Services using network_mode: service:gluetun cannot have Traefik labels directly
-# We define their routes here using the file provider
-
 http:
   # ============================================
   # Routers for services behind Gluetun VPN
@@ -9,18 +5,18 @@ http:
   routers:
     # qBittorrent - Torrent Client
     qbittorrent:
-      rule: 'Host(`qbittorrent.{{ env "DOMAIN" }}`) || Host(`qb.{{ env "DOMAIN" }}`) || Host(`torrent.{{ env "DOMAIN" }}`)'
+      rule: "Host(`qbittorrent.local`) || Host(`qb.local`) || Host(`torrent.local`)"
       entryPoints:
         - websecure
       service: qbittorrent-service
-      # middlewares:
-      #   - homelab-admin@file  # Requires authentication
+      middlewares:
+        - homelab-admin@file # Requires authentication
       tls:
         certResolver: letsencrypt
 
     # Prowlarr - Indexer Manager
     prowlarr:
-      rule: 'Host(`prowlarr.{{ env "DOMAIN" }}`)'
+      rule: "Host(`prowlarr.local`)"
       entryPoints:
         - websecure
       service: prowlarr-service
@@ -31,7 +27,7 @@ http:
 
     # NZBGet - Usenet Client
     nzbget:
-      rule: 'Host(`nzbget.{{ env "DOMAIN" }}`) || Host(`usenet.{{ env "DOMAIN" }}`)'
+      rule: "Host(`nzbget.local`) || Host(`usenet.local`)"
       entryPoints:
         - websecure
       service: nzbget-service
