@@ -30,6 +30,15 @@ main() {
         exit $?
     fi
 
+    # Check if we can use sudo without password
+    CAN_SUDO=false
+    if sudo -n true 2>/dev/null; then
+        CAN_SUDO=true
+        log "Passwordless sudo available"
+    else
+        log "Sudo requires password or not available - attempting without sudo"
+    fi
+
     # Fix permissions on existing directories and create missing ones
     log "Ensuring service directories with proper permissions"
 
