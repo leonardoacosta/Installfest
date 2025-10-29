@@ -71,7 +71,10 @@ services:
     container_name: homeassistant
     restart: unless-stopped
     privileged: true
+    network_mode: host
     environment:
+      - PUID=1000
+      - PGID=1000
       - TZ=${TZ:-America/Chicago}
     volumes:
       - ./homeassistant:/config
@@ -79,6 +82,9 @@ services:
     ports:
       # - outer:inner
       - "8123:8123"
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
     networks:
       homelab:
         ipv4_address: 172.20.0.123
@@ -129,7 +135,11 @@ services:
     cap_add:
       - NET_BIND_SERVICE
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:82/ || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "wget -q --spider http://adguard.${DOMAIN:-local}:82 || exit 1",
+        ]
       interval: 30s
       timeout: 10s
       retries: 5
