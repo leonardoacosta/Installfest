@@ -71,7 +71,6 @@ services:
     container_name: homeassistant
     restart: unless-stopped
     privileged: true
-    network_mode: host
     environment:
       - PUID=1000
       - PGID=1000
@@ -84,9 +83,10 @@ services:
     cap_add:
       - NET_ADMIN
       - NET_RAW
-    # networks:
-    #   homelab:
-    #     ipv4_address: 172.20.0.123
+    # network_mode: host
+    networks:
+      homelab:
+        ipv4_address: 172.20.0.123
     security_opt:
       - seccomp:unconfined
       - apparmor:unconfined
@@ -101,8 +101,8 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.homeassistant.entrypoints=8080"
-      # - "traefik.http.routers.homeassistant.tls=true"
-      - "traefik.http.services.homeassistant.loadbalancer.server.port=8123"
+      - "traefik.http.routers.homeassistant.tls=true"
+      - "traefik.http.services.homeassistant.loadbalancer.servers.port=8123"
 
   # ? AdGuard Home - DNS Ad Blocker
   adguardhome:
