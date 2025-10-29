@@ -220,24 +220,24 @@ services:
     restart: unless-stopped
     environment:
       - TZ=${TZ:-America/Chicago}
-      - DOMAIN=${VAULTWARDEN_DOMAIN:-https://vault.local}
-      - ADMIN_TOKEN=${VAULTWARDEN_ADMIN_TOKEN}
-      - SIGNUPS_ALLOWED=${VAULTWARDEN_SIGNUPS_ALLOWED:-false}
-      - INVITATIONS_ALLOWED=${VAULTWARDEN_INVITATIONS_ALLOWED:-true}
+      # - DOMAIN=${VAULTWARDEN_DOMAIN:-https://vault.local}
+      # - ADMIN_TOKEN=${VAULTWARDEN_ADMIN_TOKEN}
+      # - SIGNUPS_ALLOWED=${VAULTWARDEN_SIGNUPS_ALLOWED:-false}
+      # - INVITATIONS_ALLOWED=${VAULTWARDEN_INVITATIONS_ALLOWED:-true}
       - WEBSOCKET_ENABLED=true
-      - SENDS_ALLOWED=true
-      - EMERGENCY_ACCESS_ALLOWED=true
+      # - SENDS_ALLOWED=true
+      # - EMERGENCY_ACCESS_ALLOWED=true
       - WEB_VAULT_ENABLED=true
-      - LOG_LEVEL=${VAULTWARDEN_LOG_LEVEL:-warn}
+      - LOG_LEVEL=${VAULTWARDEN_LOG_LEVEL:-debug}
       - EXTENDED_LOGGING=true
-      - SHOW_PASSWORD_HINT=false
+      # - SHOW_PASSWORD_HINT=false
       - DATABASE_URL=sqlite://db.sqlite3
       - DATABASE_MAX_CONNS=10
       - IP_HEADER=X-Real-IP
       - ICON_CACHE_TTL=2592000
       - ICON_CACHE_NEGTTL=259200
-    volumes:
-      - ./vaultwarden/data:/data
+    # volumes:
+    #   - ./vaultwarden/data:/data
     ports:
       - "8222:80"
       - "3012:3012"
