@@ -22,7 +22,8 @@ server:
 pages:
   - name: Home
     slug: home
-    rows:
+
+    head-widgets:
       - size: small
         widgets:
           - type: weather
