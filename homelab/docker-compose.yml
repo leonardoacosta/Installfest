@@ -468,10 +468,11 @@ services:
     container_name: jellyfin
     restart: unless-stopped
     environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
       - TZ=${TZ:-America/Chicago}
     volumes:
       - ./jellyfin/config:/config
-      - ./jellyfin/config/logs:/logs
       - ./jellyfin/cache:/cache
       - ${MEDIA_PATH:-/data/media}:/media:ro
       - ${MEDIA_PATH2:-/data/media2}:/media2:ro
@@ -492,6 +493,8 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+    security_opt:
+      - no-new-privileges:true
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=homelab"
