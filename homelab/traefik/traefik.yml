@@ -95,7 +95,7 @@ providers:
 
 # Logging Configuration
 log:
-  level: "INFO" # DEBUG, INFO, WARN, ERROR, FATAL, PANIC
+  level: "DEBUG" # DEBUG, INFO, WARN, ERROR, FATAL, PANIC
   filePath: "/var/log/traefik/traefik.log"
   format: "common" # common or json
   # maxSize: 100      # Maximum size in MB before rotation
@@ -143,11 +143,11 @@ serversTransport:
     responseHeaderTimeout: "30s"
     idleConnTimeout: "90s"
 
-# HTTP Configuration
-http:
-  # Encoding support
-  encoding:
-    gzip: true
+# # HTTP Configuration
+# http:
+#   # Encoding support
+#   encoding:
+#     gzip: true
 
 # Experimental Features (Traefik v3)
 experimental:
