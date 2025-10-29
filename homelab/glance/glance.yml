@@ -24,10 +24,9 @@ pages:
     slug: home
 
     head-widgets:
-      widgets:
-        - type: weather
-          location: Dallas, TX, United States # More specific location format
-          units: imperial # or 'metric'
+      - type: weather
+        location: Dallas, TX, United States # More specific location format
+        units: imperial # or 'metric'
 
     columns:
       - size: full
