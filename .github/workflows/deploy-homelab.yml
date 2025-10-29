@@ -1,23 +1,23 @@
 name: Deploy to Homelab
 
-on:
-  push:
-    branches: [main]
-    paths:
-      - "homelab/**"
-      - ".github/workflows/deploy-homelab.yml"
-  workflow_dispatch:
-    inputs:
-      force_deploy:
-        description: "Force deployment even without changes"
-        required: false
-        type: boolean
-        default: false
-      rollback:
-        description: "Rollback to previous version"
-        required: false
-        type: boolean
-        default: false
+# on:
+#   push:
+#     branches: [main]
+#     paths:
+#       - "homelab/**"
+#       - ".github/workflows/deploy-homelab.yml"
+#   workflow_dispatch:
+#     inputs:
+#       force_deploy:
+#         description: "Force deployment even without changes"
+#         required: false
+#         type: boolean
+#         default: false
+#       rollback:
+#         description: "Rollback to previous version"
+#         required: false
+#         type: boolean
+#         default: false
 
 env:
   DEPLOYMENT_TIMEOUT: 300
@@ -35,15 +35,11 @@ jobs:
 
       - name: Deploy to Homelab
         env:
-          ROLLBACK: ${{ inputs.rollback || 'false' }}
           HOMELAB_PATH: ~/homelab
-          HEALTH_CHECK_RETRIES: 5
-          HEALTH_CHECK_DELAY: 10
-          MAX_BACKUPS: ${{ vars.MAX_BACKUPS || '5' }}
-        run: bash homelab/scripts/deploy-ci.sh
+        run: bash homelab/scripts/deploy-ci-streamlined.sh
 
       - name: Send Success Notification
-        if: success() && steps.changes.outputs.has_changes == 'true'
+        if: success()
         uses: actions/github-script@v7
         with:
           script: |
