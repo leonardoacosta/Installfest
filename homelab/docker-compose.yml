@@ -636,13 +636,13 @@ services:
       retries: 5
     labels:
       - "traefik.enable=true"
-      - "traefik.http.services.prowlarr.loadbalancer.server.url=http://172.21.0.2:9696"
-      - "traefik.http.services.prowlarr.loadbalancer.server.port=9696"
-      - "traefik.http.services.prowlarr.loadbalancer.server.passHostHeader=true"
-      - "traefik.http.services.prowlarr.loadbalancer.server.healthCheck.path=/ping"
-      - "traefik.http.services.prowlarr.loadbalancer.server.healthCheck.interval=30s"
-      - "traefik.http.services.prowlarr.loadbalancer.server.healthCheck.timeout=10s"
-      - "traefik.http.services.prowlarr.loadbalancer.server.healthCheck.retries=5"
+      - "traefik.http.services.prowlarr-service.loadbalancer.server.url=http://172.21.0.2:9696"
+      - "traefik.http.services.prowlarr-service.loadbalancer.server.port=9696"
+      - "traefik.http.services.prowlarr-service.loadbalancer.server.passHostHeader=true"
+      - "traefik.http.services.prowlarr-service.loadbalancer.server.healthCheck.path=/ping"
+      - "traefik.http.services.prowlarr-service.loadbalancer.server.healthCheck.interval=30s"
+      - "traefik.http.services.prowlarr-service.loadbalancer.server.healthCheck.timeout=10s"
+      - "traefik.http.services.prowlarr-service.loadbalancer.server.healthCheck.retries=5"
 
       - "traefik.http.routers.prowlarr.rule=Host(`prowlarr.${DOMAIN:-local}`)"
       - "traefik.http.routers.prowlarr.entrypoints=websecure"
@@ -679,13 +679,13 @@ services:
       retries: 5
     labels:
       - "traefik.enable=true"
-      - "traefik.http.services.qbittorrent.loadbalancer.server.url=http://172.21.0.2:8080"
-      - "traefik.http.services.qbittorrent.loadbalancer.server.port=8080"
-      - "traefik.http.services.qbittorrent.loadbalancer.server.passHostHeader=true"
-      - "traefik.http.services.qbittorrent.loadbalancer.server.healthCheck.path=/"
-      - "traefik.http.services.qbittorrent.loadbalancer.server.healthCheck.interval=30s"
-      - "traefik.http.services.qbittorrent.loadbalancer.server.healthCheck.timeout=10s"
-      - "traefik.http.services.qbittorrent.loadbalancer.server.healthCheck.retries=5"
+      - "traefik.http.services.qbittorrent-service.loadbalancer.server.url=http://172.21.0.2:8080"
+      - "traefik.http.services.qbittorrent-service.loadbalancer.server.port=8080"
+      - "traefik.http.services.qbittorrent-service.loadbalancer.server.passHostHeader=true"
+      - "traefik.http.services.qbittorrent-service.loadbalancer.server.healthCheck.path=/"
+      - "traefik.http.services.qbittorrent-service.loadbalancer.server.healthCheck.interval=30s"
+      - "traefik.http.services.qbittorrent-service.loadbalancer.server.healthCheck.timeout=10s"
+      - "traefik.http.services.qbittorrent-service.loadbalancer.server.healthCheck.retries=5"
 
       - "traefik.http.routers.qbittorrent.rule=Host(`qbittorrent.${DOMAIN:-local}`) || Host(`qb.${DOMAIN:-local}`) || Host(`torrent.${DOMAIN:-local}`)"
       - "traefik.http.routers.qbittorrent.entrypoints=websecure"
@@ -717,13 +717,13 @@ services:
       retries: 5
     labels:
       - "traefik.enable=true"
-      - "traefik.http.services.nzbget.loadbalancer.server.url=http://172.21.0.2:6789"
-      - "traefik.http.services.nzbget.loadbalancer.server.port=6789"
-      - "traefik.http.services.nzbget.loadbalancer.server.passHostHeader=true"
-      - "traefik.http.services.nzbget.loadbalancer.server.healthCheck.path=/"
-      - "traefik.http.services.nzbget.loadbalancer.server.healthCheck.interval=30s"
-      - "traefik.http.services.nzbget.loadbalancer.server.healthCheck.timeout=10s"
-      - "traefik.http.services.nzbget.loadbalancer.server.healthCheck.retries=5"
+      - "traefik.http.services.nzbget-service.loadbalancer.server.url=http://172.21.0.2:6789"
+      - "traefik.http.services.nzbget-service.loadbalancer.server.port=6789"
+      - "traefik.http.services.nzbget-service.loadbalancer.server.passHostHeader=true"
+      - "traefik.http.services.nzbget-service.loadbalancer.server.healthCheck.path=/"
+      - "traefik.http.services.nzbget-service.loadbalancer.server.healthCheck.interval=30s"
+      - "traefik.http.services.nzbget-service.loadbalancer.server.healthCheck.timeout=10s"
+      - "traefik.http.services.nzbget-service.loadbalancer.server.healthCheck.retries=5"
 
       - "traefik.http.routers.nzbget.rule=Host(`nzbget.${DOMAIN:-local}`) || Host(`usenet.${DOMAIN:-local}`)"
       - "traefik.http.routers.nzbget.entrypoints=websecure"
