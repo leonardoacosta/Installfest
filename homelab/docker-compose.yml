@@ -231,7 +231,7 @@ services:
       - LOG_LEVEL=${VAULTWARDEN_LOG_LEVEL:-warn}
       - EXTENDED_LOGGING=true
       - SHOW_PASSWORD_HINT=false
-      - DATABASE_URL=sqlite://data/db.sqlite3
+      - DATABASE_URL=sqlite://db.sqlite3
       - DATABASE_MAX_CONNS=10
       - IP_HEADER=X-Real-IP
       - ICON_CACHE_TTL=2592000
@@ -468,19 +468,18 @@ services:
     container_name: jellyfin
     restart: unless-stopped
     environment:
-      - PUID=${PUID:-1000}
-      - PGID=${PGID:-1000}
       - TZ=${TZ:-America/Chicago}
     volumes:
       - ./jellyfin/config:/config
+      - ./jellyfin/config/logs:/logs
       - ./jellyfin/cache:/cache
       - ${MEDIA_PATH:-/data/media}:/media:ro
       - ${MEDIA_PATH2:-/data/media2}:/media2:ro
     ports:
       - "8096:8096" # Web interface
-      - "8920:8920" # HTTPS web interface (optional)
-      - "7359:7359/udp" # Client discovery
-      - "1900:1900/udp" # DLNA service discovery
+      - "8920:8920" # HTTPS web interface
+      - "7359:7359/udp" # Client discovery - Allows clients to discover Jellyfin on the local network
+      - "1900:1900/udp" # DLNA - Service discovery used by DNLA and clients
     networks:
       homelab:
         ipv4_address: 172.20.0.96
@@ -488,8 +487,6 @@ services:
         ipv4_address: 172.21.0.96
     # devices:
     #   - /dev/dri:/dev/dri  # Intel QuickSync / GPU transcoding
-    security_opt:
-      - no-new-privileges:true
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8096/health || exit 1"]
       interval: 30s
