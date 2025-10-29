@@ -314,9 +314,9 @@ main() {
     fi
 
     # Install HACS for Home Assistant if not already installed
-    if [ -f "$SCRIPT_DIR/setup-hacs.sh" ]; then
+    if [ -f "./scripts/setup-hacs.sh" ]; then
         log "Checking HACS installation for Home Assistant..."
-        if bash "$SCRIPT_DIR/setup-hacs.sh"; then
+        if bash "./scripts/setup-hacs.sh"; then
             log "HACS installation check completed"
         else
             warning "HACS installation check failed - manual setup may be required"
