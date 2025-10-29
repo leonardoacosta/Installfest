@@ -13,21 +13,21 @@ source "$SCRIPT_DIR/common-utils.sh"
 HA_CONTAINER_NAME="${HA_CONTAINER_NAME:-homeassistant}"
 HACS_CHECK_FILE="/config/.hacs_installed"
 
-log_header "HACS Installation for Home Assistant"
+print_header "HACS Installation for Home Assistant"
 
 # Function to check if HACS is already installed
 check_hacs_installed() {
-    log_info "Checking if HACS is already installed..."
+            print_info "Checking if HACS is already installed..."
 
     # Check if the marker file exists in the container
     if docker exec "$HA_CONTAINER_NAME" test -f "$HACS_CHECK_FILE" 2>/dev/null; then
-        log_success "HACS is already installed"
+        print_success "HACS is already installed"
         return 0
     fi
 
     # Check if HACS directory exists
     if docker exec "$HA_CONTAINER_NAME" test -d "/config/custom_components/hacs" 2>/dev/null; then
-        log_success "HACS directory found - marking as installed"
+        print_success "HACS directory found - marking as installed"
         docker exec "$HA_CONTAINER_NAME" touch "$HACS_CHECK_FILE"
         return 0
     fi
@@ -37,28 +37,28 @@ check_hacs_installed() {
 
 # Function to wait for Home Assistant to be ready
 wait_for_homeassistant() {
-    log_info "Waiting for Home Assistant to be ready..."
+    print_info "Waiting for Home Assistant to be ready..."
     local max_attempts=60
     local attempt=0
 
     while [ $attempt -lt $max_attempts ]; do
         if docker exec "$HA_CONTAINER_NAME" curl -s -o /dev/null -w "%{http_code}" http://localhost:8123/api/ 2>/dev/null | grep -q "200\|401"; then
-            log_success "Home Assistant is ready"
+            print_success "Home Assistant is ready"
             return 0
         fi
 
         attempt=$((attempt + 1))
-        log_info "Waiting for Home Assistant... (attempt $attempt/$max_attempts)"
+        print_info "Waiting for Home Assistant... (attempt $attempt/$max_attempts)"
         sleep 5
     done
 
-    log_error "Home Assistant did not become ready in time"
+    print_error "Home Assistant did not become ready in time"
     return 1
 }
 
 # Function to install HACS
 install_hacs() {
-    log_info "Installing HACS into Home Assistant container..."
+    print_info "Installing HACS into Home Assistant container..."
 
     # Download and run HACS installation script inside the container
     docker exec "$HA_CONTAINER_NAME" bash -c "
@@ -71,17 +71,17 @@ install_hacs() {
 
         echo 'HACS installation completed successfully'
     " || {
-        log_error "Failed to install HACS"
+        print_error "Failed to install HACS"
         return 1
     }
 
-    log_success "HACS installed successfully"
+    print_success "HACS installed successfully"
     return 0
 }
 
 # Function to restart Home Assistant
 restart_homeassistant() {
-    log_info "Restarting Home Assistant to apply HACS installation..."
+    print_info "Restarting Home Assistant to apply HACS installation..."
 
     # Restart the Home Assistant container
     docker restart "$HA_CONTAINER_NAME"
@@ -90,12 +90,12 @@ restart_homeassistant() {
     sleep 10
     wait_for_homeassistant
 
-    log_success "Home Assistant restarted successfully"
+    print_success "Home Assistant restarted successfully"
 }
 
 # Function to provide setup instructions
 provide_setup_instructions() {
-    log_header "HACS Setup Instructions"
+    print_header "HACS Setup Instructions"
 
     cat << EOF
 ========================================
@@ -135,17 +135,17 @@ EOF
 
 # Main execution
 main() {
-    log_info "Starting HACS installation process..."
+    print_info "Starting HACS installation process..."
 
     # Check if container exists
     if ! docker ps -a --format "{{.Names}}" | grep -q "^${HA_CONTAINER_NAME}$"; then
-        log_error "Home Assistant container '$HA_CONTAINER_NAME' not found"
+        print_error "Home Assistant container '$HA_CONTAINER_NAME' not found"
         exit 1
     fi
 
     # Check if container is running
     if ! docker ps --format "{{.Names}}" | grep -q "^${HA_CONTAINER_NAME}$"; then
-        log_info "Starting Home Assistant container..."
+        print_info "Starting Home Assistant container..."
         docker start "$HA_CONTAINER_NAME"
         sleep 5
     fi
@@ -155,7 +155,7 @@ main() {
 
     # Check if HACS is already installed
     if check_hacs_installed; then
-        log_info "HACS is already installed - skipping installation"
+        print_info "HACS is already installed - skipping installation"
         provide_setup_instructions
         exit 0
     fi
@@ -169,7 +169,7 @@ main() {
     # Provide setup instructions
     provide_setup_instructions
 
-    log_success "HACS installation process completed!"
+    print_success "HACS installation process completed!"
 }
 
 # Run main function
