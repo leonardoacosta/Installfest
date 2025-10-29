@@ -29,18 +29,40 @@ main() {
     mkdir -p "$DEPLOY_PATH"
 
     # Simple rsync with minimal options - let Docker handle permissions
+    # IMPORTANT: Preserve .env and other local-only files
+    # NOTE: --delete flag removed to prevent deletion of server-only files like .env
     if command -v rsync &> /dev/null; then
-        rsync -av --delete \
+        rsync -av \
               --exclude='*.log' \
               --exclude='**/cache' \
               --exclude='**/logs' \
+              --exclude='.env' \
+              --exclude='*.env.*' \
+              --exclude='**/data' \
+              --exclude='**/backups' \
+              --exclude='**/letsencrypt' \
+              --exclude='**/state' \
+              --exclude='**/config/*.key' \
+              --exclude='**/config/*.pem' \
+              --exclude='**/config/*.crt' \
+              --exclude-from=<(find "$DEPLOY_PATH" -name ".gitignore" 2>/dev/null | xargs cat 2>/dev/null | grep -v '^#' | grep -v '^$' || true) \
               "$WORKSPACE_HOMELAB/" "$DEPLOY_PATH/" || {
             warning "Some files could not be copied, continuing..."
         }
     else
+        # Fallback to cp if rsync not available - preserve .env file
+        if [ -f "$DEPLOY_PATH/.env" ]; then
+            cp "$DEPLOY_PATH/.env" "/tmp/.env.backup.$$"
+        fi
+
         cp -r "$WORKSPACE_HOMELAB"/* "$DEPLOY_PATH/" || {
             warning "Some files could not be copied, continuing..."
         }
+
+        # Restore .env file if it was backed up
+        if [ -f "/tmp/.env.backup.$$" ]; then
+            mv "/tmp/.env.backup.$$" "$DEPLOY_PATH/.env"
+        fi
     fi
 
     # 3. Navigate to deployment directory

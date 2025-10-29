@@ -271,7 +271,7 @@ services:
   # ************************************
   # ********** AI & Knowledge **********
   # ************************************
-  # Ollama - Local LLM Server
+  # ? Ollama - Local LLM Server
   ollama:
     image: docker.io/ollama/ollama:0.5.4
     container_name: ollama
@@ -289,8 +289,6 @@ services:
     networks:
       homelab:
         ipv4_address: 172.20.0.11
-    security_opt:
-      - no-new-privileges:true
     healthcheck:
       test: ["CMD", "ollama", "list"]
       interval: 30s
@@ -304,16 +302,21 @@ services:
           memory: 8G
         reservations:
           memory: 2G
-    labels:
-      - "traefik.enable=false" # API service, typically not exposed
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
 
-  # Ollama WebUI - Interface for Ollama
+  # ? Ollama WebUI - Interface for Ollama
   ollama-webui:
     image: ghcr.io/open-webui/open-webui:main
     container_name: ollama-webui
     restart: unless-stopped
     ports:
-      - "8081:8080"
+      - "8081:8080" # Ollama WebUI
     environment:
       - OLLAMA_BASE_URL=http://ollama:11434
       - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY:-changeme}
@@ -331,13 +334,12 @@ services:
     security_opt:
       - no-new-privileges:true
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080 || exit 1"]
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8081 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
     labels:
       - "traefik.enable=true"
-      - "traefik.docker.network=homelab"
       - "traefik.http.routers.ollama-webui.rule=Host(`ollama.${DOMAIN:-local}`) || Host(`ai.${DOMAIN:-local}`)"
       - "traefik.http.routers.ollama-webui.entrypoints=websecure"
       - "traefik.http.routers.ollama-webui.tls=true"
