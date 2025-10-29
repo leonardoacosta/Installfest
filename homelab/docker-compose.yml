@@ -248,7 +248,7 @@ services:
     security_opt:
       - no-new-privileges:true
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:80/alive"]
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8222/alive"]
       interval: 30s
       timeout: 10s
       retries: 3
