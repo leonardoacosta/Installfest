@@ -376,7 +376,7 @@ services:
   # ************************************
   # ********** Storage Services ********
   # ************************************
-  # Samba - Network Attached Storage
+  # ? Samba - Network Attached Storage
   samba:
     image: ghcr.io/servercontainers/samba:latest
     container_name: samba
@@ -387,19 +387,21 @@ services:
       - GROUPID=${PGID:-1000}
       - SHARE1=${SAMBA_SHARE1:-Media;/media;yes;no;yes;all;none}
       - SHARE2=${SAMBA_SHARE2:-Backup;/backup;yes;no;no;all;none}
-      - USER1=${SAMBA_USER:-user;${SAMBA_PASSWORD}}
+      - USER1=${SAMBA_USER:-user;SAMBA_PASSWORD}
+      - SAMBA_USER=${SAMBA_USER}
+      - SAMBA_PASSWORD=${SAMBA_PASSWORD}
       - RECYCLE=false
     volumes:
       - ${NAS_PATH:-/data}:/media
-      - ${BACKUP_PATH:-/backup}:/backup
+      # - ${BACKUP_PATH:-/backup}:/backup
     ports:
-      - "445:445/tcp"
-      - "139:139/tcp"
+      - "445:445"
+      - "139:139"
     networks:
       homelab:
         ipv4_address: 172.20.0.45
     healthcheck:
-      test: ["CMD-SHELL", "smbclient -L localhost -N || exit 1"]
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:445 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -409,7 +411,7 @@ services:
     security_opt:
       - no-new-privileges:true
     labels:
-      - "traefik.enable=false" # SMB doesn't work over HTTP/HTTPS
+      - "traefik.enable=true"
 
   # ************************************
   # ********** Media Stack Services ****
