@@ -26,7 +26,7 @@ services:
   # ***********************************
   # ********** Dashboard & Monitoring *
   # ***********************************
-  # ? Glance - Self-Hosted Dashboard
+  # Glance - Self-Hosted Dashboard
   glance:
     image: glanceapp/glance:latest
     container_name: glance
@@ -34,11 +34,10 @@ services:
     environment:
       - TZ=${TZ:-America/Chicago}
     volumes:
-      - ./glance:/app/data
-      - ./glance:/app/config
+      - ./glance/data:/app/data
+      - ./glance/config:/app/config
       - /var/run/docker.sock:/var/run/docker.sock:ro
     ports:
-      # - outer:inner
       - "8085:8080"
     networks:
       homelab:
@@ -53,34 +52,43 @@ services:
     security_opt:
       - no-new-privileges:true
     labels:
-      - "traefik.enable=false" # Disable if using Traefik
-      - "com.centurylinklabs.watchtower.enable=true" # Auto-update
+      - "traefik.enable=true"
+      - "traefik.docker.network=homelab"
+      - "traefik.http.routers.glance.rule=Host(`glance.${DOMAIN:-local}`)"
+      - "traefik.http.routers.glance.entrypoints=websecure"
+      - "traefik.http.routers.glance.tls=true"
+      - "traefik.http.routers.glance.tls.certresolver=letsencrypt"
+      - "traefik.http.services.glance.loadbalancer.server.port=8080"
+      - "traefik.http.routers.glance.middlewares=homelab-general@file"
+      - "com.centurylinklabs.watchtower.enable=true"
       - "homepage.group=Infrastructure"
       - "homepage.name=Glance"
       - "homepage.icon=glance"
-      - "homepage.href=http://glance.local:8085"
+      - "homepage.href=https://glance.${DOMAIN:-local}"
       - "homepage.description=Homelab Dashboard"
 
   # ************************************
   # ********** Core Infrastructure *****
   # ************************************
 
-  # ? Home Assistant - Smart Home Hub
+  # Home Assistant - Smart Home Hub
   homeassistant:
     image: ghcr.io/home-assistant/home-assistant:stable
     container_name: homeassistant
     restart: unless-stopped
-    privileged: true
+    privileged: false # Changed from true - use specific capabilities instead
     environment:
       - TZ=${TZ:-America/Chicago}
     volumes:
       - ./homeassistant:/config
       - /etc/localtime:/etc/localtime:ro
-    # cap_add:
-    #   - NET_ADMIN
-    #   - NET_RAW
+      # Add device mapping if needed for USB devices
+      # - /dev/ttyUSB0:/dev/ttyUSB0
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+      - SYS_ADMIN # Only if needed for specific hardware
     ports:
-      # - outer:inner
       - "8123:8123"
     networks:
       homelab:
@@ -98,11 +106,15 @@ services:
       start_period: 120s
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.homeassistant.entrypoints=8080"
+      - "traefik.docker.network=homelab"
+      - "traefik.http.routers.homeassistant.rule=Host(`homeassistant.${DOMAIN:-local}`) || Host(`ha.${DOMAIN:-local}`)"
+      - "traefik.http.routers.homeassistant.entrypoints=websecure"
       - "traefik.http.routers.homeassistant.tls=true"
+      - "traefik.http.routers.homeassistant.tls.certresolver=letsencrypt"
       - "traefik.http.services.homeassistant.loadbalancer.server.port=8123"
+      - "traefik.http.routers.homeassistant.middlewares=homeassistant-headers@file"
 
-  # ? AdGuard Home - DNS Ad Blocker
+  # AdGuard Home - DNS Ad Blocker
   adguardhome:
     image: adguard/adguardhome:latest
     container_name: adguardhome
@@ -113,11 +125,10 @@ services:
       - ./adguardhome/work:/opt/adguardhome/work
       - ./adguardhome/conf:/opt/adguardhome/conf
     ports:
-      # Port 53 disabled - conflicts with systemd-resolved on runner
-      # Use AdGuard via container IP (172.20.0.53) or custom DNS port
+      # DNS ports - uncomment if not conflicting with systemd-resolved
       # - "53:53/tcp"
       # - "53:53/udp"
-      - "82:80/tcp" # Web interface (port 82 to avoid conflicts)
+      - "82:80/tcp" # Web interface
       - "8443:443/tcp" # HTTPS web interface
       - "3000:3000/tcp" # Initial setup
       - "853:853/tcp" # DNS-over-TLS
@@ -131,33 +142,41 @@ services:
         ipv4_address: 172.20.0.53
     cap_add:
       - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:82/ || exit 1"]
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:80/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
       start_period: 60s
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=homelab"
+      - "traefik.http.routers.adguardhome.rule=Host(`adguard.${DOMAIN:-local}`) || Host(`dns.${DOMAIN:-local}`)"
       - "traefik.http.routers.adguardhome.entrypoints=websecure"
       - "traefik.http.routers.adguardhome.tls=true"
-      - "traefik.http.services.adguardhome.loadbalancer.server.port=82"
+      - "traefik.http.routers.adguardhome.tls.certresolver=letsencrypt"
+      - "traefik.http.services.adguardhome.loadbalancer.server.port=80"
+      - "traefik.http.routers.adguardhome.middlewares=homelab-admin@file"
 
-  # ? Traefik - Reverse Proxy
-
+  # Traefik - Reverse Proxy
   traefik:
-    image: traefik:v3.3
+    image: traefik:v3.2 # Using stable v3.2 instead of v3.3
     container_name: traefik
     restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
-      - "8080:8080" # Dashboard
+      - "8090:8080" # Changed dashboard port to avoid conflict with qBittorrent
     environment:
       - TZ=${TZ:-America/Chicago}
+      - DOMAIN=${DOMAIN:-local}
+      - TRAEFIK_DASHBOARD_USER=${TRAEFIK_DASHBOARD_USER}
+      - TRAEFIK_DASHBOARD_PASSWORD=${TRAEFIK_DASHBOARD_PASSWORD}
     volumes:
       - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
-      - ./traefik/dynamic:/etc/traefik/dynamic:ro
+      - ./traefik/dynamic:/dynamic:ro
       - ./traefik/letsencrypt:/letsencrypt
       - ./traefik/logs:/var/log/traefik
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -167,7 +186,6 @@ services:
       media:
         ipv4_address: 172.21.0.81
     healthcheck:
-      # Using traefik's built-in healthcheck command
       test: ["CMD", "traefik", "healthcheck", "--ping"]
       interval: 30s
       timeout: 10s
@@ -176,25 +194,16 @@ services:
     security_opt:
       - no-new-privileges:true
     labels:
-      # Enable Traefik for the dashboard
       - "traefik.enable=true"
-      - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_DASHBOARD_USER}:${TRAEFIK_DASHBOARD_PASSWORD}"
-
+      - "traefik.docker.network=homelab"
       # Dashboard Router
+      - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.${DOMAIN:-local}`)"
       - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
+      - "traefik.http.routers.traefik-dashboard.tls=true"
       - "traefik.http.routers.traefik-dashboard.tls.certresolver=letsencrypt"
       - "traefik.http.routers.traefik-dashboard.service=api@internal"
-      # - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.${DOMAIN:-local}`)"
-      # - "traefik.http.routers.traefik-dashboard.middlewares=dashboard-auth@file"
-
-      # # API Router (for health checks)
-      - "traefik.http.routers.traefik-api.entrypoints=websecure"
-      - "traefik.http.routers.traefik-api.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.traefik-api.service=api@internal"
-      # - "traefik.http.routers.traefik-api.rule=Host(`traefik.${DOMAIN:-local}`) && PathPrefix(`/api`)"
-      # - "traefik.http.routers.traefik-api.middlewares=dashboard-auth@file"
-
-      # # Metadata
+      - "traefik.http.routers.traefik-dashboard.middlewares=dashboard-auth@file"
+      # Metadata
       - "com.centurylinklabs.watchtower.enable=true"
       - "homepage.group=Infrastructure"
       - "homepage.name=Traefik"
@@ -202,7 +211,7 @@ services:
       - "homepage.href=https://traefik.${DOMAIN:-local}"
       - "homepage.description=Reverse Proxy & Load Balancer"
 
-  # ? Vaultwarden - Password Manager
+  # Vaultwarden - Password Manager
   vaultwarden:
     image: vaultwarden/server:latest
     container_name: vaultwarden
@@ -229,27 +238,39 @@ services:
       - ./vaultwarden/data:/data
     ports:
       - "8222:80"
-      - "3012:3012"
+      - "3012:3012" # WebSocket port
     networks:
       homelab:
         ipv4_address: 172.20.0.22
     security_opt:
       - no-new-privileges:true
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:80/alive"]
+      test:
+        ["CMD-SHELL", "wget -q --spider http://localhost:80/alive || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=homelab"
+      # HTTP Router
+      - "traefik.http.routers.vaultwarden.rule=Host(`vault.${DOMAIN:-local}`) || Host(`vaultwarden.${DOMAIN:-local}`)"
       - "traefik.http.routers.vaultwarden.entrypoints=websecure"
       - "traefik.http.routers.vaultwarden.tls=true"
+      - "traefik.http.routers.vaultwarden.tls.certresolver=letsencrypt"
       - "traefik.http.services.vaultwarden.loadbalancer.server.port=80"
+      - "traefik.http.routers.vaultwarden.middlewares=vaultwarden-headers@file"
+      # WebSocket Router
+      - "traefik.http.routers.vaultwarden-ws.rule=Host(`vault.${DOMAIN:-local}`) && Path(`/notifications/hub`)"
+      - "traefik.http.routers.vaultwarden-ws.entrypoints=websecure"
+      - "traefik.http.routers.vaultwarden-ws.tls=true"
+      - "traefik.http.routers.vaultwarden-ws.tls.certresolver=letsencrypt"
+      - "traefik.http.services.vaultwarden-ws.loadbalancer.server.port=3012"
 
   # ************************************
   # ********** AI & Knowledge **********
   # ************************************
-  # ? Ollama - Local LLM Server
+  # Ollama - Local LLM Server
   ollama:
     image: docker.io/ollama/ollama:0.5.4
     container_name: ollama
@@ -267,6 +288,8 @@ services:
     networks:
       homelab:
         ipv4_address: 172.20.0.11
+    security_opt:
+      - no-new-privileges:true
     healthcheck:
       test: ["CMD", "ollama", "list"]
       interval: 30s
@@ -280,21 +303,16 @@ services:
           memory: 8G
         reservations:
           memory: 2G
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: 1
-    #           capabilities: [gpu]
+    labels:
+      - "traefik.enable=false" # API service, typically not exposed
 
-  # ? Ollama WebUI - Interface for Ollama
+  # Ollama WebUI - Interface for Ollama
   ollama-webui:
     image: ghcr.io/open-webui/open-webui:main
     container_name: ollama-webui
     restart: unless-stopped
     ports:
-      - "8081:8080" # Ollama WebUI
+      - "8081:8080"
     environment:
       - OLLAMA_BASE_URL=http://ollama:11434
       - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY:-changeme}
@@ -311,16 +329,25 @@ services:
         ipv4_address: 172.20.0.12
     security_opt:
       - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=homelab"
+      - "traefik.http.routers.ollama-webui.rule=Host(`ollama.${DOMAIN:-local}`) || Host(`ai.${DOMAIN:-local}`)"
       - "traefik.http.routers.ollama-webui.entrypoints=websecure"
       - "traefik.http.routers.ollama-webui.tls=true"
-      - "traefik.http.services.ollama-webui.loadbalancer.server.port=8081"
+      - "traefik.http.routers.ollama-webui.tls.certresolver=letsencrypt"
+      - "traefik.http.services.ollama-webui.loadbalancer.server.port=8080"
+      - "traefik.http.routers.ollama-webui.middlewares=homelab-general@file"
 
   # ************************************
   # ********** VPN & Security **********
   # ************************************
-  # ? Tailscale - Mesh VPN
+  # Tailscale - Mesh VPN
   tailscale:
     image: docker.io/tailscale/tailscale:stable
     container_name: tailscale
@@ -339,38 +366,37 @@ services:
       - NET_ADMIN
       - SYS_MODULE
     network_mode: host
-    # Note: sysctls cannot be used with host networking
-    # Set these at the system level instead:
-    # sudo sysctl -w net.ipv4.ip_forward=1
-    # sudo sysctl -w net.ipv6.conf.all.forwarding=1
+    # sysctls must be set at host level with network_mode: host
+    labels:
+      - "traefik.enable=false" # Cannot use Traefik with host networking
 
   # ************************************
   # ********** Storage Services ********
   # ************************************
-  # ? Samba - Network Attached Storage
+  # Samba - Network Attached Storage
   samba:
     image: ghcr.io/servercontainers/samba:latest
     container_name: samba
     restart: unless-stopped
     environment:
-      - TZ=${TZ:-America/New_York}
+      - TZ=${TZ:-America/Chicago}
       - USERID=${PUID:-1000}
       - GROUPID=${PGID:-1000}
       - SHARE1=${SAMBA_SHARE1:-Media;/media;yes;no;yes;all;none}
       - SHARE2=${SAMBA_SHARE2:-Backup;/backup;yes;no;no;all;none}
-      - USER1=${SAMBA_USER:-user;SAMBA_PASSWORD}
+      - USER1=${SAMBA_USER:-user;${SAMBA_PASSWORD}}
       - RECYCLE=false
     volumes:
       - ${NAS_PATH:-/data}:/media
-      # - ${BACKUP_PATH:-/backup}:/backup
+      - ${BACKUP_PATH:-/backup}:/backup
     ports:
-      - "445:445"
-      - "139:139"
+      - "445:445/tcp"
+      - "139:139/tcp"
     networks:
       homelab:
         ipv4_address: 172.20.0.45
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:445 || exit 1"]
+      test: ["CMD-SHELL", "smbclient -L localhost -N || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -380,15 +406,12 @@ services:
     security_opt:
       - no-new-privileges:true
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.samba.entrypoints=websecure"
-      - "traefik.http.routers.samba.tls=true"
-      - "traefik.http.services.samba.loadbalancer.server.port=445"
+      - "traefik.enable=false" # SMB doesn't work over HTTP/HTTPS
 
   # ************************************
   # ********** Media Stack Services ****
   # ************************************
-  # ? Gluetun - VPN Client for Media Services
+  # Gluetun - VPN Client for Media Services
   gluetun:
     image: qmcgaw/gluetun:latest
     container_name: gluetun
@@ -400,9 +423,14 @@ services:
       media:
         ipv4_address: 172.21.0.2
     ports:
+      # VPN service ports
       - "8888:8888/tcp" # HTTP proxy
       - "8388:8388/tcp" # Shadowsocks
       - "8388:8388/udp" # Shadowsocks
+      # Service ports for containers using network_mode: service:gluetun
+      - "9696:9696" # Prowlarr
+      - "8080:8080" # qBittorrent WebUI
+      - "6789:6789" # NZBGet
     volumes:
       - ./gluetun:/gluetun
     environment:
@@ -425,198 +453,249 @@ services:
       - UPDATER_PERIOD=1h
       - HTTP_CONTROL_SERVER_ADDRESS=:8000
       - HTTP_CONTROL_SERVER_LOG=on
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:8888 || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "wget -q --spider http://localhost:8000/v1/openvpn/status || wget -q --spider http://localhost:8000/v1/wireguard/status || exit 1",
+        ]
       interval: 30s
       timeout: 10s
       retries: 5
+    labels:
+      - "traefik.enable=false" # Routes defined in gluetun-routers.yml
 
-  # ? Jellyfin - Media Server
+  # Jellyfin - Media Server
   jellyfin:
     image: lscr.io/linuxserver/jellyfin:latest
     container_name: jellyfin
     restart: unless-stopped
     environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
       - TZ=${TZ:-America/Chicago}
     volumes:
       - ./jellyfin/config:/config
-      - ./jellyfin/config/logs:/logs
       - ./jellyfin/cache:/cache
       - ${MEDIA_PATH:-/data/media}:/media:ro
       - ${MEDIA_PATH2:-/data/media2}:/media2:ro
     ports:
       - "8096:8096" # Web interface
-      - "8920:8920" # HTTPS web interface
-      - "7359:7359/udp" # Client discovery - Allows clients to discover Jellyfin on the local network
-      - "1900:1900/udp" # DLNA - Service discovery used by DNLA and clients
+      - "8920:8920" # HTTPS web interface (optional)
+      - "7359:7359/udp" # Client discovery
+      - "1900:1900/udp" # DLNA service discovery
     networks:
       homelab:
         ipv4_address: 172.20.0.96
       media:
         ipv4_address: 172.21.0.96
     # devices:
-    #   - /dev/dri:/dev/dri  # Intel QuickSync
+    #   - /dev/dri:/dev/dri  # Intel QuickSync / GPU transcoding
+    security_opt:
+      - no-new-privileges:true
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:8096 || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8096/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=homelab"
+      - "traefik.http.routers.jellyfin.rule=Host(`jellyfin.${DOMAIN:-local}`) || Host(`media.${DOMAIN:-local}`)"
       - "traefik.http.routers.jellyfin.entrypoints=websecure"
       - "traefik.http.routers.jellyfin.tls=true"
+      - "traefik.http.routers.jellyfin.tls.certresolver=letsencrypt"
       - "traefik.http.services.jellyfin.loadbalancer.server.port=8096"
+      - "traefik.http.routers.jellyfin.middlewares=media-services@file"
 
-  # ? Radarr - Movie Manager
+  # Radarr - Movie Manager
   radarr:
     image: lscr.io/linuxserver/radarr:latest
     container_name: radarr
     restart: unless-stopped
     environment:
-      - PUID=1000
-      - PGID=1000
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
       - TZ=${TZ:-America/Chicago}
     volumes:
       - ./radarr:/config
       - ${MEDIA_PATH:-/data/media}:/media
       - ${DOWNLOADS_PATH:-/data/downloads}:/downloads
     ports:
-      - "7878:7878" # Web interface
+      - "7878:7878"
     networks:
       media:
         ipv4_address: 172.21.0.78
+    security_opt:
+      - no-new-privileges:true
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:7878 || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:7878/ping || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=media"
+      - "traefik.http.routers.radarr.rule=Host(`radarr.${DOMAIN:-local}`) || Host(`movies.${DOMAIN:-local}`)"
       - "traefik.http.routers.radarr.entrypoints=websecure"
       - "traefik.http.routers.radarr.tls=true"
+      - "traefik.http.routers.radarr.tls.certresolver=letsencrypt"
       - "traefik.http.services.radarr.loadbalancer.server.port=7878"
+      - "traefik.http.routers.radarr.middlewares=media-services@file"
 
-  # ? Sonarr - TV Show Manager
+  # Sonarr - TV Show Manager
   sonarr:
     image: lscr.io/linuxserver/sonarr:latest
     container_name: sonarr
     restart: unless-stopped
     environment:
-      - PUID=1000
-      - PGID=1000
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
       - TZ=${TZ:-America/Chicago}
     volumes:
       - ./sonarr:/config
       - ${MEDIA_PATH:-/data/media}:/media
       - ${DOWNLOADS_PATH:-/data/downloads}:/downloads
     ports:
-      - "8989:8989" # Web interface
+      - "8989:8989"
     networks:
       media:
         ipv4_address: 172.21.0.89
+    security_opt:
+      - no-new-privileges:true
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:8989 || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8989/ping || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=media"
+      - "traefik.http.routers.sonarr.rule=Host(`sonarr.${DOMAIN:-local}`) || Host(`tv.${DOMAIN:-local}`)"
       - "traefik.http.routers.sonarr.entrypoints=websecure"
       - "traefik.http.routers.sonarr.tls=true"
+      - "traefik.http.routers.sonarr.tls.certresolver=letsencrypt"
       - "traefik.http.services.sonarr.loadbalancer.server.port=8989"
+      - "traefik.http.routers.sonarr.middlewares=media-services@file"
 
-  # ? Lidarr - Music Manager
+  # Lidarr - Music Manager
   lidarr:
     image: lscr.io/linuxserver/lidarr:latest
     container_name: lidarr
     restart: unless-stopped
     environment:
-      - PUID=1000
-      - PGID=1000
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
       - TZ=${TZ:-America/Chicago}
     volumes:
       - ./lidarr:/config
       - ${MEDIA_PATH:-/data/media}:/media
       - ${DOWNLOADS_PATH:-/data/downloads}:/downloads
     ports:
-      - "8686:8686" # Web interface
+      - "8686:8686"
     networks:
       media:
         ipv4_address: 172.21.0.86
+    security_opt:
+      - no-new-privileges:true
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:8686 || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8686/ping || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=media"
+      - "traefik.http.routers.lidarr.rule=Host(`lidarr.${DOMAIN:-local}`) || Host(`music.${DOMAIN:-local}`)"
       - "traefik.http.routers.lidarr.entrypoints=websecure"
       - "traefik.http.routers.lidarr.tls=true"
+      - "traefik.http.routers.lidarr.tls.certresolver=letsencrypt"
       - "traefik.http.services.lidarr.loadbalancer.server.port=8686"
+      - "traefik.http.routers.lidarr.middlewares=media-services@file"
 
-  # ? Bazarr - Subtitle Manager
+  # Bazarr - Subtitle Manager
   bazarr:
     image: lscr.io/linuxserver/bazarr:latest
     container_name: bazarr
     restart: unless-stopped
     environment:
-      - PUID=1000
-      - PGID=1000
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
       - TZ=${TZ:-America/Chicago}
     volumes:
       - ./bazarr:/config
       - ${MEDIA_PATH:-/data/media}:/media
     ports:
-      - "6767:6767" # Web interface
+      - "6767:6767"
     networks:
       media:
         ipv4_address: 172.21.0.67
+    security_opt:
+      - no-new-privileges:true
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:6767 || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:6767/ping || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=media"
+      - "traefik.http.routers.bazarr.rule=Host(`bazarr.${DOMAIN:-local}`) || Host(`subtitles.${DOMAIN:-local}`)"
       - "traefik.http.routers.bazarr.entrypoints=websecure"
       - "traefik.http.routers.bazarr.tls=true"
+      - "traefik.http.routers.bazarr.tls.certresolver=letsencrypt"
       - "traefik.http.services.bazarr.loadbalancer.server.port=6767"
+      - "traefik.http.routers.bazarr.middlewares=media-services@file"
 
-  # ? Jellyseerr - Media Request Management
+  # Jellyseerr - Media Request Management
   jellyseerr:
     image: fallenbagel/jellyseerr:latest
     container_name: jellyseerr
     restart: unless-stopped
     environment:
       - TZ=${TZ:-America/Chicago}
+      - LOG_LEVEL=${JELLYSEERR_LOG_LEVEL:-info}
     volumes:
       - ./jellyseerr:/app/config
     ports:
-      - "5055:5055" # Web interface
+      - "5055:5055"
     networks:
       homelab:
         ipv4_address: 172.20.0.55
       media:
         ipv4_address: 172.21.0.55
+    security_opt:
+      - no-new-privileges:true
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:5055 || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "wget -q --spider http://localhost:5055/api/v1/status || exit 1",
+        ]
       interval: 30s
       timeout: 10s
       retries: 5
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=homelab"
+      - "traefik.http.routers.jellyseerr.rule=Host(`jellyseerr.${DOMAIN:-local}`) || Host(`request.${DOMAIN:-local}`)"
       - "traefik.http.routers.jellyseerr.entrypoints=websecure"
       - "traefik.http.routers.jellyseerr.tls=true"
+      - "traefik.http.routers.jellyseerr.tls.certresolver=letsencrypt"
       - "traefik.http.services.jellyseerr.loadbalancer.server.port=5055"
+      - "traefik.http.routers.jellyseerr.middlewares=homelab-public@file"
 
-  # ? Prowlarr - Indexer Manager
+  # Prowlarr - Indexer Manager (Behind VPN)
   prowlarr:
     image: lscr.io/linuxserver/prowlarr:latest
     container_name: prowlarr
     restart: unless-stopped
     environment:
-      - PUID=1000
-      - PGID=1000
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
       - TZ=${TZ:-America/Chicago}
     volumes:
       - ./prowlarr:/config
@@ -624,31 +703,19 @@ services:
       gluetun:
         condition: service_healthy
     network_mode: service:gluetun
+    security_opt:
+      - no-new-privileges:true
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:9696 || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:9696/ping || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.prowlarr.entrypoints=websecure"
-      - "traefik.http.routers.prowlarr.tls=true"
-      - "traefik.http.services.prowlarr.loadbalancer.server.port=9696"
-      # - "traefik.http.services.prowlarr-service.loadbalancer.servers.url=http://172.21.0.2:9696"
-      # - "traefik.http.services.prowlarr-service.loadbalancer.servers.port=9696"
-      # - "traefik.http.services.prowlarr-service.loadbalancer.servers.passHostHeader=true"
-      # - "traefik.http.services.prowlarr-service.loadbalancer.servers.healthCheck.path=/ping"
-      # - "traefik.http.services.prowlarr-service.loadbalancer.servers.healthCheck.interval=30s"
-      # - "traefik.http.services.prowlarr-service.loadbalancer.servers.healthCheck.timeout=10s"
+      # Labels won't work with network_mode: service:gluetun
+      # Routes are configured in traefik/dynamic/gluetun-routers.yml
+      - "traefik.enable=false"
 
-      # - "traefik.http.routers.prowlarr.rule=Host(`prowlarr.${DOMAIN:-local}`)"
-      # - "traefik.http.routers.prowlarr.entrypoints=websecure"
-      # - "traefik.http.routers.prowlarr.service=prowlarr-service"
-      # - "traefik.http.routers.prowlarr.middlewares=media-services@file"
-      # - "traefik.http.routers.prowlarr.tls=true"
-      # - "traefik.http.routers.prowlarr.tls.certresolver=letsencrypt"
-
-  # ? qBittorrent - Torrent Client
+  # qBittorrent - Torrent Client (Behind VPN)
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
     container_name: qbittorrent
@@ -670,38 +737,23 @@ services:
     security_opt:
       - no-new-privileges:true
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:8000 || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8080 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.qbittorrent.entrypoints=websecure"
-      - "traefik.http.routers.qbittorrent.tls=true"
-      - "traefik.http.services.qbittorrent.loadbalancer.server.port=8080"
+      # Labels won't work with network_mode: service:gluetun
+      # Routes are configured in traefik/dynamic/gluetun-routers.yml
+      - "traefik.enable=false"
 
-      # - "traefik.http.services.qbittorrent-service.loadbalancer.servers.url=http://172.21.0.2:8080"
-      # - "traefik.http.services.qbittorrent-service.loadbalancer.servers.port=8080"
-      # - "traefik.http.services.qbittorrent-service.loadbalancer.servers.passHostHeader=true"
-      # - "traefik.http.services.qbittorrent-service.loadbalancer.servers.healthCheck.path=/"
-      # - "traefik.http.services.qbittorrent-service.loadbalancer.servers.healthCheck.interval=30s"
-      # - "traefik.http.services.qbittorrent-service.loadbalancer.servers.healthCheck.timeout=10s"
-
-      # - "traefik.http.routers.qbittorrent.rule=Host(`qbittorrent.${DOMAIN:-local}`) || Host(`qb.${DOMAIN:-local}`) || Host(`torrent.${DOMAIN:-local}`)"
-      # - "traefik.http.routers.qbittorrent.entrypoints=websecure"
-      # - "traefik.http.routers.qbittorrent.service=qbittorrent-service"
-      # - "traefik.http.routers.qbittorrent.middlewares=homelab-admin@file"
-      # - "traefik.http.routers.qbittorrent.tls=true"
-      # - "traefik.http.routers.qbittorrent.tls.certresolver=letsencrypt"
-
-  # ? NZBGet - Usenet Client
+  # NZBGet - Usenet Client (Behind VPN)
   nzbget:
     image: lscr.io/linuxserver/nzbget:latest
     container_name: nzbget
     restart: unless-stopped
     environment:
-      - PUID=1000
-      - PGID=1000
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
       - TZ=${TZ:-America/Chicago}
     volumes:
       - ./nzbget:/config
@@ -710,27 +762,14 @@ services:
       gluetun:
         condition: service_healthy
     network_mode: service:gluetun
+    security_opt:
+      - no-new-privileges:true
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:6789 || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:6789 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.nzbget.entrypoints=websecure"
-      - "traefik.http.routers.nzbget.tls=true"
-      - "traefik.http.services.nzbget.loadbalancer.server.port=6789"
-
-      # - "traefik.http.services.nzbget-service.loadbalancer.servers.url=http://172.21.0.2:6789"
-      # - "traefik.http.services.nzbget-service.loadbalancer.servers.port=6789"
-      # - "traefik.http.services.nzbget-service.loadbalancer.servers.passHostHeader=true"
-      # - "traefik.http.services.nzbget-service.loadbalancer.servers.healthCheck.path=/"
-      # - "traefik.http.services.nzbget-service.loadbalancer.servers.healthCheck.interval=30s"
-      # - "traefik.http.services.nzbget-service.loadbalancer.servers.healthCheck.timeout=10s"
-
-      # - "traefik.http.routers.nzbget.rule=Host(`nzbget.${DOMAIN:-local}`) || Host(`usenet.${DOMAIN:-local}`)"
-      # - "traefik.http.routers.nzbget.entrypoints=websecure"
-      # - "traefik.http.routers.nzbget.service=nzbget-service"
-      # - "traefik.http.routers.nzbget.middlewares=homelab-admin@file"
-      # - "traefik.http.routers.nzbget.tls=true"
-      # - "traefik.http.routers.nzbget.tls.certresolver=letsencrypt"
+      # Labels won't work with network_mode: service:gluetun
+      # Routes are configured in traefik/dynamic/gluetun-routers.yml
+      - "traefik.enable=false"

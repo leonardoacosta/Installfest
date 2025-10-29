@@ -6,7 +6,7 @@ global:
 api:
   dashboard: true # Enable the Traefik dashboard
   debug: false # Set to true for debugging
-  insecure: true # Never expose dashboard without authentication
+  insecure: false # IMPORTANT: Changed to false - use router for secure access
 
 # Entry Points - Define ports and protocols
 entryPoints:
@@ -20,18 +20,15 @@ entryPoints:
           to: websecure
           scheme: https
           permanent: true
-    # # Trusted IPs for X-Forwarded headers (both Docker networks)
-    # forwardedHeaders:
-    #   trustedIPs:
-    #     - "172.20.0.0/24" # homelab network
-    #     - "172.21.0.0/24" # media network
-    #     - "127.0.0.1/32" # localhost
-    #     - "10.0.0.0/8" # private network
-    #     - "192.168.0.0/16" # private network
+    # Trusted IPs for X-Forwarded headers
+    forwardedHeaders:
+      trustedIPs:
+        - "172.20.0.0/24" # homelab network
+        - "172.21.0.0/24" # media network
+        - "127.0.0.1/32" # localhost
+        - "10.0.0.0/8" # private network
+        - "192.168.0.0/16" # private network
 
-  # HTTP Entry Point (Port 80)
-  http:
-    address: ":8080"
   # HTTPS Entry Point (Port 443)
   websecure:
     address: ":443"
@@ -42,17 +39,17 @@ entryPoints:
           - main: "leonardoacosta.dev"
             sans:
               - "*.leonardoacosta.dev"
-      # middlewares:
-      #   - security-headers@file # Apply security headers globally
-    # forwardedHeaders:
-    #   trustedIPs:
-    #     - "172.20.0.0/24" # homelab network
-    #     - "172.21.0.0/24" # media network
-    #     - "127.0.0.1/32" # localhost
-    #     - "10.0.0.0/8" # private network
-    #     - "192.168.0.0/16" # private network range
+      middlewares:
+        - security-headers@file # Apply security headers globally
+    forwardedHeaders:
+      trustedIPs:
+        - "172.20.0.0/24" # homelab network
+        - "172.21.0.0/24" # media network
+        - "127.0.0.1/32" # localhost
+        - "10.0.0.0/8" # private network
+        - "192.168.0.0/16" # private network
 
-  # Traefik Dashboard Entry Point (Internal only)
+  # Traefik Dashboard Entry Point
   traefik:
     address: ":8080"
 
@@ -62,6 +59,7 @@ certificatesResolvers:
     acme:
       email: "leo@leonardoacosta.dev" # Change to your email
       storage: "/letsencrypt/acme.json"
+      keyType: EC256 # Use elliptic curve keys for better performance
       # Use HTTP-01 challenge (recommended for most homelab setups)
       httpChallenge:
         entryPoint: web
@@ -83,8 +81,10 @@ providers:
   docker:
     endpoint: "unix:///var/run/docker.sock"
     exposedByDefault: false # Only expose containers with traefik.enable=true
-    network: "homelab" # Default network to use
+    network: homelab # Default network to use
     watch: true # Watch for Docker events in real-time
+    # Automatically use the homelab network for containers on multiple networks
+    useBindPortIP: false
     # Constraints to filter which containers Traefik should manage
     constraints: "Label(`traefik.enable`,`true`)"
 
@@ -98,8 +98,10 @@ log:
   level: "INFO" # DEBUG, INFO, WARN, ERROR, FATAL, PANIC
   filePath: "/var/log/traefik/traefik.log"
   format: "common" # common or json
-  # Enable for detailed logs
-  # level: "DEBUG"
+  # maxSize: 100      # Maximum size in MB before rotation
+  # maxBackups: 10    # Number of old log files to keep
+  # maxAge: 30        # Maximum number of days to keep old log files
+  # compress: true    # Compress rotated files
 
 # Access Logs - HTTP request logs
 accessLog:
@@ -111,34 +113,49 @@ accessLog:
       - "400-599" # Only log errors (remove to log all requests)
     retryAttempts: true
     minDuration: "10ms"
+  fields:
+    defaultMode: keep
+    headers:
+      defaultMode: drop # Don't log headers by default (privacy)
+      names:
+        User-Agent: keep
+        Referer: keep
 
-# Metrics (Optional - Prometheus integration)
+# Metrics (Prometheus integration)
 metrics:
   prometheus:
     addEntryPointsLabels: true
     addRoutersLabels: true
     addServicesLabels: true
     entryPoint: traefik
-    # Uncomment to expose metrics on separate port
-    # buckets:
-    #   - 0.1
-    #   - 0.3
-    #   - 1.2
-    #   - 5.0
-
-# Pilot (Optional - Traefik Pilot integration)
-# pilot:
-#   token: "your-pilot-token"
+    buckets:
+      - 0.1
+      - 0.3
+      - 1.2
+      - 5.0
 
 # ServersTransport - Global transport configuration
 serversTransport:
-  insecureSkipVerify: true # Set to true for self-signed certificates and internal connections
+  insecureSkipVerify: true # Allow self-signed certificates for internal services
   maxIdleConnsPerHost: 200
   forwardingTimeouts:
     dialTimeout: "30s"
     responseHeaderTimeout: "30s"
     idleConnTimeout: "90s"
+
+# HTTP Configuration
+http:
+  # Encoding support
+  encoding:
+    gzip: true
+
 # Experimental Features (Traefik v3)
-# experimental:
-# plugins: {}
-# localPlugins: {}
+experimental:
+  # HTTP/3 support
+  http3: true
+
+# Host Resolver - For better local network resolution
+hostResolver:
+  cnameFlattening: true
+  resolvConfig: "/etc/resolv.conf"
+  resolvDepth: 5
