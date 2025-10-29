@@ -80,14 +80,13 @@ services:
       - ./homeassistant:/config
       - /etc/localtime:/etc/localtime:ro
     ports:
-      # - outer:inner
       - "8123:8123"
     cap_add:
       - NET_ADMIN
       - NET_RAW
-    networks:
-      homelab:
-        ipv4_address: 172.20.0.123
+    # networks:
+    #   homelab:
+    #     ipv4_address: 172.20.0.123
     security_opt:
       - seccomp:unconfined
       - apparmor:unconfined
@@ -151,7 +150,6 @@ services:
       - "traefik.http.services.adguardhome.loadbalancer.server.port=82"
 
   # ? Traefik - Reverse Proxy
-
   traefik:
     image: traefik:v3.3
     container_name: traefik
@@ -264,7 +262,7 @@ services:
     ports:
       - "11434:11434"
     volumes:
-      - ollama_data:/root/.ollama
+      - ./ollama/data:/root/.ollama
     environment:
       - OLLAMA_HOST=0.0.0.0
       - OLLAMA_ORIGINS=*
@@ -308,7 +306,7 @@ services:
       - WEBUI_AUTH=${WEBUI_AUTH:-true}
       - ENABLE_SIGNUP=${ENABLE_SIGNUP:-true}
     volumes:
-      - ollama_webui_data:/app/backend/data
+      - ./ollama-webui/data:/app/backend/data
     depends_on:
       ollama:
         condition: service_healthy
@@ -700,7 +698,3 @@ services:
       - "traefik.http.routers.nzbget.entrypoints=websecure"
       - "traefik.http.routers.nzbget.tls=true"
       - "traefik.http.services.nzbget.loadbalancer.server.port=6789"
-volumes:
-  ollama_data:
-  ollama_webui_data:
-  vaultwarden_data:

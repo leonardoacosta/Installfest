@@ -22,33 +22,6 @@ main() {
 
     log "Starting deployment to $DEPLOY_PATH"
 
-    # Validate deployment path (must be absolute)
-    if [[ ! "$DEPLOY_PATH" = /* ]]; then
-        error "DEPLOY_PATH must be an absolute path, got: $DEPLOY_PATH"
-        error "Original HOMELAB_PATH was: $HOMELAB_PATH"
-        exit 1
-    fi
-
-    # Ensure deployment directory exists with proper permissions
-    if [ ! -d "$DEPLOY_PATH" ]; then
-        log "Deployment directory does not exist: $DEPLOY_PATH"
-        log "Creating deployment directory..."
-        # Try to create directory, use sudo if necessary
-        mkdir -p "$DEPLOY_PATH" 2>/dev/null || sudo mkdir -p "$DEPLOY_PATH" || {
-            error "Cannot create deployment directory: $DEPLOY_PATH"
-            error "Please ensure the parent directory exists and you have permissions"
-            exit 1
-        }
-    fi
-
-    # Ensure we own the deployment directory or have write access
-    if [ ! -w "$DEPLOY_PATH" ]; then
-        log "Attempting to fix permissions for $DEPLOY_PATH"
-        sudo chown -R $(whoami):$(whoami) "$DEPLOY_PATH" 2>/dev/null || {
-            warning "Cannot change ownership of $DEPLOY_PATH"
-            warning "Will attempt to use sudo for file operations"
-        }
-    fi
 
     # Check if rollback is requested
     if [ "${ROLLBACK:-false}" == "true" ]; then
@@ -57,42 +30,14 @@ main() {
         exit $?
     fi
 
-    # Check if we can use sudo without password
-    CAN_SUDO=false
-    if sudo -n true 2>/dev/null; then
-        CAN_SUDO=true
-        log "Passwordless sudo available"
-    else
-        log "Sudo requires password or not available - attempting without sudo"
-    fi
-
     # Fix permissions on existing directories and create missing ones
     log "Ensuring service directories with proper permissions"
-
-    # First, try to fix permissions on the main directory if it exists
-    if [ -d "$DEPLOY_PATH/homeassistant" ] && [ ! -w "$DEPLOY_PATH/homeassistant" ]; then
-        log "Fixing permissions on existing homeassistant directory"
-        if [ "$CAN_SUDO" = true ]; then
-            sudo chmod -R 755 "$DEPLOY_PATH/homeassistant" 2>/dev/null || true
-            sudo chown -R $(whoami):$(whoami) "$DEPLOY_PATH/homeassistant" 2>/dev/null || true
-        fi
-    fi
 
     # Now create all required directories
     for dir in homeassistant/config glance/assets traefik/letsencrypt traefik/config \
                jellyfin/config vaultwarden adguardhome/work adguardhome/conf \
                ollama ollama-webui radarr sonarr lidarr prowlarr bazarr \
                qbittorrent jellyseerr nzbget scripts traefik/dynamic; do
-
-        # Check if parent directory exists but isn't writable
-        PARENT_DIR="$(dirname "$DEPLOY_PATH/$dir")"
-        if [ -d "$PARENT_DIR" ] && [ ! -w "$PARENT_DIR" ]; then
-            if [ "$CAN_SUDO" = true ]; then
-                log "Fixing permissions on $PARENT_DIR"
-                sudo chmod 755 "$PARENT_DIR" 2>/dev/null || true
-                sudo chown -R $(whoami):$(whoami) "$PARENT_DIR" 2>/dev/null || true
-            fi
-        fi
 
         # Now create the directory if it doesn't exist
         if [ ! -d "$DEPLOY_PATH/$dir" ]; then
@@ -118,20 +63,6 @@ main() {
         fi
     done
 
-    # Fix ownership of deployment directory before copying
-    if [ ! -w "$DEPLOY_PATH" ]; then
-        if [ "$CAN_SUDO" = true ]; then
-            log "Attempting to fix ownership of deployment directory"
-            sudo chown -R $(whoami):$(whoami) "$DEPLOY_PATH" 2>/dev/null || {
-                warning "Could not change ownership - will attempt copy anyway"
-            }
-        else
-            error "No write permission to $DEPLOY_PATH and sudo not available"
-            error "Please run on the server as root:"
-            error "  sudo bash $DEPLOY_PATH/scripts/setup-runner-permissions.sh"
-            exit 1
-        fi
-    fi
 
     # Copy configurations from GitHub workspace BEFORE cd
     log "Copying configurations from GitHub workspace"
