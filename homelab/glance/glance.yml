@@ -37,21 +37,21 @@ pages:
             groups:
               - links:
                   - title: Home Assistant
-                    url: http://192.168.1.14:8123
+                    url: https://homeassistant.local
                     description: Smart Home Hub
                     icon: si:homeassistant
                     same-tab: false
                     hide-arrow: false
 
                   - title: AdGuard Home
-                    url: http://192.168.1.14:82
+                    url: https://adguard.local
                     description: DNS Ad Blocker
                     icon: si:adguard
                     same-tab: false
                     hide-arrow: false
 
                   - title: Traefik
-                    url: http://192.168.1.14:8080
+                    url: https://traefik.local
                     description: Reverse Proxy & Load Balancer
                     icon: si:traefik
                     same-tab: false
@@ -63,14 +63,14 @@ pages:
             groups:
               - links:
                   - title: Ollama WebUI
-                    url: http://192.168.1.14:8081
+                    url: https://ollama-webui.local
                     description: Local LLM Interface
                     icon: si:ollama
                     same-tab: false
                     hide-arrow: false
 
                   - title: Ollama API
-                    url: http://192.168.1.14:11434
+                    url: https://ollama.local
                     description: LLM API Server
                     icon: si:ollama
                     same-tab: false
@@ -82,14 +82,14 @@ pages:
             groups:
               - links:
                   - title: Jellyfin
-                    url: http://192.168.1.14:8096
+                    url: https://jellyfin.local
                     description: Media Streaming Server
                     icon: si:jellyfin
                     same-tab: false
                     hide-arrow: false
 
                   - title: Jellyseerr
-                    url: http://192.168.1.14:5055
+                    url: https://jellyseerr.local
                     description: Media Request Management
                     icon: si:jellyfin
                     same-tab: false
@@ -101,7 +101,7 @@ pages:
             groups:
               - links:
                   - title: Vaultwarden
-                    url: http://192.168.1.14:8222
+                    url: https://vaultwarden.local
                     description: Password Manager
                     icon: si:bitwarden
                     same-tab: false
