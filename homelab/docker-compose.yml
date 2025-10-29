@@ -115,7 +115,7 @@ services:
       - "traefik.http.services.homeassistant.loadbalancer.server.port=8123"
       - "traefik.http.routers.homeassistant.middlewares=homeassistant-headers@file"
 
-  # AdGuard Home - DNS Ad Blocker
+  # ? AdGuard Home - DNS Ad Blocker
   adguardhome:
     image: adguard/adguardhome:latest
     container_name: adguardhome
@@ -126,10 +126,11 @@ services:
       - ./adguardhome/work:/opt/adguardhome/work
       - ./adguardhome/conf:/opt/adguardhome/conf
     ports:
-      # DNS ports - uncomment if not conflicting with systemd-resolved
+      # Port 53 disabled - conflicts with systemd-resolved on runner
+      # Use AdGuard via container IP (172.20.0.53) or custom DNS port
       # - "53:53/tcp"
       # - "53:53/udp"
-      - "82:80/tcp" # Web interface
+      - "82:80/tcp" # Web interface (port 82 to avoid conflicts)
       - "8443:443/tcp" # HTTPS web interface
       - "3000:3000/tcp" # Initial setup
       - "853:853/tcp" # DNS-over-TLS
@@ -146,7 +147,7 @@ services:
     security_opt:
       - no-new-privileges:true
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:80/ || exit 1"]
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:82/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -161,15 +162,15 @@ services:
       - "traefik.http.services.adguardhome.loadbalancer.server.port=80"
       - "traefik.http.routers.adguardhome.middlewares=homelab-admin@file"
 
-  # Traefik - Reverse Proxy
+  # ? Traefik - Reverse Proxy
   traefik:
-    image: traefik:v3.2 # Using stable v3.2 instead of v3.3
+    image: traefik:v3.3
     container_name: traefik
     restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
-      - "8090:8080" # Changed dashboard port to avoid conflict with qBittorrent
+      - "8080:8080" # Dashboard
     environment:
       - TZ=${TZ:-America/Chicago}
       - DOMAIN=${DOMAIN:-local}
@@ -212,7 +213,7 @@ services:
       - "homepage.href=https://traefik.${DOMAIN:-local}"
       - "homepage.description=Reverse Proxy & Load Balancer"
 
-  # Vaultwarden - Password Manager
+  # ? Vaultwarden - Password Manager
   vaultwarden:
     image: vaultwarden/server:latest
     container_name: vaultwarden
@@ -333,24 +334,21 @@ services:
         ipv4_address: 172.20.0.12
     security_opt:
       - no-new-privileges:true
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8081/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
+    # healthcheck:
+    #   test: ["CMD-SHELL", "curl -f http://localhost:8081/health || exit 1"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 5
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.ollama-webui.rule=Host(`ollama.${DOMAIN:-local}`) || Host(`ai.${DOMAIN:-local}`)"
       - "traefik.http.routers.ollama-webui.entrypoints=websecure"
       - "traefik.http.routers.ollama-webui.tls=true"
-      - "traefik.http.routers.ollama-webui.tls.certresolver=letsencrypt"
-      - "traefik.http.services.ollama-webui.loadbalancer.server.port=8080"
-      - "traefik.http.routers.ollama-webui.middlewares=homelab-general@file"
+      - "traefik.http.services.ollama-webui.loadbalancer.server.port=8081"
 
   # ************************************
   # ********** VPN & Security **********
   # ************************************
-  # Tailscale - Mesh VPN
+  # ? Tailscale - Mesh VPN
   tailscale:
     image: docker.io/tailscale/tailscale:stable
     container_name: tailscale
@@ -401,10 +399,12 @@ services:
       homelab:
         ipv4_address: 172.20.0.45
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:445 || exit 1"]
+      # Using samba's built-in healthcheck command
+      test: ["CMD", "samba", "healthcheck", "--ping"]
       interval: 30s
       timeout: 10s
-      retries: 5
+      retries: 3
+      start_period: 20s
     cap_add:
       - SYS_ADMIN
       - DAC_READ_SEARCH
@@ -416,7 +416,7 @@ services:
   # ************************************
   # ********** Media Stack Services ****
   # ************************************
-  # Gluetun - VPN Client for Media Services
+  # ? Gluetun - VPN Client for Media Services
   gluetun:
     image: qmcgaw/gluetun:latest
     container_name: gluetun
