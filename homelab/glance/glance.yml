@@ -22,41 +22,14 @@ server:
 pages:
   - name: Home
     slug: home
-    columns:
+    rows:
       - size: small
         widgets:
           - type: weather
             location: Dallas, TX, United States # More specific location format
             units: imperial # or 'metric'
 
-          - type: monitor
-            title: Service Health
-            cache: 1m
-            sites:
-              - title: Home Assistant
-                url: http://172.20.0.123:8123/
-                icon: si:homeassistant
-
-              - title: Jellyfin
-                url: http://172.20.0.96:8096/health
-                icon: si:jellyfin
-
-              - title: AdGuard Home
-                url: http://172.20.0.53:82
-                icon: si:adguard
-
-              - title: Traefik
-                url: http://172.20.0.81:8080/ping
-                icon: si:traefik
-
-              - title: Vaultwarden
-                url: http://172.20.0.22:8222/alive
-                icon: si:bitwarden
-
-              - title: Ollama
-                url: http://172.20.0.11:11434/api/tags
-                icon: si:ollama
-
+    columns:
       - size: full
         widgets:
           # Core Services
