@@ -683,7 +683,7 @@ services:
       - "traefik.http.services.jellyseerr.loadbalancer.server.port=5055"
       - "traefik.http.routers.jellyseerr.middlewares=homelab-public@file"
 
-  # Prowlarr - Indexer Manager (Behind VPN)
+  # ? Prowlarr - Indexer Manager (Behind VPN)
   prowlarr:
     image: lscr.io/linuxserver/prowlarr:latest
     container_name: prowlarr
@@ -710,7 +710,7 @@ services:
       # Routes are configured in traefik/dynamic/gluetun-routers.yml
       - "traefik.enable=false"
 
-  # qBittorrent - Torrent Client (Behind VPN)
+  # ? qBittorrent - Torrent Client (Behind VPN)
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
     container_name: qbittorrent
@@ -741,7 +741,7 @@ services:
       # Routes are configured in traefik/dynamic/gluetun-routers.yml
       - "traefik.enable=false"
 
-  # NZBGet - Usenet Client (Behind VPN)
+  # ? NZBGet - Usenet Client (Behind VPN)
   nzbget:
     image: lscr.io/linuxserver/nzbget:latest
     container_name: nzbget
