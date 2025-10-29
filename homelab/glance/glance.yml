@@ -42,7 +42,7 @@ pages:
                 icon: si:jellyfin
 
               - title: AdGuard Home
-                url: http://172.20.0.53:80/control/status
+                url: http://172.20.0.53:82/control/status
                 icon: si:adguard
 
               - title: Traefik
