@@ -12,6 +12,22 @@ source "$SCRIPT_DIR/common-utils.sh"
 DEPLOY_PATH="${HOMELAB_PATH/#\~/$HOME}"
 WORKSPACE_HOMELAB="${GITHUB_WORKSPACE}/homelab"
 
+# Update infrastructure services separately (manual trigger only)
+update_infrastructure() {
+    log "⚠️  Updating infrastructure services (DNS will be temporarily unavailable)"
+    log "This should only be run manually, not during CI/CD"
+
+    INFRASTRUCTURE_SERVICES="traefik adguardhome"
+
+    for service in $INFRASTRUCTURE_SERVICES; do
+        log "Updating $service..."
+        compose_up --no-deps --force-recreate "$service"
+        sleep 5  # Brief pause between infrastructure updates
+    done
+
+    log "✅ Infrastructure services updated"
+}
+
 # Main deployment
 main() {
     log "Starting streamlined deployment to $DEPLOY_PATH"
@@ -77,10 +93,17 @@ main() {
 
     # 5. Deploy services (Docker Compose creates directories automatically)
     log "Deploying services..."
-    compose_down --remove-orphans 2>/dev/null || true  # Clean stop of project containers only
-    compose_pull --quiet  # Pull latest images
 
-    if ! compose_up --remove-orphans; then
+    # IMPORTANT: Never restart infrastructure services during deployment
+    # to prevent DNS outage (AdGuard) and network disruption (Traefik)
+    INFRASTRUCTURE_SERVICES="traefik adguardhome"
+
+    # Pull latest images first (doesn't disrupt running services)
+    compose_pull --quiet
+
+    # Restart only non-infrastructure services using rolling update
+    log "Performing rolling update (keeping infrastructure running)..."
+    if ! compose_up --no-deps --remove-orphans; then
         error "Failed to deploy services"
         exit 1
     fi
@@ -108,4 +131,10 @@ main() {
 }
 
 # Execute
-main "$@"
+if [ "${1:-}" = "--infrastructure" ]; then
+    log "Running infrastructure update mode"
+    cd "$DEPLOY_PATH"
+    update_infrastructure
+else
+    main "$@"
+fi
