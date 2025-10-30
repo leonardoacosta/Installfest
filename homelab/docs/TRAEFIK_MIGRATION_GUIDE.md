@@ -85,32 +85,6 @@ For local network access, update your DNS or `/etc/hosts`:
    ... (add all services)
    ```
 
-**Option B: /etc/hosts (for testing)**
-
-```bash
-# Add to /etc/hosts on your client machine
-sudo nano /etc/hosts
-
-# Add entries (replace 172.20.0.81 with your Traefik host IP)
-172.20.0.81 traefik.local
-172.20.0.81 glance.local dashboard.local
-172.20.0.81 ha.local homeassistant.local
-172.20.0.81 adguard.local dns.local
-172.20.0.81 chat.local ollama-ui.local
-172.20.0.81 jellyfin.local media.local
-172.20.0.81 vault.local vaultwarden.local
-172.20.0.81 jellyseerr.local requests.local
-172.20.0.81 radarr.local
-172.20.0.81 sonarr.local
-172.20.0.81 lidarr.local
-172.20.0.81 bazarr.local
-172.20.0.81 qbittorrent.local qb.local torrent.local
-172.20.0.81 prowlarr.local
-172.20.0.81 nzbget.local usenet.local
-172.20.0.81 gluetun.local vpn.local
-```
-
-
 
 ### Step 7: SSL Certificate Considerations
 
