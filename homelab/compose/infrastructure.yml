@@ -141,8 +141,8 @@ services:
       - "traefik.http.routers.homeassistant.rule=Host(`homeassistant.local`)"
       - "traefik.http.routers.homeassistant.entrypoints=websecure"
       - "traefik.http.routers.homeassistant.tls=true"
+      # - "traefik.http.routers.homeassistant.middlewares=homeassistant-headers@file"
       - "traefik.http.services.homeassistant.loadbalancer.server.port=8123"
-      - "traefik.http.routers.homeassistant.middlewares=homeassistant-headers@file"
 
   # ? Vaultwarden - Password Manager
   vaultwarden:

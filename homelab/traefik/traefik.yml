@@ -103,6 +103,9 @@ log:
   filePath: "/var/log/traefik/traefik.log"
   format: "common" # common or json
 
+# Tracing Configuration
+tracing: {}
+
 # Access Logs - HTTP request logs
 accessLog:
   filePath: "/var/log/traefik/access.log"
