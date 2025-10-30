@@ -13,6 +13,9 @@ services:
       - DOMAIN=${DOMAIN:-local}
       - TRAEFIK_DASHBOARD_USER=${TRAEFIK_DASHBOARD_USER}
       - TRAEFIK_DASHBOARD_PASSWORD=${TRAEFIK_DASHBOARD_PASSWORD}
+      # Cloudflare DNS-01 Challenge Credentials (required for wildcard certificates)
+      - CLOUDFLARE_EMAIL=${CLOUDFLARE_EMAIL}
+      - CLOUDFLARE_DNS_API_TOKEN=${CLOUDFLARE_DNS_API_TOKEN}
     volumes:
       - ../traefik/traefik.yml:/etc/traefik/traefik.yml:ro
       - ../traefik/dynamic:/dynamic:ro

@@ -65,16 +65,16 @@ certificatesResolvers:
       email: "leo@leonardoacosta.dev" # Change to your email
       storage: "/letsencrypt/acme.json"
       keyType: EC256 # Use elliptic curve keys for better performance
-      # Use HTTP-01 challenge (recommended for most homelab setups)
-      httpChallenge:
-        entryPoint: web
-      # Uncomment for DNS challenge (if you use Cloudflare, Route53, etc.)
-      # dnsChallenge:
-      #   provider: cloudflare
-      #   delayBeforeCheck: 30s
-      #   resolvers:
-      #     - "1.1.1.1:53"
-      #     - "8.8.8.8:53"
+      # DNS-01 challenge REQUIRED for wildcard certificates
+      dnsChallenge:
+        provider: cloudflare
+        delayBeforeCheck: 30s
+        resolvers:
+          - "1.1.1.1:53"
+          - "8.8.8.8:53"
+      # HTTP-01 challenge (does not support wildcard certificates)
+      # httpChallenge:
+      #   entryPoint: web
 
 # Ping - Healthcheck endpoint
 ping:
