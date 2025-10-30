@@ -9,6 +9,8 @@ services:
       - "443:443" # receives HTTPS requests
       - "8080:8080" # Traefik dashboard
     environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
       - TZ=${TZ:-America/Chicago}
       - DOMAIN=local
       - TRAEFIK_DASHBOARD_USER=${TRAEFIK_DASHBOARD_USER}
