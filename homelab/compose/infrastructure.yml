@@ -54,6 +54,8 @@ services:
     container_name: adguardhome
     restart: unless-stopped
     environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
       - TZ=${TZ:-America/Chicago}
     volumes:
       - ../adguardhome/work:/opt/adguardhome/work
