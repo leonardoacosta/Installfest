@@ -1,17 +1,20 @@
 # Traefik v3 Migration Guide - From Nginx Proxy Manager
 
 ## Overview
+
 This guide provides step-by-step instructions for migrating from nginx-proxy-manager to Traefik v3 for your homelab setup.
 
 ## Architecture Changes
 
 ### Before (nginx-proxy-manager)
+
 - Manual proxy host configuration via web UI
 - SSL certificates managed through GUI
 - Routes configured manually
 - Port 81 for management interface
 
 ### After (Traefik v3)
+
 - Automatic service discovery via Docker labels
 - Automatic SSL certificate management with Let's Encrypt
 - Dynamic routing without restarts
@@ -20,38 +23,19 @@ This guide provides step-by-step instructions for migrating from nginx-proxy-man
 
 ## Prerequisites
 
-1. **Backup Current Configuration**
-   ```bash
-   # Backup nginx-proxy-manager data
-   cd /Users/leonardoacosta/Personal/Installfest/homelab
-   sudo tar -czf npm-backup-$(date +%Y%m%d).tar.gz nginx-proxy-manager/
+**Verify Domain Configuration**
 
-   # Backup Let's Encrypt certificates (in case you need to revert)
-   sudo cp -r nginx-proxy-manager/letsencrypt letsencrypt-backup
-   ```
-
-2. **Verify Domain Configuration**
-   - Determine your domain strategy:
-     - **Local network only**: Use `.local` domains
-     - **Internet-accessible**: Use your registered domain
-     - **Tailscale**: Use `.ts.net` domain
-
-3. **Generate Authentication Password**
-   ```bash
-   # Install apache2-utils if not available
-   sudo apt-get install apache2-utils
-
-   # Generate password hash (replace 'your_password' with actual password)
-   htpasswd -nb admin your_password
-
-   # Copy output and replace $ with $$ in middlewares.yml
-   ```
+- Determine your domain strategy:
+  - **Local network only**: Use `.local` domains
+  - **Internet-accessible**: Use your registered domain
+  - **Tailscale**: Use `.ts.net` domain
 
 ## Migration Steps
 
 ### Step 1: Prepare Environment
 
 1. **Update Environment Variables**
+
    ```bash
    # Copy the new environment file
    cp .env.traefik .env
@@ -61,17 +45,20 @@ This guide provides step-by-step instructions for migrating from nginx-proxy-man
    ```
 
    Update these critical variables:
+
    - `DOMAIN`: Your domain (e.g., `local`, `yourdomain.com`, or `your-tailnet.ts.net`)
    - `LETSENCRYPT_EMAIL`: Your email for Let's Encrypt notifications
    - `TRAEFIK_DASHBOARD_USER` and `TRAEFIK_DASHBOARD_PASSWORD`: Dashboard credentials
 
 2. **Create Traefik Directory Structure**
+
    ```bash
    mkdir -p traefik/{dynamic,letsencrypt,logs}
    chmod 600 traefik/letsencrypt  # Secure certificate directory
    ```
 
 3. **Update Authentication in Middleware File**
+
    ```bash
    # Generate password hash
    PASSWORD_HASH=$(htpasswd -nb admin your_password | sed -e s/\\$/\\$\\$/g)
@@ -86,6 +73,7 @@ This guide provides step-by-step instructions for migrating from nginx-proxy-man
 For local network access, update your DNS or `/etc/hosts`:
 
 **Option A: Local DNS (AdGuard Home)**
+
 1. Access AdGuard Home admin panel
 2. Add DNS rewrite rules for each service:
    ```
@@ -98,6 +86,7 @@ For local network access, update your DNS or `/etc/hosts`:
    ```
 
 **Option B: /etc/hosts (for testing)**
+
 ```bash
 # Add to /etc/hosts on your client machine
 sudo nano /etc/hosts
@@ -121,104 +110,12 @@ sudo nano /etc/hosts
 172.20.0.81 gluetun.local vpn.local
 ```
 
-### Step 3: Stop nginx-proxy-manager
 
-```bash
-cd /Users/leonardoacosta/Personal/Installfest/homelab
-
-# Stop and remove nginx-proxy-manager
-docker-compose stop nginx-proxy-manager
-docker-compose rm -f nginx-proxy-manager
-
-# Verify ports are released
-sudo lsof -i :80
-sudo lsof -i :443
-```
-
-### Step 4: Deploy Traefik
-
-1. **Use the new docker-compose file**
-   ```bash
-   # Option A: Rename files
-   mv docker-compose.yml docker-compose.yml.npm-backup
-   mv docker-compose-traefik.yml docker-compose.yml
-
-   # Option B: Use specific compose file
-   # docker-compose -f docker-compose-traefik.yml up -d
-   ```
-
-2. **Start Traefik only (for testing)**
-   ```bash
-   docker-compose up -d traefik
-
-   # Check logs
-   docker logs -f traefik
-
-   # Look for:
-   # - "Configuration loaded from file: /etc/traefik/traefik.yml"
-   # - No error messages
-   # - "Server listening on :80" and ":443"
-   ```
-
-3. **Verify Traefik Dashboard**
-   ```bash
-   # Access dashboard (replace with your domain)
-   # https://traefik.local
-
-   # Check for:
-   # - Authentication prompt
-   # - Dashboard loads successfully
-   # - Entrypoints show 'web' and 'websecure'
-   ```
-
-### Step 5: Test Service Routing
-
-Start services one at a time and verify routing:
-
-```bash
-# Test Glance first (simple service)
-docker-compose up -d glance
-docker logs -f glance
-
-# Access https://glance.local
-# Verify:
-# - SSL certificate is valid (or shows Let's Encrypt staging)
-# - Service loads correctly
-# - Check Traefik dashboard for route
-
-# Continue with other services
-docker-compose up -d homeassistant
-docker-compose up -d jellyfin
-docker-compose up -d vaultwarden
-# ... etc
-```
-
-### Step 6: Verify Services Behind Gluetun
-
-Services using `network_mode: service:gluetun` require special attention:
-
-```bash
-# Start Gluetun
-docker-compose up -d gluetun
-
-# Wait for VPN connection
-docker logs -f gluetun
-# Look for: "Wireguard is up and running"
-
-# Start services
-docker-compose up -d qbittorrent prowlarr nzbget
-
-# Test access through Traefik
-# https://qbittorrent.local
-# https://prowlarr.local
-# https://nzbget.local
-
-# Verify they route through Gluetun's IP (172.21.0.2)
-```
 
 ### Step 7: SSL Certificate Considerations
 
 **For Local Network (Self-Signed Certificates)**
+
 - Traefik will generate Let's Encrypt certificates using HTTP challenge
 - Your browser will show certificate warnings for `.local` domains
 - Options:
@@ -227,6 +124,7 @@ docker-compose up -d qbittorrent prowlarr nzbget
   3. Use mkcert to generate local trusted certificates (advanced)
 
 **For Internet-Accessible Domains**
+
 - Ensure your domain points to your public IP
 - Configure port forwarding: 80, 443 → your Traefik host
 - Let's Encrypt will automatically validate and issue certificates
@@ -251,20 +149,23 @@ docker-compose ps
 
 ### Cloudflare DNS Challenge (Wildcard Certificates)
 
-For wildcard SSL certificates (*.yourdomain.com):
+For wildcard SSL certificates (\*.yourdomain.com):
 
 1. **Get Cloudflare API credentials**
+
    - Log into Cloudflare
    - Go to My Profile → API Tokens
    - Create token with Zone:DNS:Edit permissions
 
 2. **Update .env**
+
    ```bash
    CF_API_EMAIL=your-email@example.com
    CF_API_KEY=your-api-key
    ```
 
 3. **Update traefik.yml**
+
    ```yaml
    certificatesResolvers:
      letsencrypt:
@@ -302,6 +203,7 @@ http:
 ```
 
 Apply in docker-compose labels:
+
 ```yaml
 labels:
   - "traefik.http.routers.myservice.middlewares=my-custom-chain@file"
@@ -317,6 +219,7 @@ curl http://172.20.0.81:8080/metrics
 ```
 
 Integrate with Grafana:
+
 - Add Prometheus data source pointing to Traefik
 - Import Traefik dashboard: https://grafana.com/grafana/dashboards/
 
@@ -325,17 +228,20 @@ Integrate with Grafana:
 ### Issue: Service not accessible
 
 **Check 1: Verify Traefik can reach the service**
+
 ```bash
 # From inside Traefik container
 docker exec -it traefik wget -O- http://172.20.0.85:8080
 ```
 
 **Check 2: Verify labels are applied**
+
 ```bash
 docker inspect glance | grep traefik
 ```
 
 **Check 3: Check Traefik logs**
+
 ```bash
 docker logs traefik | grep -i error
 tail -f traefik/logs/traefik.log
@@ -344,16 +250,19 @@ tail -f traefik/logs/traefik.log
 ### Issue: SSL certificate errors
 
 **For HTTP challenge**
+
 - Ensure port 80 is accessible from the internet
 - Check firewall rules
 - Verify DNS points to your public IP
 
 **Check certificate status**
+
 ```bash
 cat traefik/letsencrypt/acme.json | jq .
 ```
 
 **Use staging environment for testing**
+
 ```yaml
 # In traefik.yml
 certificatesResolvers:
@@ -365,17 +274,20 @@ certificatesResolvers:
 ### Issue: Gluetun services unreachable
 
 **Check 1: Verify Gluetun is connected**
+
 ```bash
 docker logs gluetun | tail -20
 # Look for: "Wireguard is up and running"
 ```
 
 **Check 2: Verify dynamic configuration loaded**
+
 ```bash
 docker exec -it traefik cat /etc/traefik/dynamic/gluetun-routers.yml
 ```
 
 **Check 3: Test direct connection**
+
 ```bash
 # From host
 curl http://172.21.0.2:8080  # qBittorrent
@@ -385,11 +297,13 @@ curl http://172.21.0.2:9696  # Prowlarr
 ### Issue: Dashboard authentication not working
 
 **Regenerate password hash**
+
 ```bash
 echo $(htpasswd -nb admin your_password) | sed -e s/\\$/\\$\\$/g
 ```
 
 **Update middlewares.yml and restart**
+
 ```bash
 docker-compose restart traefik
 ```
@@ -397,6 +311,7 @@ docker-compose restart traefik
 ### Issue: Middleware not applying
 
 **Check middleware syntax in docker-compose**
+
 ```yaml
 # Correct
 - "traefik.http.routers.myservice.middlewares=security-headers@file"
@@ -406,6 +321,7 @@ docker-compose restart traefik
 ```
 
 **Verify middleware exists**
+
 ```bash
 docker exec -it traefik cat /etc/traefik/dynamic/middlewares.yml | grep -A5 "security-headers:"
 ```
@@ -413,12 +329,14 @@ docker exec -it traefik cat /etc/traefik/dynamic/middlewares.yml | grep -A5 "sec
 ## Testing Checklist
 
 ### Basic Functionality
+
 - [ ] Traefik dashboard accessible (https://traefik.local)
 - [ ] Dashboard requires authentication
 - [ ] HTTP redirects to HTTPS
 - [ ] SSL certificates issued (or in staging)
 
 ### Service Accessibility
+
 - [ ] Glance dashboard (https://glance.local)
 - [ ] Home Assistant (https://ha.local)
 - [ ] AdGuard Home (https://adguard.local)
@@ -432,12 +350,14 @@ docker exec -it traefik cat /etc/traefik/dynamic/middlewares.yml | grep -A5 "sec
 - [ ] Bazarr (https://bazarr.local)
 
 ### Gluetun Services
+
 - [ ] qBittorrent (https://qbittorrent.local)
 - [ ] Prowlarr (https://prowlarr.local)
 - [ ] NZBGet (https://nzbget.local)
 - [ ] Gluetun control panel (https://gluetun.local)
 
 ### Security
+
 - [ ] All services use HTTPS
 - [ ] Security headers applied (check browser dev tools)
 - [ ] Admin services require authentication
@@ -445,12 +365,14 @@ docker exec -it traefik cat /etc/traefik/dynamic/middlewares.yml | grep -A5 "sec
 - [ ] Rate limiting functional (test with curl loop)
 
 ### Performance
+
 - [ ] Compression enabled (check response headers)
 - [ ] Response times acceptable
 - [ ] No certificate errors (after Let's Encrypt issues certs)
 - [ ] WebSockets working (Home Assistant, Vaultwarden)
 
 ### Monitoring
+
 - [ ] Access logs being written (traefik/logs/access.log)
 - [ ] Error logs being written when errors occur
 - [ ] Prometheus metrics accessible
@@ -477,6 +399,7 @@ docker-compose up -d
 ## Security Best Practices
 
 ### 1. Secure the Dashboard
+
 - Use strong passwords
 - Consider restricting to local network only:
   ```yaml
@@ -484,10 +407,12 @@ docker-compose up -d
   ```
 
 ### 2. Protect Sensitive Services
-- Vaultwarden, AdGuard, and *arr services should have authentication
+
+- Vaultwarden, AdGuard, and \*arr services should have authentication
 - Consider using Authelia or OAuth for SSO (future enhancement)
 
 ### 3. Regular Updates
+
 ```bash
 # Update Traefik
 docker-compose pull traefik
@@ -497,6 +422,7 @@ docker-compose up -d traefik
 ```
 
 ### 4. Certificate Management
+
 - Monitor Let's Encrypt rate limits
 - Use staging environment for testing
 - Backup acme.json regularly:
@@ -505,6 +431,7 @@ docker-compose up -d traefik
   ```
 
 ### 5. Network Segmentation
+
 - Keep media services on media network
 - Core services on homelab network
 - Traefik bridges both networks securely
@@ -512,6 +439,7 @@ docker-compose up -d traefik
 ## Performance Optimization
 
 ### 1. Enable HTTP/3 (QUIC)
+
 ```yaml
 # In traefik.yml
 entryPoints:
@@ -521,6 +449,7 @@ entryPoints:
 ```
 
 ### 2. Adjust Resource Limits
+
 ```yaml
 # In docker-compose.yml for high-traffic setups
 deploy:
@@ -531,29 +460,35 @@ deploy:
 ```
 
 ### 3. Enable Access Log Filtering
+
 - Already configured to log only errors (400-599)
 - Reduces disk I/O
 
 ### 4. Connection Pooling
+
 - Already configured in traefik.yml
 - `maxIdleConnsPerHost: 200`
 
 ## Next Steps
 
 1. **Add Monitoring Stack**
+
    - Prometheus for metrics
    - Grafana for visualization
    - Loki for log aggregation
 
 2. **Implement SSO**
+
    - Add Authelia for centralized authentication
    - Configure OAuth providers
 
 3. **Add Fail2Ban**
+
    - Monitor Traefik access logs
    - Ban IPs with repeated authentication failures
 
 4. **Implement Rate Limiting**
+
    - Already configured in middlewares
    - Tune values based on usage patterns
 
@@ -573,6 +508,7 @@ deploy:
 ## Support
 
 If you encounter issues:
+
 1. Check Traefik logs: `docker logs traefik`
 2. Verify configuration: `docker exec -it traefik traefik version`
 3. Test connectivity: `docker exec -it traefik ping <service-name>`
@@ -582,6 +518,7 @@ If you encounter issues:
 ---
 
 **Note**: This migration maintains all functionality from nginx-proxy-manager while providing:
+
 - Automatic service discovery
 - Better performance with connection pooling
 - More granular security controls

@@ -17,7 +17,7 @@ print_header "HACS Installation for Home Assistant"
 
 # Function to check if HACS is already installed
 check_hacs_installed() {
-            print_info "Checking if HACS is already installed..."
+    print_info "Checking if HACS is already installed..."
 
     # Check if the marker file exists in the container
     if docker exec "$HA_CONTAINER_NAME" test -f "$HACS_CHECK_FILE" 2>/dev/null; then

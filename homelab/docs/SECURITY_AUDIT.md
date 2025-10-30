@@ -28,60 +28,6 @@ This security audit identified **10 critical and high-severity vulnerabilities**
 5. **Exposed management interfaces** without firewall protection
 6. **Missing health checks** preventing automated failure detection
 
----
-
-## Detailed Findings
-
-### 🔴 CRITICAL #1: Privileged Container - Home Assistant
-
-**File:** `docker-compose.yml:26`
-
-```yaml
-homeassistant:
-  privileged: true # ⚠️ FULL HOST ACCESS
-```
-
-**CVSS Score:** 9.8 (Critical)
-
-**Risk:**
-
-- Container has unrestricted access to host kernel features
-- Can access Docker socket and manipulate other containers
-- Malware in Home Assistant integration could compromise entire host
-- Bypasses all Docker security isolation
-
-**Attack Scenario:**
-
-```
-1. Attacker exploits vulnerability in Home Assistant integration
-2. Malicious code executes with privileged access
-3. Accesses Docker socket at /var/run/docker.sock
-4. Spawns new privileged container or modifies existing containers
-5. Reads secrets, SSH keys, or modifies host filesystem
-6. Full system compromise achieved
-```
-
-**Remediation:**
-Replace `privileged: true` with specific capabilities:
-
-```yaml
-homeassistant:
-  cap_add:
-    - NET_RAW # For network discovery (ping)
-    - NET_ADMIN # For network configuration
-  cap_drop:
-    - ALL
-  security_opt:
-    - no-new-privileges:true
-    - apparmor=docker-default
-  read_only: false # HA needs write access to config
-```
-
-**Priority:** IMMEDIATE
-**Estimated Fix Time:** 15 minutes
-**Verification:** `docker inspect homeassistant | grep -A5 CapAdd`
-
----
 
 ### 🔴 CRITICAL #2: Unpinned Image Versions
 

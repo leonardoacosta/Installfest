@@ -1,82 +1,5 @@
 # Glance Dashboard Integration & Homelab Architecture Review
 
-## Table of Contents
-
-1. [Architecture Overview](#architecture-overview)
-2. [Network Segmentation Analysis](#network-segmentation-analysis)
-3. [Glance Integration](#glance-integration)
-4. [Security Recommendations](#security-recommendations)
-5. [Nginx Proxy Manager Configuration](#nginx-proxy-manager-configuration)
-6. [Best Practices](#best-practices)
-7. [Troubleshooting](#troubleshooting)
-
-## Architecture Overview
-
-### Current Network Design
-
-Your homelab uses a dual-network architecture which is **well-designed** for security and service isolation:
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     Host Network (Physical)                  │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐  │
-│  │         Homelab Network (172.20.0.0/16)             │  │
-│  │                                                      │  │
-│  │  • Glance (172.20.0.85)    Dashboard               │  │
-│  │  • Home Assistant (172.20.0.123)                   │  │
-│  │  • AdGuard Home (172.20.0.53)                     │  │
-│  │  • Nginx Proxy Manager (172.20.0.81)              │  │
-│  │  • Jellyfin (172.20.0.96)                         │  │
-│  │  • Vaultwarden (172.20.0.22)                      │  │
-│  │  • Ollama/WebUI (172.20.0.11-12)                  │  │
-│  │  • Samba (172.20.0.45)                            │  │
-│  │  • Jellyseerr (172.20.0.55)                       │  │
-│  └─────────────────────────────────────────────────────┘  │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐  │
-│  │          Media Network (172.21.0.0/16)              │  │
-│  │                                                      │  │
-│  │  • Gluetun VPN (172.21.0.2) ← All VPN traffic      │  │
-│  │    ├─ qBittorrent (via Gluetun)                    │  │
-│  │    ├─ Prowlarr (via Gluetun)                       │  │
-│  │    ├─ NZBGet (via Gluetun)                         │  │
-│  │    └─ Byparr (via Gluetun)                         │  │
-│  │  • Radarr (172.21.0.78)                           │  │
-│  │  • Sonarr (172.21.0.89)                           │  │
-│  │  • Lidarr (172.21.0.86)                           │  │
-│  │  • Bazarr (172.21.0.67)                           │  │
-│  └─────────────────────────────────────────────────────┘  │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐  │
-│  │        Cross-Network Services (Both Networks)       │  │
-│  │                                                      │  │
-│  │  • Nginx Proxy Manager (172.20.0.81, 172.21.0.81)  │  │
-│  │  • Jellyfin (172.20.0.96, 172.21.0.96)            │  │
-│  │  • Jellyseerr (172.20.0.55, 172.21.0.55)          │  │
-│  │  • Glance (172.20.0.85, 172.21.0.85) - NEW        │  │
-│  └─────────────────────────────────────────────────────┘  │
-│                                                             │
-│  [Tailscale - Host Network Mode - VPN Mesh]               │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Architecture Strengths ✅
-
-1. **Proper Network Isolation**: Media downloading services are isolated behind VPN
-2. **Security Segmentation**: Core services separate from potentially risky media services
-3. **VPN Protection**: All torrent/usenet traffic routes through Gluetun
-4. **Cross-Network Access**: Strategic services have dual-network presence
-5. **Static IP Assignment**: Predictable service locations
-
-### Potential Improvements 🔧
-
-1. **Add Resource Limits**: Many services lack memory/CPU limits
-2. **Implement Health Checks**: Several services missing health check definitions
-3. **Security Hardening**: Add `security_opt` to more containers
-4. **Logging Strategy**: Centralized logging not configured
-5. **Backup Strategy**: No automated backup configuration visible
-
 ## Network Segmentation Analysis
 
 ### Current Implementation Assessment
@@ -94,78 +17,6 @@ Your homelab uses a dual-network architecture which is **well-designed** for sec
 2. **Internal DNS**: Configure AdGuard to resolve local service names
 3. **Firewall Rules**: Implement iptables rules for additional network isolation
 4. **VLAN Tagging**: Consider VLAN support if your hardware permits
-
-## Glance Integration
-
-### 1. Configuration File Location
-
-```bash
-# Main configuration file
-/Users/leonardoacosta/Personal/Installfest/homelab/glance/glance.yml
-```
-
-### 2. Key Integration Points
-
-#### A. Docker Socket Access (Optional for monitoring)
-
-```yaml
-volumes:
-  - /var/run/docker.sock:/var/run/docker.sock:ro
-```
-
-This allows Glance to monitor Docker container status directly.
-
-#### B. Network Visibility
-
-Glance needs access to both networks to monitor all services:
-
-```yaml
-networks:
-  homelab:
-    ipv4_address: 172.20.0.85
-  media:
-    ipv4_address: 172.21.0.85
-```
-
-#### C. Service Discovery
-
-The configuration uses static IPs for reliable service discovery:
-
-- Homelab services: `172.20.0.x`
-- Media services: `172.21.0.x`
-- VPN services: Through Gluetun at `172.21.0.2`
-
-### 3. Widget Configuration Examples
-
-#### Monitor Widget for Health Checks
-
-```yaml
-- type: monitor
-  title: Service Health
-  cache: 1m
-  sites:
-    - title: Home Assistant
-      url: http://172.20.0.123:8123/api/
-      icon: si:homeassistant
-    - title: Jellyfin
-      url: http://172.20.0.96:8096/health
-      icon: si:jellyfin
-    - title: VPN Status
-      url: http://172.21.0.2:8000/v1/publicip
-      icon: si:shield
-```
-
-#### Service Links with Proper URLs
-
-```yaml
-- type: link
-  title: Nginx Proxy Manager
-  url: http://npm.local:81 # or http://172.20.0.81:81
-  description: Reverse Proxy Management
-  icon: si:nginx
-```
-
-## Security Recommendations
 
 ### 1. Authentication & Authorization
 
@@ -192,36 +43,6 @@ authelia:
       ipv4_address: 172.20.0.9
 ```
 
-### 2. HTTPS Configuration
-
-#### Self-Signed SSL (Quick Setup):
-
-```bash
-# Generate self-signed certificate
-openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-  -keyout ./nginx-proxy-manager/letsencrypt/glance.key \
-  -out ./nginx-proxy-manager/letsencrypt/glance.crt \
-  -subj "/CN=glance.local"
-```
-
-#### Let's Encrypt (Production):
-
-Configure through Nginx Proxy Manager UI:
-
-1. Add Proxy Host for `glance.yourdomain.com`
-2. Forward to `http://172.20.0.85:8080`
-3. Enable SSL with Let's Encrypt
-
-### 3. Network Security
-
-#### Firewall Rules (iptables):
-
-```bash
-# Restrict Glance access to local network only
-iptables -A INPUT -p tcp --dport 8085 -s 192.168.0.0/16 -j ACCEPT
-iptables -A INPUT -p tcp --dport 8085 -j DROP
-```
-
 #### Docker Network Policies:
 
 ```yaml
@@ -231,100 +52,6 @@ networks:
     driver_opts:
       com.docker.network.bridge.enable_icc: "false" # Disable inter-container communication
 ```
-
-## Nginx Proxy Manager Configuration
-
-### 1. Basic Proxy Host Setup
-
-#### Add Proxy Host for Glance:
-
-```nginx
-# Domain: glance.yourdomain.com
-# Forward Hostname: 172.20.0.85
-# Forward Port: 8080
-# Enable Websockets Support: Yes
-# Block Common Exploits: Yes
-```
-
-### 2. Custom Nginx Configuration
-
-Create file: `./nginx-proxy-manager/data/nginx/proxy_host/glance.conf`
-
-```nginx
-location / {
-    proxy_pass http://172.20.0.85:8080;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-
-    # WebSocket support
-    proxy_http_version 1.1;
-    proxy_set_header Upgrade $http_upgrade;
-    proxy_set_header Connection "upgrade";
-
-    # Security headers
-    add_header X-Frame-Options "SAMEORIGIN" always;
-    add_header X-Content-Type-Options "nosniff" always;
-    add_header X-XSS-Protection "1; mode=block" always;
-
-    # Cache static assets
-    location ~* \.(jpg|jpeg|png|gif|ico|css|js|svg|woff|woff2)$ {
-        proxy_cache_valid 200 30d;
-        add_header Cache-Control "public, immutable";
-    }
-}
-
-# Restrict access to local network
-location /api/ {
-    allow 192.168.0.0/16;
-    allow 172.20.0.0/16;
-    allow 172.21.0.0/16;
-    deny all;
-}
-```
-
-### 3. Access Control Lists
-
-#### NPM Access List Configuration:
-
-1. Create Access List: "Local Network Only"
-2. Add Authorization:
-   - Allow: `192.168.0.0/16`
-   - Allow: `172.20.0.0/16`
-   - Allow: `172.21.0.0/16`
-   - Allow: `10.0.0.0/8` (Tailscale)
-3. Apply to Glance proxy host
-
-### 4. SSL/TLS Configuration
-
-#### Force HTTPS:
-
-```nginx
-server {
-    listen 80;
-    server_name glance.yourdomain.com;
-    return 301 https://$server_name$request_uri;
-}
-```
-
-#### HSTS Header:
-
-```nginx
-add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
-```
-
-## Best Practices
-
-### 1. Service Organization
-
-#### Group Services Logically:
-
-- **Infrastructure**: Glance, NPM, AdGuard, Tailscale
-- **Smart Home**: Home Assistant, IoT services
-- **Media**: Jellyfin, \*arr stack
-- **Security**: Vaultwarden, Authelia
-- **Development**: Ollama, code servers
 
 ### 2. Monitoring & Alerting
 
@@ -395,34 +122,6 @@ npm.local            → 172.20.0.81
 jellyfin.local       → 172.20.0.96
 homeassistant.local  → 172.20.0.123
 vault.local          → 172.20.0.22
-```
-
-## Troubleshooting
-
-### Common Issues & Solutions
-
-#### 1. Glance Can't Reach Services
-
-**Symptom**: Monitor widgets show services as down
-**Solution**:
-
-```bash
-# Check network connectivity
-docker exec glance ping 172.20.0.96  # Test Jellyfin
-docker exec glance curl http://172.20.0.96:8096/health
-```
-
-#### 2. Widgets Not Loading
-
-**Symptom**: Blank widgets or loading errors
-**Solution**:
-
-```bash
-# Check Glance logs
-docker logs glance
-
-# Verify configuration
-docker exec glance cat /app/data/glance.yml
 ```
 
 #### 3. Cross-Network Communication Issues
@@ -512,16 +211,3 @@ networks:
       config:
         - subnet: 192.168.1.0/24
 ```
-
-## Conclusion
-
-Your homelab architecture is **well-designed** with proper network segmentation. The addition of Glance as a dashboard provides excellent visibility across both networks. Key recommendations:
-
-1. ✅ **Keep the dual-network design** - it's secure and well-organized
-2. ✅ **Glance configuration is optimal** - dual-network access provides full visibility
-3. 🔧 **Add authentication** when Glance supports it or use NPM access controls
-4. 🔧 **Implement resource limits** on all containers
-5. 🔧 **Set up automated backups** for configuration persistence
-6. 🔧 **Configure local DNS** for easier service access
-
-The provided configurations should give you a fully functional, secure, and maintainable homelab dashboard with Glance.

@@ -313,15 +313,15 @@ main() {
         exit 1
     fi
 
-    # Install HACS for Home Assistant if not already installed
-    if [ -f "./scripts/setup-hacs.sh" ]; then
-        log "Checking HACS installation for Home Assistant..."
-        if bash "./scripts/setup-hacs.sh"; then
-            log "HACS installation check completed"
-        else
-            warning "HACS installation check failed - manual setup may be required"
-        fi
-    fi
+    # # Install HACS for Home Assistant if not already installed
+    # if [ -f "./scripts/setup-hacs.sh" ]; then
+    #     log "Checking HACS installation for Home Assistant..."
+    #     if bash "./scripts/setup-hacs.sh"; then
+    #         log "HACS installation check completed"
+    #     else
+    #         warning "HACS installation check failed - manual setup may be required"
+    #     fi
+    # fi
 
     # Cleanup old backups
     cleanup_backups
@@ -335,7 +335,7 @@ main() {
     echo "  Backup: $BACKUP_PATH"
     echo ""
     echo "Running Services:"
-    compose_ps --format "table {{.Service}}\t{{.Status}}\t{{.Ports}}"
+    compose_ps --format "table {{.Service}}\t{{.Ports}}"
     echo "----------------------------------------"
 }
 
