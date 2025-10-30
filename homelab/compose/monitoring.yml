@@ -35,7 +35,7 @@ services:
       - "traefik.http.routers.glance.tls=true"
       - "traefik.http.routers.glance.tls.certresolver=letsencrypt"
       - "traefik.http.services.glance.loadbalancer.server.port=8080"
-      - "traefik.http.routers.glance.middlewares=homelab-general@file"
+      # - "traefik.http.routers.glance.middlewares=homelab-general@file"
       - "com.centurylinklabs.watchtower.enable=true"
       - "homepage.group=Infrastructure"
       - "homepage.name=Glance"
