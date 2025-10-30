@@ -41,7 +41,6 @@ services:
       - "traefik.http.routers.jellyfin.rule=Host(`jellyfin.local`) || Host(`media.local`)"
       - "traefik.http.routers.jellyfin.entrypoints=websecure"
       - "traefik.http.routers.jellyfin.tls=true"
-      - "traefik.http.routers.jellyfin.tls.certresolver=letsencrypt"
       - "traefik.http.services.jellyfin.loadbalancer.server.port=8096"
       # - "traefik.http.routers.jellyfin.middlewares=media-services@file"
 
@@ -76,7 +75,6 @@ services:
       - "traefik.http.routers.radarr.rule=Host(`radarr.local`) || Host(`movies.local`)"
       - "traefik.http.routers.radarr.entrypoints=websecure"
       - "traefik.http.routers.radarr.tls=true"
-      - "traefik.http.routers.radarr.tls.certresolver=letsencrypt"
       - "traefik.http.services.radarr.loadbalancer.server.port=7878"
       # - "traefik.http.routers.radarr.middlewares=media-services@file"
 
@@ -111,7 +109,6 @@ services:
       - "traefik.http.routers.sonarr.rule=Host(`sonarr.local`) || Host(`tv.local`)"
       - "traefik.http.routers.sonarr.entrypoints=websecure"
       - "traefik.http.routers.sonarr.tls=true"
-      - "traefik.http.routers.sonarr.tls.certresolver=letsencrypt"
       - "traefik.http.services.sonarr.loadbalancer.server.port=8989"
       # - "traefik.http.routers.sonarr.middlewares=media-services@file"
 
@@ -146,7 +143,6 @@ services:
       - "traefik.http.routers.lidarr.rule=Host(`lidarr.local`) || Host(`music.local`)"
       - "traefik.http.routers.lidarr.entrypoints=websecure"
       - "traefik.http.routers.lidarr.tls=true"
-      - "traefik.http.routers.lidarr.tls.certresolver=letsencrypt"
       - "traefik.http.services.lidarr.loadbalancer.server.port=8686"
       # - "traefik.http.routers.lidarr.middlewares=media-services@file"
 
@@ -180,7 +176,6 @@ services:
       - "traefik.http.routers.bazarr.rule=Host(`bazarr.local`) || Host(`subtitles.local`)"
       - "traefik.http.routers.bazarr.entrypoints=websecure"
       - "traefik.http.routers.bazarr.tls=true"
-      - "traefik.http.routers.bazarr.tls.certresolver=letsencrypt"
       - "traefik.http.services.bazarr.loadbalancer.server.port=6767"
       # - "traefik.http.routers.bazarr.middlewares=media-services@file"
 
@@ -218,7 +213,6 @@ services:
       - "traefik.http.routers.jellyseerr.rule=Host(`jellyseerr.local`) || Host(`request.local`)"
       - "traefik.http.routers.jellyseerr.entrypoints=websecure"
       - "traefik.http.routers.jellyseerr.tls=true"
-      - "traefik.http.routers.jellyseerr.tls.certresolver=letsencrypt"
       - "traefik.http.services.jellyseerr.loadbalancer.server.port=5055"
       # - "traefik.http.routers.jellyseerr.middlewares=homelab-public@file"
 

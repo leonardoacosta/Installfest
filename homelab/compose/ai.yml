@@ -71,7 +71,6 @@ services:
       - "traefik.http.routers.ollama-webui.rule=Host(`ollama.local`) || Host(`ai.local`)"
       - "traefik.http.routers.ollama-webui.entrypoints=websecure"
       - "traefik.http.routers.ollama-webui.tls=true"
-      - "traefik.http.routers.ollama-webui.tls.certresolver=letsencrypt"
       - "traefik.http.services.ollama-webui.loadbalancer.server.port=8081"
 
   # Additional AI services can be added here:

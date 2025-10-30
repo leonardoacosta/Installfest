@@ -33,13 +33,15 @@ entryPoints:
   # HTTPS Entry Point (Port 443)
   websecure:
     address: ":443"
-    http:
-      tls:
-        certResolver: letsencrypt
-        domains:
-          - main: "local"
-            sans:
-              - "*.local"
+    # For .local domains, Traefik will use default self-signed certificates
+    # Let's Encrypt cannot issue certificates for .local TLD
+    # http:
+    #   tls:
+    #     certResolver: letsencrypt
+    #     domains:
+    #       - main: "local"
+    #         sans:
+    #           - "*.local"
       # middlewares:
       #   - security-headers@file # Apply security headers globally
     # forwardedHeaders:
