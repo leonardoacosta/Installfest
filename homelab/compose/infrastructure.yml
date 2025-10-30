@@ -36,10 +36,10 @@ services:
       - "traefik.enable=true"
       - "traefik.docker.network=homelab"
       - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.${DOMAIN}`) || Host(`traefik.local`)"
-      # - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
-      # - "traefik.http.routers.traefik-dashboard.tls=true"
-      # - "traefik.http.routers.traefik-dashboard.tls.certresolver=letsencrypt"
-      # - "traefik.http.routers.traefik-dashboard.service=api@internal"
+      - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
+      - "traefik.http.routers.traefik-dashboard.tls=true"
+      - "traefik.http.routers.traefik-dashboard.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.traefik-dashboard.service=api@internal"
       # - "traefik.http.routers.traefik-dashboard.middlewares=dashboard-auth@file"
       - "com.centurylinklabs.watchtower.enable=true"
       - "homepage.group=Infrastructure"
@@ -90,12 +90,12 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=homelab"
-      - "traefik.http.routers.adguardhome.rule=Host(`adguard.${DOMAIN:-local}`) || Host(`dns.local`)"
+      - "traefik.http.routers.adguardhome.rule=Host(`adguard.${DOMAIN}`) || Host(`dns.${DOMAIN}`) || Host(`adguard.local`) || Host(`dns.local`)"
       - "traefik.http.routers.adguardhome.entrypoints=websecure"
       - "traefik.http.routers.adguardhome.tls=true"
       - "traefik.http.routers.adguardhome.tls.certresolver=letsencrypt"
-      - "traefik.http.services.adguardhome.loadbalancer.server.port=80"
-      - "traefik.http.routers.adguardhome.middlewares=homelab-admin@file"
+      - "traefik.http.services.adguardhome.loadbalancer.server.port=82"
+      # - "traefik.http.routers.adguardhome.middlewares=homelab-admin@file"
 
   # ? Home Assistant - Smart Home Hub
   homeassistant:
@@ -133,12 +133,12 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=homelab"
-      - "traefik.http.routers.homeassistant.rule=Host(`homeassistant.${DOMAIN:-local}`) || Host(`homeassistant.local`)"
+      - "traefik.http.routers.homeassistant.rule=Host(`homeassistant.${DOMAIN}`) || Host(`homeassistant.local`)"
       - "traefik.http.routers.homeassistant.entrypoints=websecure"
       - "traefik.http.routers.homeassistant.tls=true"
       - "traefik.http.routers.homeassistant.tls.certresolver=letsencrypt"
       - "traefik.http.services.homeassistant.loadbalancer.server.port=8123"
-      - "traefik.http.routers.homeassistant.middlewares=homeassistant-headers@file"
+      # - "traefik.http.routers.homeassistant.middlewares=homeassistant-headers@file"
 
   # ? Vaultwarden - Password Manager
   vaultwarden:
@@ -180,6 +180,9 @@ services:
       retries: 3
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=homelab"
+      - "traefik.http.routers.vaultwarden.rule=Host(`vault.${DOMAIN}`) || Host(`vault.local`)"
       - "traefik.http.routers.vaultwarden.entrypoints=websecure"
       - "traefik.http.routers.vaultwarden.tls=true"
+      - "traefik.http.routers.vaultwarden.tls.certresolver=letsencrypt"
       - "traefik.http.services.vaultwarden.loadbalancer.server.port=80"
