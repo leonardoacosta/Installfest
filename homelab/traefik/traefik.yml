@@ -88,7 +88,7 @@ providers:
     # Automatically use the homelab network for containers on multiple networks
     useBindPortIP: false
     # Constraints to filter which containers Traefik should manage
-    constraints: "Label(`traefik.enable`,`true`)"
+    # constraints: "Label(`traefik.enable`,`true`)"
 
   # File provider - for dynamic configuration files
   file:
@@ -99,26 +99,22 @@ providers:
 log:
   level: "DEBUG" # DEBUG, INFO, WARN, ERROR, FATAL, PANIC
   filePath: "/var/log/traefik/traefik.log"
-  format: "common" # common or json
-  # maxSize: 100      # Maximum size in MB before rotation
-  # maxBackups: 10    # Number of old log files to keep
-  # maxAge: 30        # Maximum number of days to keep old log files
-  # compress: true    # Compress rotated files
+  format: "json" # common or json
 
 # Access Logs - HTTP request logs
 accessLog:
   filePath: "/var/log/traefik/access.log"
-  format: "common" # common or json
+  format: "json" # common or json
   bufferingSize: 100
-  filters:
-    statusCodes:
-      - "400-599" # Only log errors (remove to log all requests)
-    retryAttempts: true
-    minDuration: "10ms"
+  # filters:
+  # statusCodes:
+  #   - "400-599" # Only log errors (remove to log all requests)
+  # retryAttempts: true
+  # minDuration: "10ms"
   fields:
     defaultMode: keep
     headers:
-      defaultMode: drop # Don't log headers by default (privacy)
+      defaultMode: keep #drop # Don't log headers by default (privacy)
       names:
         User-Agent: keep
         Referer: keep
@@ -144,7 +140,6 @@ serversTransport:
     dialTimeout: "30s"
     responseHeaderTimeout: "30s"
     idleConnTimeout: "90s"
-
 # # HTTP Configuration
 # http:
 #   # Encoding support
@@ -157,7 +152,7 @@ serversTransport:
 #   http3: true
 
 # Host Resolver - For better local network resolution
-hostResolver:
-  cnameFlattening: true
-  resolvConfig: "/etc/resolv.conf"
-  resolvDepth: 5
+# hostResolver:
+#   cnameFlattening: true
+#   resolvConfig: "/etc/resolv.conf"
+#   resolvDepth: 5
