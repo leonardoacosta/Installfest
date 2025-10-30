@@ -6,7 +6,7 @@ global:
 api:
   dashboard: true # Enable the Traefik dashboard
   debug: false # Set to true for debugging
-  insecure: false # IMPORTANT: Changed to false - use router for secure access
+  insecure: true # IMPORTANT: Changed to false - use router for secure access
 
 # Entry Points - Define ports and protocols
 entryPoints:
