@@ -68,7 +68,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=homelab"
-      - "traefik.http.routers.ollama-webui.rule=Host(`ollama.${DOMAIN}`) || Host(`ai.${DOMAIN}`) || Host(`ollama.local`) || Host(`ai.local`)"
+      - "traefik.http.routers.ollama-webui.rule=Host(`ollama.local`) || Host(`ai.local`)"
       - "traefik.http.routers.ollama-webui.entrypoints=websecure"
       - "traefik.http.routers.ollama-webui.tls=true"
       - "traefik.http.routers.ollama-webui.tls.certresolver=letsencrypt"

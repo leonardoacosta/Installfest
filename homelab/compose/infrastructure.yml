@@ -10,12 +10,12 @@ services:
       - "8080:8080" # Traefik dashboard
     environment:
       - TZ=${TZ:-America/Chicago}
-      - DOMAIN=${DOMAIN:-local}
+      - DOMAIN=local
       - TRAEFIK_DASHBOARD_USER=${TRAEFIK_DASHBOARD_USER}
       - TRAEFIK_DASHBOARD_PASSWORD=${TRAEFIK_DASHBOARD_PASSWORD}
       # Cloudflare DNS-01 Challenge Credentials (required for wildcard certificates)
-      - CLOUDFLARE_EMAIL=${CLOUDFLARE_EMAIL}
-      - CLOUDFLARE_DNS_API_TOKEN=${CLOUDFLARE_DNS_API_TOKEN}
+      # - CLOUDFLARE_EMAIL=${CLOUDFLARE_EMAIL}
+      # - CLOUDFLARE_DNS_API_TOKEN=${CLOUDFLARE_DNS_API_TOKEN}
     volumes:
       - ../traefik/traefik.yml:/etc/traefik/traefik.yml:ro
       - ../traefik/dynamic:/dynamic:ro
@@ -38,7 +38,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=homelab"
-      - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.${DOMAIN}`) || Host(`traefik.local`)"
+      - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.local`)"
       - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
       - "traefik.http.routers.traefik-dashboard.tls=true"
       - "traefik.http.routers.traefik-dashboard.tls.certresolver=letsencrypt"
@@ -48,7 +48,7 @@ services:
       - "homepage.group=Infrastructure"
       - "homepage.name=Traefik"
       - "homepage.icon=traefik"
-      - "homepage.href=https://traefik.${DOMAIN:-local}"
+      - "homepage.href=https://traefik.local"
       - "homepage.description=Reverse Proxy & Load Balancer"
 
   # ? AdGuard Home - DNS Ad Blocker
@@ -93,7 +93,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=homelab"
-      - "traefik.http.routers.adguardhome.rule=Host(`adguard.${DOMAIN}`) || Host(`dns.${DOMAIN}`) || Host(`adguard.local`) || Host(`dns.local`)"
+      - "traefik.http.routers.adguardhome.rule=Host(`adguard.local`) || Host(`dns.local`)"
       - "traefik.http.routers.adguardhome.entrypoints=websecure"
       - "traefik.http.routers.adguardhome.tls=true"
       - "traefik.http.routers.adguardhome.tls.certresolver=letsencrypt"
@@ -138,7 +138,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=homelab"
-      - "traefik.http.routers.homeassistant.rule=Host(`homeassistant.${DOMAIN}`) || Host(`homeassistant.local`)"
+      - "traefik.http.routers.homeassistant.rule=Host(`homeassistant.local`)"
       - "traefik.http.routers.homeassistant.entrypoints=websecure"
       - "traefik.http.routers.homeassistant.tls=true"
       - "traefik.http.routers.homeassistant.tls.certresolver=letsencrypt"
@@ -152,7 +152,7 @@ services:
     restart: unless-stopped
     environment:
       - TZ=${TZ:-America/Chicago}
-      - DOMAIN=${VAULTWARDEN_DOMAIN:-https://vault.local}
+      - DOMAIN=https://vault.local
       - ADMIN_TOKEN=${VAULTWARDEN_ADMIN_TOKEN}
       - SIGNUPS_ALLOWED=${VAULTWARDEN_SIGNUPS_ALLOWED:-false}
       - INVITATIONS_ALLOWED=${VAULTWARDEN_INVITATIONS_ALLOWED:-true}
@@ -186,7 +186,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=homelab"
-      - "traefik.http.routers.vaultwarden.rule=Host(`vault.${DOMAIN}`) || Host(`vault.local`)"
+      - "traefik.http.routers.vaultwarden.rule=Host(`vault.local`)"
       - "traefik.http.routers.vaultwarden.entrypoints=websecure"
       - "traefik.http.routers.vaultwarden.tls=true"
       - "traefik.http.routers.vaultwarden.tls.certresolver=letsencrypt"

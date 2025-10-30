@@ -37,9 +37,6 @@ entryPoints:
       tls:
         certResolver: letsencrypt
         domains:
-          - main: "leonardoacosta.dev"
-            sans:
-              - "*.leonardoacosta.dev"
           - main: "local"
             sans:
               - "*.local"
@@ -66,15 +63,15 @@ certificatesResolvers:
       storage: "/letsencrypt/acme.json"
       keyType: EC256 # Use elliptic curve keys for better performance
       # DNS-01 challenge REQUIRED for wildcard certificates
-      dnsChallenge:
-        provider: cloudflare
-        delayBeforeCheck: 30s
-        resolvers:
-          - "1.1.1.1:53"
-          - "8.8.8.8:53"
+      # dnsChallenge:
+      #   provider: cloudflare
+      #   delayBeforeCheck: 30s
+      #   resolvers:
+      #     - "1.1.1.1:53"
+      #     - "8.8.8.8:53"
       # HTTP-01 challenge (does not support wildcard certificates)
-      # httpChallenge:
-      #   entryPoint: web
+      httpChallenge:
+        entryPoint: web
 
 # Ping - Healthcheck endpoint
 ping:

@@ -30,7 +30,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=homelab"
-      - "traefik.http.routers.glance.rule=Host(`glance.${DOMAIN:-local}`)"
+      - "traefik.http.routers.glance.rule=Host(`glance.local`)"
       - "traefik.http.routers.glance.entrypoints=websecure"
       - "traefik.http.routers.glance.tls=true"
       - "traefik.http.routers.glance.tls.certresolver=letsencrypt"
@@ -40,7 +40,7 @@ services:
       - "homepage.group=Infrastructure"
       - "homepage.name=Glance"
       - "homepage.icon=glance"
-      - "homepage.href=https://glance.${DOMAIN:-local}"
+      - "homepage.href=https://glance.local"
       - "homepage.description=Homelab Dashboard"
 
   # Additional monitoring services can be added here:

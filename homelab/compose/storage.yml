@@ -38,7 +38,7 @@ services:
       - "homepage.group=Storage"
       - "homepage.name=Samba"
       - "homepage.icon=samba"
-      - "homepage.href=smb://samba.${DOMAIN:-local}"
+      - "homepage.href=smb://samba.local"
       - "homepage.description=Network File Share"
 
   # Additional storage services can be added here:
