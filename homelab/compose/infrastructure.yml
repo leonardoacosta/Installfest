@@ -35,8 +35,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=homelab"
-      # - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.${DOMAIN:-local}`)"
-      # - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.${DOMAIN:-local}`) || Host(`traefik.${DOMAIN:-local}`) || Host(`traefik.${DOMAIN:-local}`)"
+      - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.${DOMAIN}`) || Host(`traefik.local`)"
       # - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
       # - "traefik.http.routers.traefik-dashboard.tls=true"
       # - "traefik.http.routers.traefik-dashboard.tls.certresolver=letsencrypt"
@@ -89,7 +88,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=homelab"
-      - "traefik.http.routers.adguardhome.rule=Host(`adguard.${DOMAIN:-local}`) || Host(`dns.${DOMAIN:-local}` || Host(`192.168.1.14` )"
+      - "traefik.http.routers.adguardhome.rule=Host(`adguard.${DOMAIN:-local}`) || Host(`dns.local`)"
       - "traefik.http.routers.adguardhome.entrypoints=websecure"
       - "traefik.http.routers.adguardhome.tls=true"
       - "traefik.http.routers.adguardhome.tls.certresolver=letsencrypt"
@@ -132,7 +131,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=homelab"
-      - "traefik.http.routers.homeassistant.rule=Host(`homeassistant.${DOMAIN:-local}`) || Host(`ha.${DOMAIN:-local}`)"
+      - "traefik.http.routers.homeassistant.rule=Host(`homeassistant.${DOMAIN:-local}`) || Host(`homeassistant.local`)"
       - "traefik.http.routers.homeassistant.entrypoints=websecure"
       - "traefik.http.routers.homeassistant.tls=true"
       - "traefik.http.routers.homeassistant.tls.certresolver=letsencrypt"
