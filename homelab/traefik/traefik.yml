@@ -28,6 +28,7 @@ entryPoints:
         - "127.0.0.1/32" # localhost
         - "10.0.0.0/8" # private network
         - "192.168.0.0/16" # private network
+        - "192.168.1.0/24" # private network
 
   # HTTPS Entry Point (Port 443)
   websecure:
@@ -48,6 +49,7 @@ entryPoints:
         - "127.0.0.1/32" # localhost
         - "10.0.0.0/8" # private network
         - "192.168.0.0/16" # private network
+        - "192.168.1.0/24" # private network
 
   # Traefik Dashboard Entry Point
   traefik:
