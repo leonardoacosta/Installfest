@@ -68,11 +68,11 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=homelab"
-      - "traefik.http.routers.ollama-webui.rule=Host(`ollama.${DOMAIN:-local}`) || Host(`ai.${DOMAIN:-local}`)"
+      - "traefik.http.routers.ollama-webui.rule=Host(`ollama.${DOMAIN}`) || Host(`ai.${DOMAIN}`) || Host(`ollama.local`) || Host(`ai.local`)"
       - "traefik.http.routers.ollama-webui.entrypoints=websecure"
       - "traefik.http.routers.ollama-webui.tls=true"
       - "traefik.http.routers.ollama-webui.tls.certresolver=letsencrypt"
-      - "traefik.http.services.ollama-webui.loadbalancer.server.port=8080"
+      - "traefik.http.services.ollama-webui.loadbalancer.server.port=8081"
 
   # Additional AI services can be added here:
   # - Stable Diffusion WebUI

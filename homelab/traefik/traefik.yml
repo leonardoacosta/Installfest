@@ -40,8 +40,11 @@ entryPoints:
           - main: "leonardoacosta.dev"
             sans:
               - "*.leonardoacosta.dev"
-    #   middlewares:
-    #     - security-headers@file # Apply security headers globally
+          - main: "local"
+            sans:
+              - "*.local"
+      middlewares:
+        - security-headers@file # Apply security headers globally
     # forwardedHeaders:
     #   trustedIPs:
     #     - "172.20.0.0/24" # homelab network

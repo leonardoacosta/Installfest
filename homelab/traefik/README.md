@@ -10,14 +10,14 @@ This directory contains the Traefik v3 reverse proxy configuration for your home
 traefik/
 ├── traefik.yml                 # Static configuration (main config)
 ├── dynamic/                    # Dynamic configuration (auto-reloaded)
-│   ├── middlewares.yml        # Reusable middlewares (auth, security, etc.)
-│   ├── tls.yml                # TLS options and certificates
-│   └── gluetun-routers.yml    # Routes for services behind Gluetun VPN
-├── letsencrypt/               # Let's Encrypt certificates (auto-managed)
-│   └── acme.json             # Certificate storage (do not edit manually)
-└── logs/                      # Traefik logs
-    ├── traefik.log           # General logs
-    └── access.log            # HTTP access logs
+│   ├── middlewares.yml         # Reusable middlewares (auth, security, etc.)
+│   ├── tls.yml                 # TLS options and certificates
+│   └── gluetun-routers.yml     # Routes for services behind Gluetun VPN
+├── letsencrypt/                # Let's Encrypt certificates (auto-managed)
+│   └── acme.json               # Certificate storage (do not edit manually)
+└── logs/                       # Traefik logs
+    ├── traefik.log             # General logs
+    └── access.log              # HTTP access logs
 
 ```
 
