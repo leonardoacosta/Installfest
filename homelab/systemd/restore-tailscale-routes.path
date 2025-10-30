@@ -1,0 +1,14 @@
+[Unit]
+Description=Monitor Docker for Tailscale Route Restoration
+Documentation=https://github.com/yourusername/homelab/docs/TAILSCALE-ADGUARD-IPTABLES-ISSUE.md
+After=docker.service
+Requires=docker.service
+
+[Path]
+# Monitor Docker socket for changes (container start/stop events)
+PathModified=/var/run/docker.sock
+# Trigger the service unit when changes detected
+Unit=restore-tailscale-routes.service
+
+[Install]
+WantedBy=multi-user.target

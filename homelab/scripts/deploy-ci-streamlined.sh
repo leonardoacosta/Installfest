@@ -12,6 +12,85 @@ source "$SCRIPT_DIR/common-utils.sh"
 DEPLOY_PATH="${HOMELAB_PATH/#\~/$HOME}"
 WORKSPACE_HOMELAB="${GITHUB_WORKSPACE}/homelab"
 
+# Install/verify Tailscale routes restoration system
+setup_tailscale_routes_restoration() {
+    log "Checking Tailscale routes restoration system..."
+
+    local script_source="$DEPLOY_PATH/scripts/restore-tailscale-routes.sh"
+    local script_target="/usr/local/bin/restore-tailscale-routes.sh"
+    local service_source="$DEPLOY_PATH/systemd/restore-tailscale-routes.service"
+    local service_target="/etc/systemd/system/restore-tailscale-routes.service"
+    local path_source="$DEPLOY_PATH/systemd/restore-tailscale-routes.path"
+    local path_target="/etc/systemd/system/restore-tailscale-routes.path"
+
+    local changes_made=false
+
+    # 1. Install restoration script
+    if [ ! -f "$script_target" ] || ! cmp -s "$script_source" "$script_target"; then
+        log "Installing Tailscale routes restoration script..."
+        sudo cp "$script_source" "$script_target"
+        sudo chmod +x "$script_target"
+        sudo chown root:root "$script_target"
+        changes_made=true
+        log "✓ Script installed to $script_target"
+    else
+        log "✓ Restoration script already up-to-date"
+    fi
+
+    # 2. Install systemd service unit
+    if [ ! -f "$service_target" ] || ! cmp -s "$service_source" "$service_target"; then
+        log "Installing systemd service unit..."
+        sudo cp "$service_source" "$service_target"
+        sudo chmod 644 "$service_target"
+        sudo chown root:root "$service_target"
+        changes_made=true
+        log "✓ Service unit installed"
+    else
+        log "✓ Service unit already up-to-date"
+    fi
+
+    # 3. Install systemd path unit (optional auto-trigger)
+    if [ ! -f "$path_target" ] || ! cmp -s "$path_source" "$path_target"; then
+        log "Installing systemd path unit..."
+        sudo cp "$path_source" "$path_target"
+        sudo chmod 644 "$path_target"
+        sudo chown root:root "$path_target"
+        changes_made=true
+        log "✓ Path unit installed"
+    else
+        log "✓ Path unit already up-to-date"
+    fi
+
+    # 4. Reload systemd if changes were made
+    if [ "$changes_made" = true ]; then
+        log "Reloading systemd daemon..."
+        sudo systemctl daemon-reload
+    fi
+
+    # 5. Enable services if not already enabled
+    if ! systemctl is-enabled restore-tailscale-routes.service &>/dev/null; then
+        log "Enabling restoration service..."
+        sudo systemctl enable restore-tailscale-routes.service
+    fi
+
+    if ! systemctl is-enabled restore-tailscale-routes.path &>/dev/null; then
+        log "Enabling path monitoring..."
+        sudo systemctl enable restore-tailscale-routes.path
+    fi
+
+    # 6. Start path unit if not running
+    if ! systemctl is-active restore-tailscale-routes.path &>/dev/null; then
+        log "Starting path monitoring..."
+        sudo systemctl start restore-tailscale-routes.path
+    fi
+
+    # 7. Run restoration script immediately
+    log "Running Tailscale routes restoration..."
+    sudo systemctl start restore-tailscale-routes.service || warning "Route restoration had issues (this is normal if Tailscale isn't running)"
+
+    log "✅ Tailscale routes restoration system configured"
+}
+
 # Update infrastructure services separately (manual trigger only)
 update_infrastructure() {
     log "⚠️  Updating infrastructure services (DNS will be temporarily unavailable)"
@@ -120,7 +199,10 @@ main() {
         fi
     done
 
-    # 7. Print summary
+    # 7. Setup Tailscale routes restoration (prevents iptables conflicts)
+    setup_tailscale_routes_restoration
+
+    # 8. Print summary
     log "✅ Deployment completed successfully!"
     echo "----------------------------------------"
     echo "Deployment Summary:"
