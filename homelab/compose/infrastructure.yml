@@ -77,8 +77,7 @@ services:
       - "8853:8853/udp"
       - "5443:5443/tcp" # DNSCrypt
       - "5443:5443/udp"
-    bind_hosts:
-      - "172.20.0.81"
+
     networks:
       homelab:
         ipv4_address: 172.20.0.53
