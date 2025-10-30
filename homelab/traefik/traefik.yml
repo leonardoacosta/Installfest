@@ -42,8 +42,8 @@ entryPoints:
     #       - main: "local"
     #         sans:
     #           - "*.local"
-      # middlewares:
-      #   - security-headers@file # Apply security headers globally
+    # middlewares:
+    #   - security-headers@file # Apply security headers globally
     # forwardedHeaders:
     #   trustedIPs:
     #     - "172.20.0.0/24" # homelab network
@@ -101,12 +101,12 @@ providers:
 log:
   level: "DEBUG" # DEBUG, INFO, WARN, ERROR, FATAL, PANIC
   filePath: "/var/log/traefik/traefik.log"
-  format: "json" # common or json
+  format: "common" # common or json
 
 # Access Logs - HTTP request logs
 accessLog:
   filePath: "/var/log/traefik/access.log"
-  format: "json" # common or json
+  format: "common" # common or json
   bufferingSize: 100
   # filters:
   # statusCodes:
