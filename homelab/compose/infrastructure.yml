@@ -89,7 +89,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=homelab"
-      - "traefik.http.routers.adguardhome.rule=Host(`adguard.${DOMAIN:-local}`) || Host(`dns.${DOMAIN:-local}`)"
+      - "traefik.http.routers.adguardhome.rule=Host(`adguard.${DOMAIN:-local}`) || Host(`dns.${DOMAIN:-local}` || Host(`192.168.1.14` )"
       - "traefik.http.routers.adguardhome.entrypoints=websecure"
       - "traefik.http.routers.adguardhome.tls=true"
       - "traefik.http.routers.adguardhome.tls.certresolver=letsencrypt"
