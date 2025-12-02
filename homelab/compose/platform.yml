@@ -1,0 +1,142 @@
+services:
+  # ? Coolify - Self-Hosted PaaS Platform
+  coolify:
+    image: ghcr.io/coollabsio/coolify:latest
+    container_name: coolify
+    restart: unless-stopped
+    privileged: true
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TZ:-America/Chicago}
+      - APP_ID=${COOLIFY_APP_ID}
+      - APP_NAME=Coolify
+      - APP_KEY=${COOLIFY_APP_KEY}
+      - APP_URL=${COOLIFY_APP_URL:-http://coolify.local}
+      - DB_HOST=coolify-db
+      - DB_PORT=5432
+      - DB_DATABASE=coolify
+      - DB_USERNAME=coolify
+      - DB_PASSWORD=${COOLIFY_DB_PASSWORD}
+      - REDIS_HOST=coolify-redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${COOLIFY_REDIS_PASSWORD:-}
+      - PUSHER_HOST=coolify-soketi
+      - PUSHER_PORT=6001
+      - PUSHER_APP_ID=${COOLIFY_PUSHER_APP_ID}
+      - PUSHER_APP_KEY=${COOLIFY_PUSHER_APP_KEY}
+      - PUSHER_APP_SECRET=${COOLIFY_PUSHER_APP_SECRET}
+    volumes:
+      - coolify-data:/data/coolify
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - "8000:8000" # Coolify web interface
+    networks:
+      homelab:
+        ipv4_address: 172.20.0.100
+    depends_on:
+      coolify-db:
+        condition: service_healthy
+      coolify-redis:
+        condition: service_healthy
+      coolify-soketi:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=homelab"
+      # HTTP Router
+      - "traefik.http.routers.coolify.rule=Host(`coolify.${DOMAIN:-local}`)"
+      - "traefik.http.routers.coolify.entrypoints=websecure"
+      - "traefik.http.routers.coolify.tls=true"
+      - "traefik.http.routers.coolify.service=coolify"
+      - "traefik.http.services.coolify.loadbalancer.server.port=8000"
+      # Optional: Add authentication middleware
+      # - "traefik.http.routers.coolify.middlewares=auth@file"
+      - "com.centurylinklabs.watchtower.enable=true"
+      - "homepage.group=Platform"
+      - "homepage.name=Coolify"
+      - "homepage.icon=coolify"
+      - "homepage.href=https://coolify.${DOMAIN:-local}"
+      - "homepage.description=Self-Hosted PaaS Platform"
+
+  # ? PostgreSQL Database for Coolify
+  coolify-db:
+    image: postgres:16-alpine
+    container_name: coolify-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=coolify
+      - POSTGRES_PASSWORD=${COOLIFY_DB_PASSWORD}
+      - POSTGRES_DB=coolify
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - coolify-postgres:/var/lib/postgresql/data
+    networks:
+      homelab:
+        ipv4_address: 172.20.0.101
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U coolify -d coolify"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    security_opt:
+      - no-new-privileges:true
+
+  # ? Redis Cache for Coolify
+  coolify-redis:
+    image: redis:7-alpine
+    container_name: coolify-redis
+    restart: unless-stopped
+    command: >
+      sh -c '
+      if [ -n "${COOLIFY_REDIS_PASSWORD}" ]; then
+        redis-server --requirepass "${COOLIFY_REDIS_PASSWORD}"
+      else
+        redis-server
+      fi
+      '
+    environment:
+      - COOLIFY_REDIS_PASSWORD=${COOLIFY_REDIS_PASSWORD:-}
+    volumes:
+      - coolify-redis:/data
+    networks:
+      homelab:
+        ipv4_address: 172.20.0.102
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    security_opt:
+      - no-new-privileges:true
+
+  # ? Soketi - WebSocket Server for Coolify
+  coolify-soketi:
+    image: quay.io/soketi/soketi:1.6-16-alpine
+    container_name: coolify-soketi
+    restart: unless-stopped
+    environment:
+      - SOKETI_DEFAULT_APP_ID=${COOLIFY_PUSHER_APP_ID}
+      - SOKETI_DEFAULT_APP_KEY=${COOLIFY_PUSHER_APP_KEY}
+      - SOKETI_DEFAULT_APP_SECRET=${COOLIFY_PUSHER_APP_SECRET}
+    networks:
+      homelab:
+        ipv4_address: 172.20.0.103
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  coolify-data:
+    name: coolify-data
+  coolify-postgres:
+    name: coolify-postgres
+  coolify-redis:
+    name: coolify-redis

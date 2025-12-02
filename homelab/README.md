@@ -105,6 +105,12 @@ cd homelab
 | **AdGuard Home**   | 82     | DNS ad blocking        | `http://<IP>:82`           |
 | **Traefik**        | 80/443 | Reverse proxy with SSL | `https://traefik.<domain>` |
 
+### Platform as a Service
+
+| Service      | Port | Purpose                    | Access             |
+| ------------ | ---- | -------------------------- | ------------------ |
+| **Coolify**  | 8000 | Self-hosted PaaS platform  | `http://<IP>:8000` |
+
 ### AI & Knowledge
 
 | Service          | Port  | Purpose                  | Access              |
@@ -502,14 +508,15 @@ docker compose up -d
 
 ### Scripts
 
-| Script                       | Purpose                                 |
-| ---------------------------- | --------------------------------------- |
-| `homelab.sh`                 | Main management script                  |
-| `scripts/common-utils.sh`    | Shared utility functions                |
-| `scripts/deploy-ci.sh`       | CI/CD deployment with HACS auto-install |
-| `scripts/monitor-ci.sh`      | Service health monitoring               |
-| `scripts/fix-permissions.sh` | Fix directory permissions               |
-| `scripts/setup-hacs.sh`      | HACS installation for Home Assistant    |
+| Script                            | Purpose                                 |
+| --------------------------------- | --------------------------------------- |
+| `homelab.sh`                      | Main management script                  |
+| `scripts/common-utils.sh`         | Shared utility functions                |
+| `scripts/deploy-ci.sh`            | CI/CD deployment with HACS auto-install |
+| `scripts/monitor-ci.sh`           | Service health monitoring               |
+| `scripts/fix-permissions.sh`      | Fix directory permissions               |
+| `scripts/setup-hacs.sh`           | HACS installation for Home Assistant    |
+| `scripts/generate-coolify-env.sh` | Generate Coolify credentials            |
 
 ## 🔧 Troubleshooting
 
@@ -612,6 +619,7 @@ docker system df
 - [Security Audit](docs/SECURITY_AUDIT.md)
 - [Service Documentation](docs/SERVICES.md)
 - [Migration from NPM](docs/TRAEFIK_MIGRATION_GUIDE.md)
+- [Coolify Setup Guide](docs/COOLIFY_SETUP.md)
 
 ### Quick Links
 

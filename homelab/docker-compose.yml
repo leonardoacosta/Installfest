@@ -51,6 +51,9 @@ include:
   # Storage services (Samba)
   - compose/storage.yml
 
+  # Platform as a Service (Coolify)
+  - compose/platform.yml
+
   # Optional: Override configurations for local environment
   # - compose.override.yml
 
