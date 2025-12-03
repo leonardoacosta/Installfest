@@ -1,0 +1,104 @@
+services:
+  # GitHub Actions Self-Hosted Runner 1
+  github-runner-1:
+    image: myoung34/github-runner:latest
+    container_name: github-runner-1
+    restart: unless-stopped
+    environment:
+      - REPO_URL=https://github.com/${GITHUB_REPO}
+      - RUNNER_NAME=homelab-runner-1
+      - RUNNER_TOKEN=${RUNNER_TOKEN_1}
+      - RUNNER_WORKDIR=/runner/_work
+      - RUNNER_GROUP=default
+      - LABELS=self-hosted,Linux,X64,homelab,runner-1
+      - RUNNER_SCOPE=repo
+      - EPHEMERAL=false
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - runner-1-work:/runner/_work
+      - playwright-reports:/reports
+    networks:
+      - homelab
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  # GitHub Actions Self-Hosted Runner 2
+  github-runner-2:
+    image: myoung34/github-runner:latest
+    container_name: github-runner-2
+    restart: unless-stopped
+    environment:
+      - REPO_URL=https://github.com/${GITHUB_REPO}
+      - RUNNER_NAME=homelab-runner-2
+      - RUNNER_TOKEN=${RUNNER_TOKEN_2}
+      - RUNNER_WORKDIR=/runner/_work
+      - RUNNER_GROUP=default
+      - LABELS=self-hosted,Linux,X64,homelab,runner-2
+      - RUNNER_SCOPE=repo
+      - EPHEMERAL=false
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - runner-2-work:/runner/_work
+      - playwright-reports:/reports
+    networks:
+      - homelab
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  # GitHub Actions Self-Hosted Runner 3
+  github-runner-3:
+    image: myoung34/github-runner:latest
+    container_name: github-runner-3
+    restart: unless-stopped
+    environment:
+      - REPO_URL=https://github.com/${GITHUB_REPO}
+      - RUNNER_NAME=homelab-runner-3
+      - RUNNER_TOKEN=${RUNNER_TOKEN_3}
+      - RUNNER_WORKDIR=/runner/_work
+      - RUNNER_GROUP=default
+      - LABELS=self-hosted,Linux,X64,homelab,runner-3
+      - RUNNER_SCOPE=repo
+      - EPHEMERAL=false
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - runner-3-work:/runner/_work
+      - playwright-reports:/reports
+    networks:
+      - homelab
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  # GitHub Actions Self-Hosted Runner 4
+  github-runner-4:
+    image: myoung34/github-runner:latest
+    container_name: github-runner-4
+    restart: unless-stopped
+    environment:
+      - REPO_URL=https://github.com/${GITHUB_REPO}
+      - RUNNER_NAME=homelab-runner-4
+      - RUNNER_TOKEN=${RUNNER_TOKEN_4}
+      - RUNNER_WORKDIR=/runner/_work
+      - RUNNER_GROUP=default
+      - LABELS=self-hosted,Linux,X64,homelab,runner-4
+      - RUNNER_SCOPE=repo
+      - EPHEMERAL=false
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - runner-4-work:/runner/_work
+      - playwright-reports:/reports
+    networks:
+      - homelab
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+
+volumes:
+  runner-1-work:
+  runner-2-work:
+  runner-3-work:
+  runner-4-work:
+  playwright-reports:
+    driver: local
+
+networks:
+  homelab:
+    external: true

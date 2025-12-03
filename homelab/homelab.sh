@@ -2,7 +2,7 @@
 
 # Homelab Complete Management Script
 # Single script for installation and management
-# Version: 3.0
+# Version: 3.1 - Added unattended mode support
 
 set -e
 
@@ -17,6 +17,11 @@ RUNNER_HASH="194f1e1e4bd02f80b7e9633fc546084d8d4e19f3928a324d512ea53430102e1d"
 # Setup state tracking
 SETUP_STATE_FILE="$SCRIPT_DIR/.setup_state"
 ENV_FILE="$SCRIPT_DIR/.env"
+
+# Unattended mode support
+UNATTENDED=false
+CONFIG_FILE=""
+declare -A CONFIG_VALUES
 
 # Colors for output
 RED='\033[0;31m'
@@ -63,11 +68,25 @@ print_required() {
 require_input() {
     local prompt="$1"
     local var_name="$2"
+    local config_key="$3"  # Optional: key to look up in CONFIG_VALUES
     local value=""
 
+    # Check if value exists in config (unattended mode)
+    if [ "$UNATTENDED" = true ] && [ -n "$config_key" ] && [ -n "${CONFIG_VALUES[$config_key]}" ]; then
+        value="${CONFIG_VALUES[$config_key]}"
+        print_info "Using config value for: $prompt"
+        eval "$var_name='$value'"
+        return 0
+    fi
+
+    # Interactive mode
     while [ -z "$value" ]; do
         read -p "$(echo -e "${MAGENTA}[REQUIRED]${NC} ${prompt}: ")" value
         if [ -z "$value" ]; then
+            if [ "$UNATTENDED" = true ]; then
+                print_error "Unattended mode: Missing required config value for key: $config_key"
+                exit 1
+            fi
             print_error "This field is required and cannot be empty"
         fi
     done
@@ -78,12 +97,26 @@ require_input() {
 require_password() {
     local prompt="$1"
     local var_name="$2"
+    local config_key="$3"  # Optional: key to look up in CONFIG_VALUES
     local value=""
 
+    # Check if value exists in config (unattended mode)
+    if [ "$UNATTENDED" = true ] && [ -n "$config_key" ] && [ -n "${CONFIG_VALUES[$config_key]}" ]; then
+        value="${CONFIG_VALUES[$config_key]}"
+        print_info "Using config value for: $prompt"
+        eval "$var_name='$value'"
+        return 0
+    fi
+
+    # Interactive mode
     while [ -z "$value" ]; do
         read -sp "$(echo -e "${MAGENTA}[REQUIRED]${NC} ${prompt}: ")" value
         echo ""
         if [ -z "$value" ]; then
+            if [ "$UNATTENDED" = true ]; then
+                print_error "Unattended mode: Missing required config value for key: $config_key"
+                exit 1
+            fi
             print_error "Password is required and cannot be empty"
         elif [ ${#value} -lt 8 ]; then
             print_error "Password must be at least 8 characters"
@@ -103,6 +136,69 @@ get_state() {
         cat "$SETUP_STATE_FILE"
     else
         echo "fresh"
+    fi
+}
+
+# ============= Config File Parsing =============
+load_config_file() {
+    local config_file="$1"
+
+    if [ ! -f "$config_file" ]; then
+        print_error "Config file not found: $config_file"
+        exit 1
+    fi
+
+    print_info "Loading configuration from: $config_file"
+
+    # Check if yq is installed
+    if ! command -v yq &> /dev/null; then
+        print_error "yq is required for config file parsing but not installed"
+        print_info "Install with: sudo pacman -S yq"
+        exit 1
+    fi
+
+    # Validate YAML syntax
+    if ! yq eval '.' "$config_file" > /dev/null 2>&1; then
+        print_error "Invalid YAML syntax in config file"
+        exit 1
+    fi
+
+    # Load configuration values
+    CONFIG_VALUES[unattended]=$(yq eval '.unattended // false' "$config_file")
+    CONFIG_VALUES[timezone]=$(yq eval '.system.timezone // "America/Chicago"' "$config_file")
+    CONFIG_VALUES[domain]=$(yq eval '.system.domain // "local"' "$config_file")
+
+    # Passwords
+    CONFIG_VALUES[jellyfin_password]=$(yq eval '.passwords.jellyfin // ""' "$config_file")
+    CONFIG_VALUES[vaultwarden_password]=$(yq eval '.passwords.vaultwarden // ""' "$config_file")
+    CONFIG_VALUES[adguard_password]=$(yq eval '.passwords.adguard // ""' "$config_file")
+    CONFIG_VALUES[samba_password]=$(yq eval '.passwords.samba // ""' "$config_file")
+    CONFIG_VALUES[traefik_dashboard_password]=$(yq eval '.passwords.traefik_dashboard // ""' "$config_file")
+
+    # VPN
+    CONFIG_VALUES[vpn_provider]=$(yq eval '.vpn.provider // ""' "$config_file")
+    CONFIG_VALUES[vpn_username]=$(yq eval '.vpn.username // ""' "$config_file")
+    CONFIG_VALUES[vpn_password]=$(yq eval '.vpn.password // ""' "$config_file")
+
+    # Tailscale
+    CONFIG_VALUES[tailscale_auth_key]=$(yq eval '.tailscale.auth_key // ""' "$config_file")
+
+    # SMTP
+    CONFIG_VALUES[smtp_host]=$(yq eval '.smtp.host // ""' "$config_file")
+    CONFIG_VALUES[smtp_port]=$(yq eval '.smtp.port // "587"' "$config_file")
+    CONFIG_VALUES[smtp_username]=$(yq eval '.smtp.username // ""' "$config_file")
+    CONFIG_VALUES[smtp_password]=$(yq eval '.smtp.password // ""' "$config_file")
+    CONFIG_VALUES[smtp_from]=$(yq eval '.smtp.from // ""' "$config_file")
+
+    # GitHub Runner
+    CONFIG_VALUES[github_runner_token]=$(yq eval '.github.runner_token // ""' "$config_file")
+
+    print_success "Configuration loaded successfully"
+
+    # If unattended flag is true in config, enable unattended mode
+    if [ "${CONFIG_VALUES[unattended]}" = "true" ]; then
+        UNATTENDED=true
+        print_info "Unattended mode enabled"
     fi
 }
 
@@ -851,6 +947,24 @@ show_menu() {
 
 # ============= Main Execution =============
 main() {
+    # Parse command line arguments for --config flag first
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --config)
+                CONFIG_FILE="$2"
+                if [ -z "$CONFIG_FILE" ]; then
+                    print_error "--config requires a file path argument"
+                    exit 1
+                fi
+                load_config_file "$CONFIG_FILE"
+                shift 2
+                ;;
+            *)
+                break
+                ;;
+        esac
+    done
+
     # Check if not configured - force setup
     if [ ! -f "$ENV_FILE" ] && [ "$1" != "--help" ] && [ "$1" != "-h" ]; then
         run_complete_setup

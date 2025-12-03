@@ -54,6 +54,13 @@ include:
   # Platform as a Service (Coolify)
   - compose/platform.yml
 
+  # CI/CD runners (GitHub Actions self-hosted runners)
+  - compose/runners.yml
+
+  # Development tools (Playwright report server, Claude agent management)
+  - compose/playwright-server.yml
+  - compose/claude-agent-server.yml
+
   # Optional: Override configurations for local environment
   # - compose.override.yml
 

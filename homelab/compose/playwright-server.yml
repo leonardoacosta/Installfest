@@ -1,0 +1,45 @@
+services:
+  playwright-server:
+    build: ../../playwright-server
+    container_name: playwright-server
+    restart: unless-stopped
+    environment:
+      - PORT=3000
+      - DB_PATH=/app/db/reports.db
+      - REPORTS_DIR=/reports
+      - WEB_DIR=/app/web/dist
+      - NODE_ENV=production
+    volumes:
+      - playwright-reports:/reports
+      - playwright-db:/app/db
+    networks:
+      - homelab
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=homelab"
+      - "traefik.http.routers.playwright.rule=Host(`playwright.local`)"
+      - "traefik.http.routers.playwright.entrypoints=websecure"
+      - "traefik.http.routers.playwright.tls=true"
+      - "traefik.http.services.playwright.loadbalancer.server.port=3000"
+      - "com.centurylinklabs.watchtower.enable=true"
+      - "homepage.group=Development"
+      - "homepage.name=Playwright Reports"
+      - "homepage.icon=playwright.png"
+      - "homepage.href=http://playwright.local"
+      - "homepage.description=Test report viewer"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  playwright-reports:
+    external: true
+  playwright-db:
+    driver: local
+
+networks:
+  homelab:
+    external: true

@@ -1,62 +1,68 @@
 # Implementation Tasks
 
-## Phase 1: USB Boot System
+## Phase 1: USB Boot System ✅ COMPLETED
 
 ### 1.1 Create archinstall Configuration
-- [ ] 1.1.1 Create `homelab/usb-boot/archinstall-config.json`
-- [ ] 1.1.2 Define partitioning scheme (EFI, root, swap)
-- [ ] 1.1.3 Specify package list (base, docker, bluez, steam, git, curl)
-- [ ] 1.1.4 Configure user creation and docker group membership
-- [ ] 1.1.5 Enable multilib repository for Steam
-- [ ] 1.1.6 Set timezone and locale
-- [ ] 1.1.7 Configure network (NetworkManager)
+- [x] 1.1.1 Create `homelab/usb-boot/archinstall-config.json`
+- [x] 1.1.2 Define partitioning scheme (EFI, root, swap)
+- [x] 1.1.3 Specify package list (base, docker, bluez, steam, git, curl)
+- [x] 1.1.4 Configure user creation and docker group membership
+- [x] 1.1.5 Enable multilib repository for Steam
+- [x] 1.1.6 Set timezone and locale
+- [x] 1.1.7 Configure network (NetworkManager)
 
 ### 1.2 Implement Bootstrap Script
-- [ ] 1.2.1 Create `homelab/usb-boot/homelab-bootstrap.sh`
-- [ ] 1.2.2 Add GPG decryption of secrets file
-- [ ] 1.2.3 Clone Installfest repository
-- [ ] 1.2.4 Source decrypted environment variables
-- [ ] 1.2.5 Generate .homelab-config.yml from environment
-- [ ] 1.2.6 Execute homelab.sh in unattended mode
-- [ ] 1.2.7 Add error handling and logging
+- [x] 1.2.1 Create `homelab/usb-boot/homelab-bootstrap.sh`
+- [x] 1.2.2 Add GPG decryption of secrets file
+- [x] 1.2.3 Clone Installfest repository
+- [x] 1.2.4 Source decrypted environment variables
+- [x] 1.2.5 Generate .homelab-config.yml from environment
+- [x] 1.2.6 Execute homelab.sh in unattended mode
+- [x] 1.2.7 Add error handling and logging
 
 ### 1.3 Create systemd First-Boot Service
-- [ ] 1.3.1 Create `homelab/usb-boot/systemd/homelab-bootstrap.service`
-- [ ] 1.3.2 Configure as oneshot service
-- [ ] 1.3.3 Set dependencies (After=network-online.target)
-- [ ] 1.3.4 Add to archinstall config for auto-enable
-- [ ] 1.3.5 Log output to /var/log/homelab-bootstrap.log
+- [x] 1.3.1 Create `homelab/usb-boot/systemd/homelab-bootstrap.service`
+- [x] 1.3.2 Configure as oneshot service
+- [x] 1.3.3 Set dependencies (After=network-online.target)
+- [x] 1.3.4 Add to archinstall config for auto-enable
+- [x] 1.3.5 Log output to /var/log/homelab-bootstrap.log
 
 ### 1.4 Enhance homelab.sh with Unattended Mode
-- [ ] 1.4.1 Add config file parser for `.homelab-config.yml`
-- [ ] 1.4.2 Skip interactive prompts when config present
-- [ ] 1.4.3 Validate required config values
-- [ ] 1.4.4 Add `--config` flag for explicit config file path
-- [ ] 1.4.5 Maintain backward compatibility with interactive mode
-- [ ] 1.4.6 Update state management for unattended flow
+- [x] 1.4.1 Add config file parser for `.homelab-config.yml`
+- [x] 1.4.2 Skip interactive prompts when config present
+- [x] 1.4.3 Validate required config values
+- [x] 1.4.4 Add `--config` flag for explicit config file path
+- [x] 1.4.5 Maintain backward compatibility with interactive mode
+- [x] 1.4.6 Update state management for unattended flow
 
 ### 1.5 Create USB Preparation Script
-- [ ] 1.5.1 Create `homelab/usb-boot/create-bootable-usb.sh`
-- [ ] 1.5.2 Download Arch ISO automatically
-- [ ] 1.5.3 Verify ISO checksum
-- [ ] 1.5.4 Format USB drive (FAT32)
-- [ ] 1.5.5 Copy ISO, configs, and encrypted secrets
-- [ ] 1.5.6 Make USB bootable (syslinux/grub)
-- [ ] 1.5.7 Add usage instructions
+- [x] 1.5.1 Create `homelab/usb-boot/create-bootable-usb.sh`
+- [x] 1.5.2 Download Arch ISO automatically
+- [x] 1.5.3 Verify ISO checksum
+- [x] 1.5.4 Format USB drive (FAT32)
+- [x] 1.5.5 Copy ISO, configs, and encrypted secrets
+- [x] 1.5.6 Make USB bootable (syslinux/grub)
+- [x] 1.5.7 Add usage instructions
+
+### 1.5a Create Installation Orchestrator (BONUS)
+- [x] 1.5a.1 Create `homelab/usb-boot/run-install.sh`
+- [x] 1.5a.2 Kick off archinstall programmatically from USB
+- [x] 1.5a.3 Copy bootstrap files to new system
+- [x] 1.5a.4 Enable systemd service automatically
 
 ### 1.6 Secrets Management
-- [ ] 1.6.1 Create `homelab/.homelab-secrets.env.example`
-- [ ] 1.6.2 Document all required secret variables
-- [ ] 1.6.3 Create encryption helper script
-- [ ] 1.6.4 Add GPG passphrase prompt to bootstrap
-- [ ] 1.6.5 Implement secure deletion of decrypted secrets
+- [x] 1.6.1 Create `homelab/.homelab-secrets.env.example`
+- [x] 1.6.2 Document all required secret variables
+- [x] 1.6.3 Create encryption helper script (integrated in create-bootable-usb.sh)
+- [x] 1.6.4 Add GPG passphrase prompt to bootstrap
+- [x] 1.6.5 Implement secure deletion of decrypted secrets
 
 ### 1.7 Testing
-- [ ] 1.7.1 Test archinstall config in VM
-- [ ] 1.7.2 Test bootstrap script manually
-- [ ] 1.7.3 Test full USB boot flow (fresh VM install)
-- [ ] 1.7.4 Verify all services deploy correctly
-- [ ] 1.7.5 Document any manual steps required
+- [ ] 1.7.1 Test archinstall config in VM (requires VM)
+- [ ] 1.7.2 Test bootstrap script manually (requires VM)
+- [ ] 1.7.3 Test full USB boot flow (fresh VM install) (requires VM)
+- [ ] 1.7.4 Verify all services deploy correctly (requires VM)
+- [ ] 1.7.5 Document any manual steps required (pending testing)
 
 ---
 

@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Agent Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .header {
+            background: #7c3aed;
+            color: white;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .card h2 {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            color: #7c3aed;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            background: #7c3aed;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .btn:hover {
+            background: #6d28d9;
+        }
+
+        .btn-danger {
+            background: #dc2626;
+        }
+
+        .btn-danger:hover {
+            background: #b91c1c;
+        }
+
+        .btn-small {
+            padding: 0.25rem 0.75rem;
+            font-size: 0.85rem;
+        }
+
+        .project-list,
+        .session-list {
+            list-style: none;
+        }
+
+        .project-item,
+        .session-item {
+            padding: 1rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .project-item:hover,
+        .session-item:hover {
+            background: #f9fafb;
+            border-color: #7c3aed;
+        }
+
+        .project-item.active {
+            background: #ede9fe;
+            border-color: #7c3aed;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .status-running {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-stopped {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
+        .status-error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+        }
+
+        .hooks-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        .hooks-table th {
+            background: #f9fafb;
+            padding: 0.75rem;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .hooks-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 2rem;
+            color: #9ca3af;
+        }
+
+        .actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🤖 Claude Agent Management</h1>
+    </div>
+
+    <div class="container">
+        <div class="grid">
+            <!-- Projects Panel -->
+            <div class="card">
+                <h2>Projects</h2>
+                <div class="actions">
+                    <button class="btn btn-small" onclick="showNewProjectForm()">+ New Project</button>
+                    <button class="btn btn-small" onclick="loadProjects()">Refresh</button>
+                </div>
+
+                <div id="newProjectForm" style="display:none; margin-top: 1rem;">
+                    <div class="form-group">
+                        <label>Name:</label>
+                        <input type="text" id="projectName" placeholder="my-project">
+                    </div>
+                    <div class="form-group">
+                        <label>Path:</label>
+                        <input type="text" id="projectPath" placeholder="/home/leo/dev/projects/my-project">
+                    </div>
+                    <div class="actions">
+                        <button class="btn btn-small" onclick="createProject()">Create</button>
+                        <button class="btn btn-small" onclick="hideNewProjectForm()">Cancel</button>
+                    </div>
+                </div>
+
+                <ul id="projectsList" class="project-list" style="margin-top: 1rem;"></ul>
+            </div>
+
+            <!-- Sessions Panel -->
+            <div class="card">
+                <h2>Active Sessions</h2>
+                <div class="actions">
+                    <button class="btn btn-small" id="startSessionBtn" disabled onclick="startSession()">Start Agent</button>
+                    <button class="btn btn-small" onclick="loadSessions()">Refresh</button>
+                </div>
+                <ul id="sessionsList" class="session-list" style="margin-top: 1rem;"></ul>
+            </div>
+        </div>
+
+        <!-- Hooks Panel -->
+        <div class="card">
+            <h2>Hook History</h2>
+            <div id="hooksContainer">
+                <p class="empty">Select a session to view hook history</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+        let selectedProjectId = null;
+        let selectedSessionId = null;
+
+        // Load projects
+        async function loadProjects() {
+            try {
+                const response = await fetch(`${API_BASE}/api/projects`);
+                const projects = await response.json();
+
+                const list = document.getElementById('projectsList');
+                if (projects.length === 0) {
+                    list.innerHTML = '<li class="empty">No projects found</li>';
+                    return;
+                }
+
+                list.innerHTML = projects.map(p => `
+                    <li class="project-item ${p.id === selectedProjectId ? 'active' : ''}"
+                        onclick="selectProject(${p.id})">
+                        <strong>${p.name}</strong>
+                        <div style="font-size: 0.85rem; color: #6b7280; margin-top: 0.25rem;">
+                            ${p.path}
+                        </div>
+                        <div style="font-size: 0.75rem; color: #9ca3af; margin-top: 0.25rem;">
+                            ${p.session_count || 0} sessions
+                        </div>
+                    </li>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading projects:', error);
+            }
+        }
+
+        // Select project
+        function selectProject(id) {
+            selectedProjectId = id;
+            loadProjects();
+            document.getElementById('startSessionBtn').disabled = false;
+        }
+
+        // Show/hide new project form
+        function showNewProjectForm() {
+            document.getElementById('newProjectForm').style.display = 'block';
+        }
+
+        function hideNewProjectForm() {
+            document.getElementById('newProjectForm').style.display = 'none';
+            document.getElementById('projectName').value = '';
+            document.getElementById('projectPath').value = '';
+        }
+
+        // Create project
+        async function createProject() {
+            const name = document.getElementById('projectName').value;
+            const path = document.getElementById('projectPath').value;
+
+            if (!name || !path) {
+                alert('Name and path are required');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/api/projects`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, path })
+                });
+
+                if (response.ok) {
+                    hideNewProjectForm();
+                    loadProjects();
+                } else {
+                    const error = await response.json();
+                    alert(error.error || 'Failed to create project');
+                }
+            } catch (error) {
+                console.error('Error creating project:', error);
+                alert('Error creating project');
+            }
+        }
+
+        // Start agent session
+        async function startSession() {
+            if (!selectedProjectId) {
+                alert('Please select a project first');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/api/sessions`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ project_id: selectedProjectId })
+                });
+
+                if (response.ok) {
+                    loadSessions();
+                } else {
+                    alert('Failed to start session');
+                }
+            } catch (error) {
+                console.error('Error starting session:', error);
+                alert('Error starting session');
+            }
+        }
+
+        // Load sessions
+        async function loadSessions() {
+            try {
+                const response = await fetch(`${API_BASE}/api/sessions`);
+                const sessions = await response.json();
+
+                const list = document.getElementById('sessionsList');
+                if (sessions.length === 0) {
+                    list.innerHTML = '<li class="empty">No active sessions</li>';
+                    return;
+                }
+
+                list.innerHTML = sessions.map(s => {
+                    const statusClass = `status-${s.status}`;
+                    return `
+                        <li class="session-item" onclick="selectSession(${s.id})">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <strong>${s.project_name}</strong>
+                                    <span class="status-badge ${statusClass}">${s.status}</span>
+                                </div>
+                                ${s.status === 'running' ? `
+                                    <button class="btn btn-small btn-danger" onclick="event.stopPropagation(); stopSession(${s.id})">Stop</button>
+                                ` : ''}
+                            </div>
+                            <div style="font-size: 0.85rem; color: #6b7280; margin-top: 0.25rem;">
+                                Agent: ${s.agent_id}
+                            </div>
+                            <div style="font-size: 0.75rem; color: #9ca3af; margin-top: 0.25rem;">
+                                Started: ${new Date(s.started_at).toLocaleString()}
+                            </div>
+                        </li>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Error loading sessions:', error);
+            }
+        }
+
+        // Stop session
+        async function stopSession(id) {
+            try {
+                const response = await fetch(`${API_BASE}/api/sessions/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    loadSessions();
+                }
+            } catch (error) {
+                console.error('Error stopping session:', error);
+            }
+        }
+
+        // Select session and load hooks
+        async function selectSession(id) {
+            selectedSessionId = id;
+            await loadHooks();
+        }
+
+        // Load hooks for selected session
+        async function loadHooks() {
+            if (!selectedSessionId) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/hooks?session_id=${selectedSessionId}&limit=50`);
+                const hooks = await response.json();
+
+                const container = document.getElementById('hooksContainer');
+
+                if (hooks.length === 0) {
+                    container.innerHTML = '<p class="empty">No hooks recorded yet (Claude Agent SDK integration pending)</p>';
+                    return;
+                }
+
+                container.innerHTML = `
+                    <table class="hooks-table">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Tool</th>
+                                <th>Timestamp</th>
+                                <th>Duration</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${hooks.map(h => `
+                                <tr>
+                                    <td>${h.hook_type}</td>
+                                    <td>${h.tool_name || 'N/A'}</td>
+                                    <td>${new Date(h.timestamp).toLocaleString()}</td>
+                                    <td>${h.duration_ms ? h.duration_ms + 'ms' : 'N/A'}</td>
+                                    <td>${h.success ? '✓' : '✗'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+            } catch (error) {
+                console.error('Error loading hooks:', error);
+            }
+        }
+
+        // Initial load
+        loadProjects();
+        loadSessions();
+
+        // Auto-refresh
+        setInterval(() => {
+            loadSessions();
+            if (selectedSessionId) {
+                loadHooks();
+            }
+        }, 10000);
+    </script>
+</body>
+</html>

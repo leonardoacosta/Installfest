@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Playwright Test Reports</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .header {
+            background: #2563eb;
+            color: white;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .filters {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-group label {
+            font-weight: 500;
+            color: #666;
+        }
+
+        .filter-group select,
+        .filter-group input {
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .filter-group button {
+            padding: 0.5rem 1rem;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .filter-group button:hover {
+            background: #1d4ed8;
+        }
+
+        .reports-table {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: #f9fafb;
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: #374151;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        tr:hover {
+            background: #f9fafb;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .badge-success {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .badge-danger {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .badge-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .view-btn {
+            padding: 0.5rem 1rem;
+            background: #2563eb;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            display: inline-block;
+        }
+
+        .view-btn:hover {
+            background: #1d4ed8;
+        }
+
+        .delete-btn {
+            padding: 0.5rem 1rem;
+            background: #dc2626;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            margin-left: 0.5rem;
+        }
+
+        .delete-btn:hover {
+            background: #b91c1c;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #666;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 3rem;
+            color: #666;
+        }
+
+        .stats {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .stat-item {
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎭 Playwright Test Reports</h1>
+    </div>
+
+    <div class="container">
+        <div class="filters">
+            <div class="filter-group">
+                <label>Workflow:</label>
+                <select id="workflowFilter">
+                    <option value="">All Workflows</option>
+                </select>
+
+                <label>Search:</label>
+                <input type="text" id="searchInput" placeholder="Search run ID or workflow...">
+
+                <button onclick="loadReports()">Refresh</button>
+            </div>
+        </div>
+
+        <div class="reports-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Workflow</th>
+                        <th>Run ID</th>
+                        <th>Tests</th>
+                        <th>Passed</th>
+                        <th>Failed</th>
+                        <th>Skipped</th>
+                        <th>Timestamp</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="reportsBody">
+                    <tr>
+                        <td colspan="8" class="loading">Loading reports...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+
+        // Load workflows for filter
+        async function loadWorkflows() {
+            try {
+                const response = await fetch(`${API_BASE}/api/workflows`);
+                const workflows = await response.json();
+
+                const select = document.getElementById('workflowFilter');
+                workflows.forEach(workflow => {
+                    const option = document.createElement('option');
+                    option.value = workflow;
+                    option.textContent = workflow;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading workflows:', error);
+            }
+        }
+
+        // Load reports
+        async function loadReports() {
+            const workflow = document.getElementById('workflowFilter').value;
+            const search = document.getElementById('searchInput').value.toLowerCase();
+
+            try {
+                let url = `${API_BASE}/api/reports?limit=100`;
+                if (workflow) {
+                    url += `&workflow=${encodeURIComponent(workflow)}`;
+                }
+
+                const response = await fetch(url);
+                const reports = await response.json();
+
+                // Filter by search
+                const filtered = search
+                    ? reports.filter(r =>
+                        r.workflow.toLowerCase().includes(search) ||
+                        r.run_id.toLowerCase().includes(search)
+                    )
+                    : reports;
+
+                renderReports(filtered);
+            } catch (error) {
+                console.error('Error loading reports:', error);
+                document.getElementById('reportsBody').innerHTML = `
+                    <tr>
+                        <td colspan="8" class="empty">Error loading reports</td>
+                    </tr>
+                `;
+            }
+        }
+
+        // Render reports table
+        function renderReports(reports) {
+            const tbody = document.getElementById('reportsBody');
+
+            if (reports.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="empty">No reports found</td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = reports.map(report => {
+                const passRate = report.total_tests > 0
+                    ? ((report.passed / report.total_tests) * 100).toFixed(1)
+                    : 0;
+
+                const statusBadge = report.failed > 0
+                    ? '<span class="badge badge-danger">Failed</span>'
+                    : report.passed === report.total_tests
+                    ? '<span class="badge badge-success">Passed</span>'
+                    : '<span class="badge badge-warning">Partial</span>';
+
+                const timestamp = new Date(report.timestamp).toLocaleString();
+
+                return `
+                    <tr>
+                        <td><strong>${report.workflow}</strong></td>
+                        <td><code>${report.run_id}</code></td>
+                        <td>${report.total_tests}</td>
+                        <td><span class="badge badge-success">${report.passed}</span></td>
+                        <td>${report.failed > 0 ? `<span class="badge badge-danger">${report.failed}</span>` : '0'}</td>
+                        <td>${report.skipped > 0 ? `<span class="badge badge-warning">${report.skipped}</span>` : '0'}</td>
+                        <td>${timestamp}</td>
+                        <td>
+                            <a href="/reports-static/${report.report_path}" target="_blank" class="view-btn">View Report</a>
+                            <button class="delete-btn" onclick="deleteReport(${report.id})">Delete</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Delete report
+        async function deleteReport(id) {
+            if (!confirm('Are you sure you want to delete this report?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/api/reports/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    loadReports();
+                } else {
+                    alert('Failed to delete report');
+                }
+            } catch (error) {
+                console.error('Error deleting report:', error);
+                alert('Error deleting report');
+            }
+        }
+
+        // Event listeners
+        document.getElementById('workflowFilter').addEventListener('change', loadReports);
+        document.getElementById('searchInput').addEventListener('input', loadReports);
+
+        // Initial load
+        loadWorkflows();
+        loadReports();
+
+        // Auto-refresh every 30 seconds
+        setInterval(loadReports, 30000);
+    </script>
+</body>
+</html>
