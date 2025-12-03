@@ -45,6 +45,25 @@ Real-world dashboard layout for test run monitoring and agent session tracking.
 - Claude Agent Server session monitoring
 - General admin dashboards
 
+### 3. Forms Example (`forms.tsx`)
+
+Comprehensive form examples with validation, icons, and accessibility.
+
+**Features:**
+- Input validation states (error, success, default)
+- Icon support (prefix/suffix icons)
+- Password toggle visibility
+- All form controls (inputs, textareas, selects, checkboxes, radios, switches)
+- Complete login form with validation
+- Button variants (cyan, success, warning, destructive)
+- Accessible form patterns with proper labels and error messages
+
+**Use this for:**
+- Form implementation reference
+- Validation pattern examples
+- Accessibility testing for forms
+- Input component API demonstration
+
 ## Running Examples
 
 These examples are designed to be used in a React application. To run them:

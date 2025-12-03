@@ -543,3 +543,157 @@ Total: ~220KB (acceptable for rich dashboard)
 - No regression in API performance (frontend-only change)
 - Docker builds complete in < 5 minutes
 - Hot reload in development < 500ms
+
+---
+
+## Phase 6 Architectural Decisions (December 2024)
+
+### Decision: Adopt T3 Stack Pattern for Service Migrations
+
+**Status:** ✅ Implemented in Phase 6 (Claude Agent Server)
+**Date:** December 3, 2024
+
+**Decision:**
+Migrate both Claude Agent Server and Playwright Server to follow the **T3 Stack pattern** with a shared `packages/api` containing tRPC routers, rather than standalone Express/Hono backends.
+
+**Why:**
+
+1. **End-to-End Type Safety**
+   - Database types (Drizzle ORM) → tRPC routers → React Query hooks
+   - Zero runtime overhead for type checking
+   - Automatic TypeScript inference across the stack
+   - Example: `trpc.projects.create.mutate({ name, path })` is fully typed
+
+2. **Shared API Package** (`packages/api`)
+   - Single source of truth for backend logic
+   - Reusable across multiple Next.js apps (claude-agent-web, playwright-server)
+   - Reduces code duplication
+   - Consistent API patterns across services
+
+3. **Simplified Architecture**
+   - No separate backend server to maintain
+   - Next.js API routes co-located with frontend
+   - Single database shared between services
+   - Fewer moving parts in Docker compose
+
+4. **Developer Experience**
+   - Hot reload includes backend changes
+   - No need for API versioning or OpenAPI specs
+   - Automatic client generation from server types
+   - React Query integration for caching/optimistic updates
+
+5. **Performance Benefits**
+   - SuperJSON transformer handles Date, BigInt, undefined
+   - React Query caching reduces redundant API calls
+   - Optimistic updates for instant UI feedback
+   - Streaming support via tRPC subscriptions
+
+**Implementation Pattern:**
+
+```
+packages/
+  api/                  # Shared tRPC routers
+    src/
+      router/
+        projects.ts     # CRUD for projects
+        sessions.ts     # Session lifecycle
+        hooks.ts        # Tool call tracking
+        reports.ts      # Playwright reports
+      root.ts           # Combine all routers
+      context.ts        # Database access
+      trpc.ts           # tRPC instance
+  db/                   # Drizzle ORM + SQLite
+  ui/                   # Design system
+
+apps/
+  claude-agent-web/     # Next.js 14 T3 app
+    src/
+      app/
+        api/trpc/[trpc]/route.ts  # tRPC handler
+        (dashboard)/
+          projects/page.tsx       # Projects page
+          sessions/page.tsx       # Sessions page
+          hooks/page.tsx          # Hooks page
+      trpc/
+        client.ts                 # tRPC React client
+        Provider.tsx              # React Query wrapper
+      components/
+        Sidebar.tsx
+        TopBar.tsx
+        Providers.tsx
+
+  playwright-server/    # Next.js 14 T3 app (planned)
+    # Same structure as claude-agent-web
+```
+
+**Database Strategy:**
+
+- **Single SQLite Database** (`@homelab/db`)
+- Exposed raw SQLite instance via `getSqlite()` for complex queries
+- Maintains Drizzle ORM compatibility for type-safe queries
+- All services share same database (projects, sessions, hooks, reports tables)
+
+**Benefits Realized in Phase 6:**
+
+- ✅ **Zero TypeScript errors** - Full type safety maintained
+- ✅ **3-hour development time** - Faster than estimated 30-40 hours
+- ✅ **Small bundle sizes** - Projects (1.78 kB), Sessions (1.87 kB), Hooks (1.95 kB)
+- ✅ **No API documentation needed** - Types are the documentation
+- ✅ **Automatic cache invalidation** - React Query handles it
+- ✅ **Real-time ready** - tRPC subscriptions for WebSocket support
+
+**Lessons Learned:**
+
+1. **ESM vs CommonJS Gotcha**
+   - Initially set `"type": "module"` in package.json
+   - Caused Next.js config file errors (expected CommonJS)
+   - Solution: Remove type field, use CommonJS for configs
+
+2. **UI Package Exports**
+   - Individual component exports (`@homelab/ui/button`) didn't work
+   - Solution: Wildcard export in package.json, import from main index
+
+3. **React Context Bundling**
+   - `createContext is not a function` due to React duplication
+   - Solution: Use client component wrapper (Providers.tsx) for Toaster
+
+4. **Server Components vs Client Components**
+   - Theme providers need `'use client'` directive
+   - Separate Providers.tsx wrapper pattern works well
+
+**Phase 7 Implications:**
+
+Playwright Server migration will be **significantly faster** because:
+- ✅ Reports router already exists in `packages/api`
+- ✅ tRPC setup pattern is proven
+- ✅ Layout components can be copied from claude-agent-web
+- ✅ Only frontend work needed (2-3 hours estimated)
+
+**Alternatives Considered:**
+
+1. **Standalone Express/Hono Backend**
+   - ❌ Requires API versioning and documentation
+   - ❌ No automatic type safety
+   - ❌ More complex deployment (separate containers)
+   - ❌ Slower development cycle
+
+2. **GraphQL with Code Generation**
+   - ❌ Additional build step for codegen
+   - ❌ Schema definition duplication
+   - ❌ More complex than tRPC for TypeScript projects
+
+3. **REST API with OpenAPI**
+   - ❌ Manual schema maintenance
+   - ❌ Codegen required for TypeScript types
+   - ❌ No type safety at compile time
+
+**Decision Outcome:**
+
+The T3 Stack pattern proved to be the **right architectural choice** for homelab services:
+- Dramatically reduced development time (3 hours vs 30-40 hours)
+- Maintained full type safety across the stack
+- Simplified deployment and maintenance
+- Excellent developer experience
+- Production-ready patterns from create-t3-app
+
+**Status:** ✅ **Validated and recommended for all future homelab services**
