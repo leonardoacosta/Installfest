@@ -1,0 +1,186 @@
+# Homelab Unattended Configuration Template
+# This file enables fully automated homelab deployment without interactive prompts
+#
+# Usage:
+#   1. Copy this file to .homelab-config.yml
+#   2. Fill in your actual values
+#   3. Run: ./homelab.sh --config .homelab-config.yml
+#
+# For USB boot automation, this file is auto-generated from encrypted secrets
+
+# Enable unattended mode (required)
+unattended: true
+
+# System Configuration
+system:
+  timezone: "America/Chicago"
+  domain: "homelab.local"
+  hostname: "homelab-server"
+
+# User Configuration
+user:
+  username: "leo"
+  uid: 1000
+  gid: 1000
+
+# Network Configuration
+network:
+  # Primary DNS (AdGuard Home)
+  primary_dns: "172.20.0.5"
+  # Fallback DNS (Cloudflare)
+  fallback_dns: "1.1.1.1"
+
+# Service Passwords
+passwords:
+  # Jellyfin admin password
+  jellyfin: "change_me_jellyfin_password"
+
+  # Vaultwarden master password
+  vaultwarden: "change_me_vaultwarden_password"
+
+  # AdGuard Home admin password
+  adguard: "change_me_adguard_password"
+
+  # Samba file sharing password
+  samba: "change_me_samba_password"
+
+# VPN Configuration (Gluetun)
+vpn:
+  # VPN provider (e.g., mullvad, nordvpn, expressvpn, custom)
+  provider: "custom"
+
+  # VPN type (wireguard or openvpn)
+  type: "wireguard"
+
+  # WireGuard specific settings (if type: wireguard)
+  wireguard:
+    private_key: "your_wireguard_private_key_here"
+    addresses: "10.x.x.x/32"
+    endpoint_ip: "xxx.xxx.xxx.xxx"
+    endpoint_port: "51820"
+    public_key: "server_public_key_here"
+
+  # OpenVPN specific settings (if type: openvpn)
+  # openvpn:
+  #   username: "your_vpn_username"
+  #   password: "your_vpn_password"
+  #   config_file: "/path/to/ovpn/config"
+
+# Tailscale Configuration
+tailscale:
+  # Auth key from: https://login.tailscale.com/admin/settings/keys
+  auth_key: "tskey-auth-xxxxx"
+
+  # Tailscale hostname
+  hostname: "homelab"
+
+# SMTP Configuration (for Vaultwarden email)
+smtp:
+  host: "smtp.gmail.com"
+  port: 587
+  from: "your-email@gmail.com"
+  username: "your-email@gmail.com"
+  password: "your_app_specific_password"
+  use_tls: true
+
+# GitHub Actions Runners
+github:
+  # Repository owner and name
+  repo_owner: "your-github-username"
+  repo_name: "your-repo-name"
+
+  # Repository URL (auto-constructed if not provided)
+  repo_url: "https://github.com/your-github-username/your-repo-name"
+
+  # Runner registration tokens (from GitHub Settings → Actions → Runners → New)
+  # Note: Tokens expire after 1 hour if unused
+  runner_tokens:
+    - "RUNNER_TOKEN_1_from_github"
+    - "RUNNER_TOKEN_2_from_github"
+    - "RUNNER_TOKEN_3_from_github"
+    - "RUNNER_TOKEN_4_from_github"
+
+# Steam Configuration (optional)
+steam:
+  # Enable Steam headless setup
+  enabled: true
+
+  # Steam username (for auto-login after first manual login)
+  # Leave empty to skip auto-login configuration
+  username: ""
+
+# Bluetooth Configuration (optional)
+bluetooth:
+  # Enable Bluetooth auto-pairing
+  enabled: true
+
+  # Bluetooth devices to auto-pair
+  # Find MAC addresses with: bluetoothctl → scan on → devices
+  devices:
+    - name: "Xbox Controller"
+      mac: "AA:BB:CC:DD:EE:FF"
+      auto_connect: true
+
+    - name: "Bluetooth Headset"
+      mac: "11:22:33:44:55:66"
+      auto_connect: true
+
+# Media Automation Configuration
+media:
+  # Download directory (inside containers)
+  downloads_dir: "/downloads"
+
+  # Media library directory
+  media_dir: "/media"
+
+  # Enable qBittorrent
+  qbittorrent_enabled: true
+
+  # Enable NZBGet
+  nzbget_enabled: true
+
+# Home Assistant Configuration
+homeassistant:
+  # Enable auto-discovery for network devices
+  auto_discovery: true
+
+  # Enable mobile app support (websockets)
+  mobile_app: true
+
+  # Trusted networks for authentication bypass
+  trusted_networks:
+    - "192.168.1.0/24"
+    - "172.20.0.0/16"
+
+# Coolify Configuration (optional)
+coolify:
+  # Enable Coolify PaaS
+  enabled: false
+
+  # Coolify app ID (auto-generated if not provided)
+  app_id: ""
+
+  # Coolify app key (auto-generated if not provided)
+  app_key: ""
+
+# Advanced Configuration
+advanced:
+  # Skip service health checks (faster deployment, less safe)
+  skip_health_checks: false
+
+  # Number of backup copies to keep
+  backup_retention: 5
+
+  # Auto-start services after deployment
+  auto_start: true
+
+  # Pull latest Docker images before deployment
+  pull_images: true
+
+# Notes:
+# - All passwords should be strong and unique
+# - VPN configuration is required for download services to work
+# - Tailscale auth key is required for remote access
+# - GitHub runner tokens expire after 1 hour if not used
+# - This file contains sensitive data - encrypt before storing on USB
+# - For USB boot: encrypt with GPG: gpg --symmetric --cipher-algo AES256 .homelab-config.yml

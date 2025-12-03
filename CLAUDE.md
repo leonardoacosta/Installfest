@@ -295,6 +295,122 @@ sudo ./svc.sh restart
 - **VPN**: All download services protected by Gluetun
 - **Access**: Use Tailscale for secure remote access
 
+## DNS Configuration
+
+### Overview
+
+The homelab uses a two-tier DNS strategy for reliability:
+- **Primary DNS**: AdGuard Home (172.20.0.5) - Ad-blocking and local domain resolution
+- **Fallback DNS**: Cloudflare (1.1.1.1) - Public DNS when AdGuard is unavailable
+
+### AdGuard Home as Primary DNS
+
+AdGuard Home runs at `172.20.0.5` in the homelab network and provides:
+- Ad-blocking and tracker blocking
+- Custom DNS rules for local services
+- DNS-over-HTTPS (DoH) upstream support
+- Query logging and statistics
+
+**Access**: http://adguard.local or http://172.20.0.5
+
+**Configuration**:
+```bash
+# Set as primary DNS on all devices
+Primary DNS: 172.20.0.5
+Secondary DNS: 1.1.1.1
+```
+
+### Cloudflare Fallback (1.1.1.1)
+
+Cloudflare DNS is configured as fallback for:
+- AdGuard Home maintenance or restarts
+- Network troubleshooting
+- Initial boot before AdGuard starts
+
+**Why Cloudflare**:
+- Fast, reliable public DNS
+- Privacy-focused (1.1.1.1)
+- Global anycast network
+- DNS-over-HTTPS support
+
+### System-Wide Configuration
+
+**Linux/Arch (systemd-resolved)**:
+```bash
+# Edit /etc/systemd/resolved.conf
+[Resolve]
+DNS=172.20.0.5 1.1.1.1
+FallbackDNS=1.0.0.1 8.8.8.8
+DNSOverTLS=opportunistic
+```
+
+**Docker Containers**:
+```yaml
+# In docker-compose.yml or container config
+dns:
+  - 172.20.0.5
+  - 1.1.1.1
+```
+
+**Network Clients (DHCP)**:
+Configure router/DHCP server to advertise:
+- Primary DNS: 172.20.0.5
+- Secondary DNS: 1.1.1.1
+
+### Testing DNS Resolution
+
+```bash
+# Test AdGuard (should block ads)
+dig @172.20.0.5 doubleclick.net
+
+# Test Cloudflare fallback
+dig @1.1.1.1 google.com
+
+# Test system DNS
+dig google.com
+
+# Verify which DNS is being used
+resolvectl status
+```
+
+### Troubleshooting
+
+**AdGuard not responding**:
+```bash
+# Check AdGuard status
+docker compose ps adguardhome
+docker compose logs adguardhome
+
+# Restart if needed
+docker compose restart adguardhome
+```
+
+**DNS not resolving**:
+```bash
+# Check system DNS config
+cat /etc/resolv.conf
+
+# Verify network connectivity
+ping 172.20.0.5
+ping 1.1.1.1
+
+# Test with explicit DNS server
+dig @1.1.1.1 example.com
+```
+
+**Fallback not working**:
+- Verify secondary DNS configured in system/router
+- Check firewall rules allow outbound DNS (port 53)
+- Test with: `dig @1.1.1.1 google.com`
+
+### Best Practices
+
+1. **Always configure fallback**: Prevents total DNS failure if AdGuard is down
+2. **Monitor AdGuard logs**: Watch for blocked queries and issues
+3. **Test periodically**: Verify both primary and fallback DNS work
+4. **Document custom rules**: Keep track of AdGuard custom DNS entries
+5. **Backup configuration**: Export AdGuard settings regularly
+
 ## Testing Workflows Locally
 
 ```bash
@@ -324,6 +440,78 @@ First-time setup requires GitHub authentication via device code flow.
 
 Zone visualization template: `homeassistant/config/mtr1-zones.yaml`
 Requires Plotly Graph Card from HACS.
+
+### Auto-Discovery and Network Scanning
+
+Home Assistant automatically discovers devices on the local network using:
+- **mDNS/Zeroconf**: Discovers network devices advertising services
+- **SSDP**: Universal Plug and Play device discovery
+- **NetBIOS**: Windows network device discovery
+
+**Supported Devices**:
+- Smart TVs (Samsung, LG, Sony, etc.)
+- Media players (Chromecast, Roku, Apple TV)
+- Network printers
+- Smart home hubs (Philips Hue, IKEA Trådfri)
+- IoT devices (ESPHome, Tasmota, Shelly)
+
+**Configuration**:
+Auto-discovery is enabled by default. Discovered devices appear in:
+- **Configuration** → **Devices & Services** → **Discovered** tab
+
+**Manual Discovery Trigger**:
+```bash
+# Restart Home Assistant to re-scan network
+docker compose restart homeassistant
+
+# Or trigger from UI:
+# Configuration → System → Restart
+```
+
+### Mobile App Configuration
+
+The Home Assistant mobile app requires WebSocket support for real-time updates.
+
+**WebSocket Configuration** (already enabled by default):
+```yaml
+# homeassistant/configuration.yaml
+http:
+  use_x_forwarded_for: true
+  trusted_proxies:
+    - 172.20.0.0/16  # homelab network
+    - 172.21.0.0/16  # media network
+```
+
+**Mobile App Setup**:
+1. Install Home Assistant app (iOS/Android)
+2. Connect to same network as homelab
+3. App auto-discovers Home Assistant at `homeassistant.local`
+4. Authenticate with credentials
+5. Enable notifications and location tracking (optional)
+
+**Remote Access** (via Tailscale):
+1. Connect mobile device to Tailscale VPN
+2. Access Home Assistant via Tailscale IP
+3. WebSocket connection works over Tailscale
+
+**Troubleshooting Mobile App**:
+```bash
+# Check WebSocket is accessible
+curl -i -N -H "Connection: Upgrade" \
+     -H "Upgrade: websocket" \
+     http://homeassistant.local:8123/api/websocket
+
+# Verify Traefik routing
+docker compose logs traefik | grep homeassistant
+
+# Check Home Assistant logs
+docker compose logs homeassistant | grep -i websocket
+```
+
+**Common Issues**:
+- **App can't find Home Assistant**: Ensure both on same network, check mDNS
+- **Connection timeout**: Verify firewall rules, check Traefik routing
+- **Disconnects frequently**: Check WebSocket proxy timeout settings
 
 ## Coolify PaaS
 
@@ -417,7 +605,9 @@ Runs automatically on first boot via systemd service:
 4. Generates unattended config file from secrets
 5. Executes `homelab.sh --config` for automated setup
 6. Securely deletes decrypted secrets (shred -vfz -n 3)
-7. Prevents re-run by creating completion marker
+7. Configures Steam headless mode (if enabled)
+8. Sets up Bluetooth auto-pairing (if bluetooth-devices.yml present on USB)
+9. Prevents re-run by disabling systemd service
 
 **Secrets File**: `.homelab-secrets.env.gpg`
 
@@ -437,8 +627,16 @@ Process:
 2. Verifies SHA256 checksum
 3. Writes ISO to USB with dd
 4. Mounts USB and copies automation files
-5. Encrypts secrets with GPG (prompts for passphrase)
-6. Creates README with boot instructions
+5. Copies optional configuration files:
+   - `bluetooth-devices.yml` (if present in homelab/config/)
+6. Encrypts secrets with GPG (prompts for passphrase)
+7. Creates README with boot instructions
+
+**Optional Bluetooth Setup**:
+To enable automatic Bluetooth device pairing on first boot:
+1. Create `homelab/config/bluetooth-devices.yml` from the example template
+2. Add your Bluetooth device MAC addresses
+3. Run `create-bootable-usb.sh` - it will automatically include the config
 
 ### Unattended Mode
 

@@ -212,6 +212,21 @@ main() {
 
     success "Automation files copied"
 
+    # Copy optional configuration files
+    log "Copying optional configuration files..."
+
+    # Copy Bluetooth devices config if it exists
+    BLUETOOTH_CONFIG="$SCRIPT_DIR/../config/bluetooth-devices.yml"
+    if [ -f "$BLUETOOTH_CONFIG" ]; then
+        cp "$BLUETOOTH_CONFIG" "$MOUNT_POINT/homelab-usb/bluetooth-devices.yml"
+        success "Bluetooth configuration copied"
+    else
+        warning "Bluetooth config not found (optional): $BLUETOOTH_CONFIG"
+        log "To enable Bluetooth auto-pairing:"
+        log "  1. Create homelab/config/bluetooth-devices.yml from example"
+        log "  2. Re-run this script to include it on USB"
+    fi
+
     # 14. Create README
     cat > "$MOUNT_POINT/homelab-usb/README.txt" << 'EOF'
 HOMELAB AUTOMATED INSTALLATION USB
@@ -266,6 +281,7 @@ EOF
     log "  • homelab-bootstrap.sh (first-boot automation)"
     log "  • homelab-secrets.env.gpg (encrypted credentials)"
     log "  • systemd service files"
+    log "  • bluetooth-devices.yml (optional, if configured)"
     echo ""
     warning "Keep this USB safe - it contains your encrypted credentials!"
     echo ""

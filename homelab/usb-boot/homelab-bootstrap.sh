@@ -186,7 +186,43 @@ EOF
 
     log_success "Homelab deployment completed!"
 
-    # 8. Final status
+    # 8. Setup Steam (headless mode for Remote Play)
+    log "Step 8: Setting up Steam headless mode..."
+    if [ -f "$HOME/Installfest/homelab/scripts/setup-steam.sh" ]; then
+        if bash "$HOME/Installfest/homelab/scripts/setup-steam.sh" >> "$LOG_FILE" 2>&1; then
+            log_success "Steam headless mode configured"
+        else
+            log_warning "Steam setup failed, continuing..."
+        fi
+    else
+        log_warning "Steam setup script not found, skipping..."
+    fi
+
+    # 9. Setup Bluetooth auto-pairing
+    log "Step 9: Setting up Bluetooth auto-pairing..."
+    BLUETOOTH_CONFIG="$USB_MOUNT/bluetooth-devices.yml"
+    if [ -f "$BLUETOOTH_CONFIG" ]; then
+        # Copy config to homelab directory
+        mkdir -p "$HOME/Installfest/homelab/config"
+        cp "$BLUETOOTH_CONFIG" "$HOME/Installfest/homelab/config/bluetooth-devices.yml"
+        log_success "Bluetooth config copied from USB"
+
+        # Run setup script
+        if [ -f "$HOME/Installfest/homelab/scripts/setup-bluetooth.sh" ]; then
+            if BLUETOOTH_CONFIG="$HOME/Installfest/homelab/config/bluetooth-devices.yml" \
+               bash "$HOME/Installfest/homelab/scripts/setup-bluetooth.sh" >> "$LOG_FILE" 2>&1; then
+                log_success "Bluetooth devices configured"
+            else
+                log_warning "Bluetooth setup failed, continuing..."
+            fi
+        else
+            log_warning "Bluetooth setup script not found, skipping..."
+        fi
+    else
+        log_warning "Bluetooth config not found on USB, skipping..."
+    fi
+
+    # 10. Final status
     log "=========================================="
     log "Bootstrap completed successfully!"
     log "All services should now be running"
