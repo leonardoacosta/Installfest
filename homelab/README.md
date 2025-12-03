@@ -1,80 +1,156 @@
 # Homelab Stack
 
-Complete Docker-based homelab solution for remote server deployment with automated setup, Traefik reverse proxy, and comprehensive security hardening.
+Complete Docker-based homelab solution for Arch Linux with **automated USB-boot deployment**, CI/CD multi-runner infrastructure, Traefik reverse proxy, and comprehensive security hardening.
 
 > ⚠️ **SECURITY WARNING**: Default configuration exposes 27+ ports. **Must configure Traefik routes** before production deployment. See [Security Considerations](#-security-considerations) for critical hardening steps.
+
+## ✨ Key Features
+
+- 🚀 **USB Boot Automation** - Complete system rebuild from bootable USB with encrypted secrets
+- 🔄 **Multi-Runner CI/CD** - 4 parallel GitHub Actions runners for concurrent workflows
+- 🎭 **Playwright Report Server** - Centralized test report aggregation with web UI
+- 🤖 **Claude Agent Management** - Development session tracking and project management
+- 🎮 **Steam Headless** - Remote Play ready without desktop environment
+- 🔵 **Bluetooth Automation** - Auto-pairing from YAML configuration
 
 ## 📁 Project Structure
 
 ```
 homelab/
-├── homelab.sh                 # Main management script
-├── docker-compose.yml         # Service definitions
+├── homelab.sh                 # Main management script (now with --config flag)
+├── docker-compose.yml         # Service orchestrator with modular includes
 ├── .env                       # Environment variables (auto-generated)
 ├── .env.example              # Template for environment variables
-├── TRAEFIK_VAULTWARDEN_CONFIG.md  # Traefik configuration guide
+├── .homelab-secrets.env.example  # Template for USB boot secrets
+│
+├── usb-boot/                  # USB Boot Automation System
+│   ├── run-install.sh         # Stage 1: Programmatic archinstall
+│   ├── homelab-bootstrap.sh   # Stage 2: First-boot deployment
+│   ├── create-bootable-usb.sh # USB creation script
+│   ├── archinstall-config.json # Arch installation configuration
+│   └── systemd/               # Systemd service files
+│       └── homelab-bootstrap.service
+│
+├── compose/                   # Modular service definitions
+│   ├── infrastructure.yml     # Core services (Traefik, AdGuard, HA)
+│   ├── media.yml             # Media stack (*arr, Jellyfin)
+│   ├── ai.yml                # AI services (Ollama)
+│   ├── monitoring.yml        # Glance dashboard
+│   ├── vpn.yml               # Tailscale, Gluetun
+│   ├── storage.yml           # Samba file sharing
+│   ├── platform.yml          # Coolify PaaS
+│   ├── runners.yml           # 4 GitHub Actions runners (NEW)
+│   ├── playwright-server.yml # Test report server (NEW)
+│   └── claude-agent-server.yml # Agent management (NEW)
+│
+├── config/                    # Service configurations
+│   ├── bluetooth-devices.yml.example  # Bluetooth auto-pairing
+│   └── runner-tokens.env.example      # GitHub runner tokens
 │
 ├── scripts/                   # Utility scripts
 │   ├── common-utils.sh       # Shared functions for all scripts
-│   ├── deploy-ci.sh          # CI/CD deployment script with HACS auto-install
-│   ├── monitor-ci.sh         # Service monitoring script
+│   ├── deploy-ci.sh          # CI/CD deployment with HACS
+│   ├── monitor-ci.sh         # Service health monitoring
 │   ├── fix-permissions.sh    # Permission fixing utility
-│   └── setup-hacs.sh         # HACS installer for Home Assistant
+│   ├── setup-hacs.sh         # HACS installer for Home Assistant
+│   ├── setup-steam.sh        # Steam headless setup (NEW)
+│   └── setup-bluetooth.sh    # Bluetooth automation (NEW)
 │
-├── traefik/                   # Traefik configuration
+├── traefik/                   # Traefik reverse proxy
 │   ├── traefik.yml           # Static configuration
 │   ├── dynamic/              # Dynamic configurations
 │   │   ├── middlewares.yml   # Security middlewares
 │   │   ├── tls.yml          # TLS configuration
 │   │   └── gluetun-routers.yml  # VPN service routes
-│   └── scripts/              # Traefik utilities
+│   └── scripts/
 │       └── test-service.sh   # Service connectivity test
 │
-├── homeassistant/             # Home Assistant configuration
-│   └── config/               # Configuration files
-│       └── mtr1-zones.yaml   # MTR-1 zone visualization template
+├── homeassistant/             # Home Assistant
+│   └── config/
+│       └── mtr1-zones.yaml   # MTR-1 zone visualization
 │
-├── glance/                    # Dashboard configuration
-│   ├── glance.yml           # Dashboard layout & widgets
-│   └── assets/              # Static assets
+├── glance/                    # Dashboard
+│   ├── glance.yml
+│   └── assets/
 │
 ├── docs/                      # Documentation
-│   ├── SECURITY_AUDIT.md    # Security analysis
-│   ├── TRAEFIK_MIGRATION_GUIDE.md  # Migration from NPM
-│   └── [service guides]      # Service-specific docs
+│   ├── SECURITY_AUDIT.md
+│   ├── TRAEFIK_MIGRATION_GUIDE.md
+│   └── COOLIFY_SETUP.md
 │
 └── [service directories]      # Auto-created data directories
-    ├── vaultwarden/          # Password manager data
-    ├── jellyfin/             # Media server data
-    ├── homeassistant/        # Smart home config
-    └── ...                   # Other service data
+    ├── vaultwarden/
+    ├── jellyfin/
+    ├── homeassistant/
+    └── ...
 ```
 
-## 🚀 Quick Start
+## 🚀 Automated Deployment Options
+
+### Option 1: USB Boot (Fully Automated)
+
+**Complete system rebuild from bootable USB with zero manual configuration.**
+
+1. **Prepare Secrets**:
+   ```bash
+   # Copy template and fill in values
+   cp .homelab-secrets.env.example .homelab-secrets.env
+   # Edit with all passwords, API keys, VPN config
+   ```
+
+2. **Create Bootable USB**:
+   ```bash
+   cd usb-boot
+   ./create-bootable-usb.sh /dev/sdX /path/to/.homelab-secrets.env
+   # Enter GPG passphrase for encryption
+   ```
+
+3. **Boot from USB**:
+   - Insert USB into target server
+   - Boot from USB
+   - Run: `./run-install.sh /dev/sda`
+   - Enter GPG passphrase when prompted
+   - System automatically:
+     - Installs Arch Linux
+     - Reboots into fresh system
+     - Decrypts secrets on first boot
+     - Deploys all homelab services
+     - Securely deletes decrypted secrets
+
+**Result**: Fully configured homelab in 15-30 minutes (no manual steps).
+
+See [USB Boot Documentation](#-usb-boot-automation) for details.
+
+### Option 2: Manual Installation
+
+**Traditional interactive installation on existing Arch Linux system.**
 
 ### Prerequisites
 
-- **Omarchy Server** (Arch Base)
+- **Arch Linux Server** (or use USB boot automation)
 - **Docker** 24.0+ with Docker Compose v2
-- **Domain** pointed to server IP
-- **Ports** 80/443 accessible from internet
+- **Domain** pointed to server IP (optional for local-only)
+- **Network** access to ports 80/443
 
-### Installation
+### Interactive Installation
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/homelab.git
-cd homelab
+git clone https://github.com/leonardoacosta/Installfest.git
+cd Installfest/homelab
 
-# Run setup wizard
+# Run interactive setup wizard
 ./homelab.sh
 
-# The script will:
+# Or use config file for unattended mode
+./homelab.sh --config /path/to/config.yml
+
+# The wizard will:
 # 1. Install Docker & dependencies
-# 2. Configure all services (mandatory)
-# 3. Setup GitHub Actions runner
-# 4. Deploy services
-# 5. Configure SSH & Bluetooth
+# 2. Configure all services
+# 3. Setup GitHub Actions runners (4 runners)
+# 4. Deploy Docker services
+# 5. Configure Steam + Bluetooth (optional)
 ```
 
 ## 🎯 Management Commands
@@ -105,6 +181,14 @@ cd homelab
 | **AdGuard Home**   | 82     | DNS ad blocking        | `http://<IP>:82`           |
 | **Traefik**        | 80/443 | Reverse proxy with SSL | `https://traefik.<domain>` |
 
+### CI/CD & Development
+
+| Service                       | Port | Purpose                         | Access                    |
+| ----------------------------- | ---- | ------------------------------- | ------------------------- |
+| **GitHub Runners** (x4)       | -    | Self-hosted CI/CD runners       | Via GitHub Actions        |
+| **Playwright Report Server**  | -    | Test report aggregation         | `http://playwright.local` |
+| **Claude Agent Management**   | -    | Dev session tracking            | `http://claude.local`     |
+
 ### Platform as a Service
 
 | Service      | Port | Purpose                    | Access             |
@@ -117,6 +201,13 @@ cd homelab
 | ---------------- | ----- | ------------------------ | ------------------- |
 | **Ollama**       | 11434 | Local LLM API            | `http://<IP>:11434` |
 | **Ollama WebUI** | 8081  | Web interface for Ollama | `http://<IP>:8081`  |
+
+### Gaming & Entertainment
+
+| Service           | Port | Purpose                    | Access                |
+| ----------------- | ---- | -------------------------- | --------------------- |
+| **Steam**         | -    | Headless Remote Play       | Via Steam Link app    |
+| **Bluetooth**     | -    | Auto-paired devices        | Configured via YAML   |
 
 ### Media Services
 
@@ -510,13 +601,17 @@ docker compose up -d
 
 | Script                            | Purpose                                 |
 | --------------------------------- | --------------------------------------- |
-| `homelab.sh`                      | Main management script                  |
+| `homelab.sh`                      | Main management script (with --config)  |
 | `scripts/common-utils.sh`         | Shared utility functions                |
 | `scripts/deploy-ci.sh`            | CI/CD deployment with HACS auto-install |
 | `scripts/monitor-ci.sh`           | Service health monitoring               |
 | `scripts/fix-permissions.sh`      | Fix directory permissions               |
 | `scripts/setup-hacs.sh`           | HACS installation for Home Assistant    |
+| `scripts/setup-steam.sh`          | Steam headless setup                    |
+| `scripts/setup-bluetooth.sh`      | Bluetooth auto-pairing                  |
 | `scripts/generate-coolify-env.sh` | Generate Coolify credentials            |
+| `usb-boot/create-bootable-usb.sh` | Create automated install USB            |
+| `usb-boot/run-install.sh`         | Execute archinstall from USB            |
 
 ## 🔧 Troubleshooting
 
@@ -611,10 +706,115 @@ cp -r backups/backup_*/. .
 docker system df
 ```
 
+## 🔄 USB Boot Automation
+
+### Overview
+
+Two-stage automated deployment system that rebuilds your entire homelab from a bootable USB drive.
+
+### How It Works
+
+**Stage 1: Arch Installation** (`run-install.sh`)
+- Programmatically executes `archinstall` with predefined configuration
+- Partitions disk (EFI + swap + root)
+- Installs base system + Docker + dependencies
+- Creates user with docker group membership
+- Copies bootstrap files to new system
+- Enables first-boot systemd service
+
+**Stage 2: Homelab Bootstrap** (`homelab-bootstrap.sh`)
+- Runs automatically on first boot via systemd
+- Mounts USB drive and decrypts GPG-encrypted secrets
+- Clones repository from GitHub
+- Generates unattended configuration YAML
+- Executes `homelab.sh --config` for automated setup
+- Securely deletes decrypted secrets (shred -vfz -n 3)
+- Creates completion marker to prevent re-run
+
+### Security Features
+
+- **GPG AES256 Encryption**: All secrets encrypted on USB
+- **Secure Deletion**: Decrypted files shredded (3-pass overwrite)
+- **One-Time Execution**: Bootstrap service disables itself after completion
+- **No Hardcoded Credentials**: All passwords from encrypted file
+
+### Creating a Bootable USB
+
+```bash
+# 1. Prepare secrets file
+cp homelab/.homelab-secrets.env.example .homelab-secrets.env
+# Edit and fill in all values (passwords, tokens, VPN config)
+
+# 2. Create bootable USB
+cd homelab/usb-boot
+./create-bootable-usb.sh /dev/sdX /path/to/.homelab-secrets.env
+# Enter GPG passphrase (you'll need this during install)
+
+# 3. Boot target server from USB
+# 4. Run: ./run-install.sh /dev/sda
+# 5. Enter GPG passphrase when prompted
+# 6. Wait 15-30 minutes for complete deployment
+```
+
+### What Gets Automated
+
+- ✅ Arch Linux base installation
+- ✅ Docker + Docker Compose installation
+- ✅ All 20+ homelab services
+- ✅ 4 GitHub Actions runners
+- ✅ Playwright report server
+- ✅ Claude agent management server
+- ✅ Steam headless setup
+- ✅ Bluetooth device pairing
+- ✅ Network configuration
+- ✅ Firewall rules
+
+### Manual Steps Required
+
+- ⚠️ Steam first-time login (Steam Guard)
+- ⚠️ Bluetooth devices must be in pairing mode
+- ⚠️ GitHub runner tokens (1-hour expiration)
+- ⚠️ Domain DNS configuration (if using Traefik)
+
+### Unattended Mode Configuration
+
+The bootstrap generates this YAML config automatically from secrets:
+
+```yaml
+unattended: true
+system:
+  timezone: "America/Chicago"
+  domain: "homelab.local"
+passwords:
+  jellyfin: "xxxxx"
+  vaultwarden: "xxxxx"
+vpn:
+  provider: "custom"
+  type: "wireguard"
+  # ... VPN settings
+github:
+  repo_owner: "username"
+  repo_name: "Installfest"
+  runner_tokens:
+    - "token1"
+    - "token2"
+    - "token3"
+    - "token4"
+```
+
+For more details, see `CLAUDE.md` sections:
+- USB Boot Automation
+- GitHub Actions Multi-Runner
+- Playwright Report Server
+- Claude Agent Management Server
+- Steam Headless Setup
+- Bluetooth Automation
+
 ## 📚 Documentation
 
 ### Detailed Guides
 
+- [Complete Documentation](../CLAUDE.md) - Comprehensive setup and architecture guide
 - [Traefik Configuration](TRAEFIK_VAULTWARDEN_CONFIG.md)
 - [Security Audit](docs/SECURITY_AUDIT.md)
 - [Service Documentation](docs/SERVICES.md)
@@ -625,6 +825,8 @@ docker system df
 
 - [Traefik Dashboard](https://traefik.yourdomain.com)
 - [Glance Dashboard](http://server-ip:8085)
+- [Playwright Reports](http://playwright.local)
+- [Claude Agent Management](http://claude.local)
 - [Portainer](https://portainer.yourdomain.com) (if configured)
 
 ## 🤝 Contributing
@@ -649,14 +851,24 @@ MIT License - See LICENSE file for details
 
 ---
 
-## Future Enhancements
+## 🎯 Future Enhancements
 
 Consider adding:
 
 - **Monitoring**: Prometheus + Grafana stack
 - **Logging**: ELK or Loki stack
-- **Backup**: Automated backup solutions
+- **Backup**: Automated backup solutions (Restic, Borg)
 - **Security**: Fail2ban, CrowdSec
-- **Development**: GitLab, Gitea, Drone CI
+- **Development**: GitLab, Gitea
+- **Database**: PostgreSQL, Redis for application data
+- **Message Queue**: RabbitMQ, Redis for async processing
 
-**Need Help?** Check [troubleshooting](#-troubleshooting) or open an issue on GitHub.
+**Recently Implemented:**
+- ✅ USB Boot Automation
+- ✅ Multi-Runner CI/CD (4 runners)
+- ✅ Playwright Report Server
+- ✅ Claude Agent Management
+- ✅ Steam Headless Gaming
+- ✅ Bluetooth Automation
+
+**Need Help?** Check [troubleshooting](#-troubleshooting), see [CLAUDE.md](../CLAUDE.md) for detailed documentation, or open an issue on GitHub.
