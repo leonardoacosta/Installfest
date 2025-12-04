@@ -1,6 +1,8 @@
 services:
   playwright-server:
-    build: ../../playwright-server
+    build:
+      context: ../../homelab-services
+      dockerfile: docker/playwright.Dockerfile
     container_name: playwright-server
     restart: unless-stopped
     environment:
@@ -9,6 +11,12 @@ services:
       - REPORTS_DIR=/reports
       - WEB_DIR=/app/web/dist
       - NODE_ENV=production
+      # Claude Integration
+      - CLAUDE_SERVER_URL=http://claude-agent-web:3002
+      - CLAUDE_INTEGRATION_ENABLED=true
+      - NOTIFICATION_RATE_LIMIT=1
+      - FAILURE_THRESHOLD_MIN_FAILED_TESTS=3
+      - FAILURE_THRESHOLD_ONLY_NEW_FAILURES=true
     volumes:
       - playwright-reports:/reports
       - playwright-db:/app/db

@@ -9,38 +9,38 @@
 
 ## 2. Database Layer Migration and Extension
 - [x] 2.1 ~~Create `packages/db/` workspace~~ - Already exists at `homelab-services/packages/db/`
-- [ ] 2.2 Define Drizzle schema for existing reports table in `homelab-services/packages/db/src/schema/reports.ts`
-- [ ] 2.3 Define Drizzle schema for new failure_history table in `homelab-services/packages/db/src/schema/failures.ts`
-- [ ] 2.4 Define Drizzle schema for remediation_attempts table in `homelab-services/packages/db/src/schema/remediation.ts`
-- [ ] 2.5 Define Drizzle schema for threshold_config table in `homelab-services/packages/db/src/schema/config.ts`
+- [x] 2.2 Define Drizzle schema for existing reports table in `homelab-services/packages/db/src/schema/reports.ts`
+- [x] 2.3 Define Drizzle schema for new failure_history table in `homelab-services/packages/db/src/schema/failures.ts`
+- [x] 2.4 Define Drizzle schema for remediation_attempts table in `homelab-services/packages/db/src/schema/remediation.ts`
+- [x] 2.5 Define Drizzle schema for threshold_config table in `homelab-services/packages/db/src/schema/config.ts`
 - [x] 2.6 ~~Create Drizzle client configuration~~ - `homelab-services/packages/db/src/client.ts` exists with createDb/getDb
-- [ ] 2.7 Generate initial migration from schemas: `drizzle-kit generate:sqlite`
-- [ ] 2.8 Create data migration script to copy existing reports data from standalone playwright-server
-- [ ] 2.9 Test migration script against development database
+- [x] 2.7 Generate initial migration from schemas: `drizzle-kit generate:sqlite` - Migration `0001_luxuriant_mockingbird.sql` created
+- [ ] 2.8 Create data migration script to copy existing reports data from standalone playwright-server - DEFERRED: Will migrate during deployment
+- [ ] 2.9 Test migration script against development database - DEFERRED: Will test during deployment
 - [x] 2.10 ~~Export schemas and client~~ - `homelab-services/packages/db/src/index.ts` exports client utilities
 
 ## 3. Shared Packages
 - [x] 3.1 ~~Create `packages/validators/` workspace~~ - Already exists at `homelab-services/packages/validators/`
-- [ ] 3.2 Define Zod schema for report queries in `homelab-services/packages/validators/src/report.ts` (extend existing)
-- [ ] 3.3 Define Zod schema for failure notifications in `homelab-services/packages/validators/src/failure.ts`
-- [ ] 3.4 Define Zod schema for remediation tracking in `homelab-services/packages/validators/src/remediation.ts`
-- [ ] 3.5 Define Zod schema for threshold configuration in `homelab-services/packages/validators/src/config.ts`
-- [x] 3.6 ~~Export all validators~~ - `homelab-services/packages/validators/src/index.ts` exists (update with new schemas)
-- [ ] 3.7 Create `homelab-services/packages/report-parser/` workspace (NEW package)
-- [ ] 3.8 Extract report parsing logic from standalone playwright-server to `report-parser/src/parse.ts`
-- [ ] 3.9 Enhance parser to extract test file paths and line numbers
-- [ ] 3.10 Add error extraction with stack trace parsing
-- [ ] 3.11 Add cheerio parsing for Playwright's __playwright object
-- [ ] 3.12 Write unit tests for report parser
+- [x] 3.2 Define Zod schema for report queries in `homelab-services/packages/validators/src/report.ts` (extended with new schemas)
+- [x] 3.3 Define Zod schema for failure notifications in `homelab-services/packages/validators/src/failure.ts`
+- [x] 3.4 Define Zod schema for remediation tracking in `homelab-services/packages/validators/src/remediation.ts`
+- [x] 3.5 Define Zod schema for threshold configuration in `homelab-services/packages/validators/src/config.ts`
+- [x] 3.6 Export all validators from `homelab-services/packages/validators/src/index.ts`
+- [x] 3.7 Create `homelab-services/packages/report-parser/` workspace (NEW package)
+- [x] 3.8 Extract report parsing logic to `report-parser/src/parse.ts`
+- [x] 3.9 Enhance parser to extract test file paths and line numbers
+- [x] 3.10 Add error extraction with stack trace parsing
+- [x] 3.11 Add cheerio parsing for Playwright's __playwright object
+- [ ] 3.12 Write unit tests for report parser - DEFERRED: Tests to be added post-deployment
 
 ## 4. Failure Classification Logic
-- [ ] 4.1 Create `homelab-services/packages/failure-classifier/` workspace (NEW package)
-- [ ] 4.2 Implement failure history tracking functions
-- [ ] 4.3 Implement classification algorithm (NEW, FLAKY, RECURRING, PERSISTENT)
-- [ ] 4.4 Implement threshold evaluation logic
-- [ ] 4.5 Add pattern matching for critical/excluded tests
-- [ ] 4.6 Write unit tests for classification logic
-- [ ] 4.7 Export classifier functions from package index
+- [x] 4.1 Create `homelab-services/packages/failure-classifier/` workspace (NEW package)
+- [x] 4.2 Implement failure history tracking functions
+- [x] 4.3 Implement classification algorithm (NEW, FLAKY, RECURRING, PERSISTENT)
+- [x] 4.4 Implement threshold evaluation logic
+- [x] 4.5 Add pattern matching for critical/excluded tests
+- [ ] 4.6 Write unit tests for classification logic - DEFERRED: Tests to be added post-deployment
+- [x] 4.7 Export classifier functions from package index
 
 ## 5. tRPC API Backend
 - [x] 5.1 ~~Create `apps/api/` workspace~~ - `homelab-services/apps/playwright-server/` exists with minimal Hono server

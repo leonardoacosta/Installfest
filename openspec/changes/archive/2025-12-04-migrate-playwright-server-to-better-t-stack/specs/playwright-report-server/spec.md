@@ -202,9 +202,25 @@ The system SHALL maintain Docker deployment compatibility with modified build pr
 - **AND** persists database to `/app/db` volume
 - **AND** file watcher monitors same directory path
 
+### Requirement: File Watching and Auto-Indexing
+The system SHALL monitor the reports directory for new Playwright reports and trigger automatic indexing with threshold evaluation.
+
+#### Scenario: Watch for new reports
+- **WHEN** server starts
+- **THEN** initializes chokidar watcher on REPORTS_DIR
+- **AND** processes existing reports (ignoreInitial: false)
+- **AND** monitors for new index.html files
+
+#### Scenario: Index and evaluate failures
+- **WHEN** new report is detected
+- **THEN** parses report with enhanced extraction
+- **AND** stores in database
+- **AND** evaluates against failure thresholds
+- **AND** triggers Claude notification if thresholds met
+
 ## MODIFIED Requirements
 
-### Requirement: Report Indexing and Storage
+### Requirement: Report Indexing
 The system SHALL parse Playwright HTML reports and store enhanced metadata using Drizzle ORM.
 
 **Previous Implementation:** Basic statistics extraction (total, passed, failed, skipped) stored via raw SQLite3 INSERT
@@ -224,26 +240,6 @@ The system SHALL parse Playwright HTML reports and store enhanced metadata using
 - **AND** logs detailed error for debugging
 - **AND** marks report as partially_indexed
 - **AND** allows manual retry or inspection
-
-### Requirement: File Watching
-The system SHALL monitor the reports directory for new Playwright reports and trigger indexing.
-
-**Previous Implementation:** Chokidar watches /reports, triggers indexReport() on add event
-
-**New Implementation:** Same mechanism, but calls enhanced parsing and triggers threshold evaluation
-
-#### Scenario: Watch for new reports
-- **WHEN** server starts
-- **THEN** initializes chokidar watcher on REPORTS_DIR
-- **AND** processes existing reports (ignoreInitial: false)
-- **AND** monitors for new index.html files
-
-#### Scenario: Index and evaluate failures
-- **WHEN** new report is detected
-- **THEN** parses report with enhanced extraction
-- **AND** stores in database
-- **AND** evaluates against failure thresholds
-- **AND** triggers Claude notification if thresholds met
 
 ## REMOVED Requirements
 

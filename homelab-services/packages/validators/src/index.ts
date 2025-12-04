@@ -4,3 +4,6 @@ export * from './hook';
 export * from './common';
 export * from './date-range';
 export * from './reports';
+export * from './failure';
+export * from './remediation';
+export * from './config';
