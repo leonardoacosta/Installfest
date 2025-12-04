@@ -121,3 +121,10 @@ Bluetooth setup SHALL handle errors gracefully without blocking deployment.
 - **AND** homelab deployment continues
 - **AND** user is notified to troubleshoot manually
 
+## Related Documentation
+
+- **Main Documentation**: `/CLAUDE.md` - Bluetooth Automation section
+- **Configuration Template**: `homelab/config/bluetooth-devices.yml.example` - Device configuration example
+- **Setup Script**: `homelab/scripts/setup-bluetooth.sh` - Automated Bluetooth pairing
+- **Bootstrap Integration**: `homelab/usb-boot/homelab-bootstrap.sh` - First-boot deployment
+- **USB Boot Guide**: `homelab/usb-boot/README.md` - Creating bootable USB with Bluetooth config

@@ -415,3 +415,32 @@ When refactoring or reorganizing documentation:
 - Run `openspec validate --strict` on all specs
 - Verify all internal links resolve correctly
 - Check that required sections are present in service docs
+
+### Homelab Services Documentation Standards
+
+The `homelab-services/` monorepo (Better-T-Stack) follows additional documentation conventions:
+
+**Architecture documentation** (`homelab-services/docs/architecture.md`):
+- System design and data flow
+- Tech stack justification
+- Design patterns and trade-offs
+
+**Development documentation** (`homelab-services/docs/development.md`):
+- Local setup instructions
+- Development workflows
+- Common issues and solutions
+
+**Contributing documentation** (`homelab-services/docs/contributing.md`):
+- Code standards and best practices
+- Pull request process
+- Testing guidelines
+
+**Package documentation** (`homelab-services/docs/packages/[name].md`):
+- API documentation for shared packages
+- Usage examples
+- Best practices
+
+**Cross-repository linking:**
+- Main CLAUDE.md → homelab-services/docs/ for monorepo details
+- homelab-services docs → Main specs for formal requirements
+- Both documentation trees have INDEX.md for navigation

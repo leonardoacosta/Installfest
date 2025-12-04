@@ -1,5 +1,12 @@
 # Coolify Setup Guide
 
+> **⚠️ DEPRECATED**: This documentation has been migrated to the new structure.
+>
+> **New Location**: [../../docs/coolify/README.md](../../docs/coolify/README.md)
+>
+> **Archived**: This file is preserved for reference but may contain outdated information.
+> See [../../openspec/specs/coolify-paas/spec.md](../../openspec/specs/coolify-paas/spec.md) for formal requirements.
+
 Coolify is a self-hosted Platform-as-a-Service (PaaS) that provides an alternative to Heroku, Netlify, and Vercel. This guide covers deployment in your homelab.
 
 ## Overview

@@ -259,3 +259,14 @@ The system SHALL monitor health of Claude integration and alert on issues.
 - **AND** sends alert to admin
 - **AND** attempts recovery check periodically
 
+
+
+## Related Documentation
+
+- **Main Documentation**: `/CLAUDE.md` - Claude Test Failure Integration section
+- **Playwright Server Docs**: `homelab-services/docs/architecture.md` - Failure classification and remediation
+- **Configuration Schema**: `homelab-services/packages/db/src/schema/playwright.ts` - Threshold and remediation tables
+- **Failure Classifier**: `homelab-services/packages/failure-classifier/` - Classification logic
+- **Claude Integration**: `homelab-services/packages/claude-integration/` - Agent server client
+- **tRPC API**: `homelab-services/packages/api/src/router/remediation.ts` - Remediation procedures
+- **Docker Compose**: `homelab/compose/playwright-server.yml` - Service configuration with thresholds

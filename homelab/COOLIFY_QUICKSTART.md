@@ -1,5 +1,12 @@
 # Coolify Quick Start
 
+> **⚠️ DEPRECATED**: This documentation has been migrated to the new structure.
+>
+> **New Location**: [docs/coolify/README.md](../docs/coolify/README.md)
+>
+> **Archived**: This file is preserved for reference but may contain outdated information.
+> See [openspec/specs/coolify-paas/spec.md](../openspec/specs/coolify-paas/spec.md) for formal requirements.
+
 Add Coolify to your homelab in 5 minutes.
 
 ## What is Coolify?

@@ -249,7 +249,31 @@ docker build -f docker/claude.Dockerfile . --no-cache
 docker build -f docker/claude.Dockerfile . --progress=plain
 ```
 
-## 📚 Resources
+## 📚 Documentation
+
+### Comprehensive Guides
+
+- **[📖 Documentation Index](./docs/INDEX.md)** - Complete navigation guide
+- **[🏗️ Architecture Guide](./docs/architecture.md)** - Better-T-Stack design and data flow
+- **[💻 Development Guide](./docs/development.md)** - Setup, workflows, and debugging
+- **[🤝 Contributing Guide](./docs/contributing.md)** - Code standards and PR process
+- **[🚀 Deployment Guide](./docs/deployment.md)** - Docker builds and CI/CD
+
+### Package Documentation
+
+- **[@homelab/ui](./docs/packages/ui.md)** - Shared React components
+- **[@homelab/db](./docs/packages/db.md)** - Database utilities and schemas
+- **[@homelab/validators](./docs/packages/validators.md)** - Validation schemas
+
+### Quick Start
+
+New to the project? Start here:
+
+1. [Prerequisites](./docs/development.md#prerequisites)
+2. [Initial Setup](./docs/development.md#initial-setup)
+3. [Development Workflow](./docs/development.md#development-workflow)
+
+### External Resources
 
 - [Turborepo Docs](https://turbo.build/repo/docs)
 - [Drizzle ORM](https://orm.drizzle.team/)
@@ -259,7 +283,13 @@ docker build -f docker/claude.Dockerfile . --progress=plain
 
 ## 🤝 Contributing
 
-This is a personal homelab project, but suggestions welcome via issues!
+This is a personal homelab project, but suggestions welcome!
+
+See [Contributing Guide](./docs/contributing.md) for:
+- Code standards and best practices
+- Development workflow
+- Pull request process
+- Testing guidelines
 
 ## 📄 License
 

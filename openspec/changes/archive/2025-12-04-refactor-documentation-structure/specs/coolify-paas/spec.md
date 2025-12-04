@@ -32,14 +32,6 @@ Users SHALL deploy applications from Git repositories or Docker images through C
 - **THEN** Coolify SHALL pull image and deploy container
 - **AND** environment variables are configurable
 
-### Requirement: Homelab Network Integration
-Coolify-deployed applications SHALL access homelab services by connecting to homelab network.
-
-#### Scenario: Application accessing homelab services
-- **WHEN** Coolify deploys an application
-- **THEN** application container SHALL connect to homelab network
-- **AND** can access services via Docker network names (e.g., adguardhome, homeassistant)
-
 ### Requirement: Coolify Access and Management
 Coolify web interface SHALL be accessible at configured server IP on port 8000.
 

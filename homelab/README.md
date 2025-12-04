@@ -802,19 +802,20 @@ github:
     - "token4"
 ```
 
-For more details, see `CLAUDE.md` sections:
-- USB Boot Automation
-- GitHub Actions Multi-Runner
-- Playwright Report Server
-- Claude Agent Management Server
-- Steam Headless Setup
-- Bluetooth Automation
+For more details, see OpenSpec specifications:
+- [USB Boot Automation](../openspec/specs/usb-boot-automation/)
+- [Multi-Runner Orchestration](../openspec/specs/multi-runner-orchestration/)
+- [Playwright Report Server](../openspec/specs/playwright-report-server/)
+- [Claude Agent Management](../openspec/specs/claude-agent-management/)
+- [Steam Gaming Setup](../openspec/specs/steam-gaming-setup/)
+- [Bluetooth Automation](../openspec/specs/bluetooth-automation/)
 
 ## 📚 Documentation
 
 ### Detailed Guides
 
-- [Complete Documentation](../CLAUDE.md) - Comprehensive setup and architecture guide
+- [Documentation Index](../docs/INDEX.md) - Complete documentation navigation
+- [Quick Reference](../CLAUDE.md) - Essential commands and links
 - [Traefik Configuration](TRAEFIK_VAULTWARDEN_CONFIG.md)
 - [Security Audit](docs/SECURITY_AUDIT.md)
 - [Service Documentation](docs/SERVICES.md)
@@ -871,4 +872,4 @@ Consider adding:
 - ✅ Steam Headless Gaming
 - ✅ Bluetooth Automation
 
-**Need Help?** Check [troubleshooting](#-troubleshooting), see [CLAUDE.md](../CLAUDE.md) for detailed documentation, or open an issue on GitHub.
+**Need Help?** Check [troubleshooting](#-troubleshooting), see [Documentation Index](../docs/INDEX.md) for detailed guides, or open an issue on GitHub.

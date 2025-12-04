@@ -98,3 +98,13 @@ Steam SHALL create and maintain proper directory structure.
 - **AND** library is ready for game installation
 - **AND** sufficient disk space is verified
 
+
+
+## Related Documentation
+
+- **Main Documentation**: `/CLAUDE.md` - Steam Headless Setup section
+- **Setup Script**: `homelab/scripts/setup-steam.sh` - Automated Steam service configuration
+- **Systemd Service**: `/etc/systemd/system/steam-headless.service` - Steam service definition
+- **Bootstrap Integration**: `homelab/usb-boot/homelab-bootstrap.sh` - First-boot deployment with Steam setup
+- **Firewall Configuration**: UFW rules for Remote Play ports (27031-27037)
+- **Troubleshooting**: `/CLAUDE.md` - First-time login, service logs, and Remote Play setup

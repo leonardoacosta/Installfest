@@ -92,3 +92,13 @@ The system SHALL support concurrent workflow execution across all runners.
 - **AND** remaining workflows wait for available runner
 - **AND** workflows execute in queue order
 
+
+
+## Related Documentation
+
+- **Main Documentation**: `/CLAUDE.md` - GitHub Actions Multi-Runner section
+- **Runner Configuration**: `homelab/compose/runners.yml` - Docker-based runner definitions
+- **GitHub Actions Guide**: `docs/github-actions/README.md` - Workflow and runner documentation
+- **Workflow Examples**: `.github/workflows/` - Deploy and monitor workflows using runners
+- **Setup Instructions**: `/CLAUDE.md` - Runner token generation and deployment steps
+- **Troubleshooting**: `/CLAUDE.md` - Runner logs, status checks, and re-registration

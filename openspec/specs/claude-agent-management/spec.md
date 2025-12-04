@@ -234,3 +234,14 @@ The web dashboard SHALL use shared UI components from @homelab/ui.
 - **THEN** StatsCard component from @homelab/ui is used
 - **AND** cards show metric name, value, trend indicator
 
+
+
+## Related Documentation
+
+- **Main Documentation**: `/CLAUDE.md` - Claude Agent Management Server section
+- **Architecture Guide**: `homelab-services/docs/architecture.md` - Better-T-Stack architecture
+- **Development Guide**: `homelab-services/docs/development.md` - Development workflows
+- **API Documentation**: `homelab-services/packages/api/src/router/` - tRPC routers
+- **Database Schema**: `homelab-services/packages/db/src/schema/claude-agent.ts` - Database tables
+- **Hook Scripts**: `homelab-services/.claude/hooks/` - Python hook scripts
+- **Docker Compose**: `homelab/compose/claude-agent-server.yml` - Service configuration

@@ -87,3 +87,15 @@ Bootstrap and setup processes SHALL log all operations for troubleshooting.
 - **THEN** progress is logged to specified log file
 - **AND** success/failure of each step is recorded
 
+
+
+## Related Documentation
+
+- **Main Documentation**: `/CLAUDE.md` - USB Boot Automation section
+- **Installation Script**: `homelab/usb-boot/run-install.sh` - Stage 1 Arch Linux installation
+- **Bootstrap Script**: `homelab/usb-boot/homelab-bootstrap.sh` - Stage 2 homelab deployment
+- **USB Creation Script**: `homelab/usb-boot/create-bootable-usb.sh` - Bootable USB creation
+- **Archinstall Config**: `homelab/usb-boot/archinstall-config.json` - Automated Arch installation
+- **Secrets Template**: `homelab/.homelab-secrets.env.example` - Environment variables for encryption
+- **Homelab Script**: `homelab/homelab.sh` - Management script with --config flag for unattended mode
+- **Systemd Service**: First-boot service definition in bootstrap script

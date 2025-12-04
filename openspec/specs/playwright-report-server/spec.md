@@ -412,3 +412,15 @@ The system SHALL monitor the reports directory for new Playwright reports and tr
 - **AND** evaluates against failure thresholds
 - **AND** triggers Claude notification if thresholds met
 
+
+
+## Related Documentation
+
+- **Main Documentation**: `/CLAUDE.md` - Playwright Report Server section
+- **Architecture Guide**: `homelab-services/docs/architecture.md` - Better-T-Stack architecture and tRPC design
+- **Development Guide**: `homelab-services/docs/development.md` - Development workflows
+- **Report Parser**: `homelab-services/packages/report-parser/` - HTML parsing and extraction
+- **Database Schema**: `homelab-services/packages/db/src/schema/playwright.ts` - Reports and failures tables
+- **tRPC API**: `homelab-services/packages/api/src/router/reports.ts` - Report procedures
+- **File Watcher**: Implementation in Playwright Server app - Monitors /reports volume
+- **Docker Compose**: `homelab/compose/playwright-server.yml` - Service configuration and volumes
