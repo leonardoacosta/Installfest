@@ -5,44 +5,55 @@
  */
 
 import { z } from 'zod'
+import { eq, desc, count, avg, sum, sql } from 'drizzle-orm'
+import { observable } from '@trpc/server/observable'
 import { createTRPCRouter, publicProcedure } from '../trpc'
+import { hooks, sessions, projects } from '@homelab/db'
+import {
+  ingestHookSchema,
+  hookFilterSchema
+} from '@homelab/validators'
+import { hookEvents } from '../events'
 
 export const hooksRouter = createTRPCRouter({
   // List hooks with filtering
   list: publicProcedure
-    .input(
-      z
-        .object({
-          sessionId: z.number().optional(),
-          limit: z.number().min(1).max(100).default(50),
-          offset: z.number().min(0).default(0),
-        })
-        .optional()
-    )
-    .query(({ ctx, input }) => {
-      const { sessionId, limit = 50, offset = 0 } = input || {}
+    .input(hookFilterSchema.optional())
+    .query(async ({ ctx, input }) => {
+      const { sessionId, limit = 50, offset: queryOffset = 0 } = input || {}
 
       if (sessionId) {
         return ctx.db
-          .prepare(
-            `SELECT * FROM hooks
-             WHERE session_id = ?
-             ORDER BY timestamp DESC
-             LIMIT ? OFFSET ?`
-          )
-          .all(sessionId, limit, offset)
+          .select()
+          .from(hooks)
+          .where(eq(hooks.sessionId, sessionId))
+          .orderBy(desc(hooks.timestamp))
+          .limit(limit)
+          .offset(queryOffset)
       }
 
       return ctx.db
-        .prepare(
-          `SELECT h.*, s.agent_id, p.name as project_name
-           FROM hooks h
-           LEFT JOIN sessions s ON h.session_id = s.id
-           LEFT JOIN projects p ON s.project_id = p.id
-           ORDER BY h.timestamp DESC
-           LIMIT ? OFFSET ?`
-        )
-        .all(limit, offset)
+        .select({
+          id: hooks.id,
+          sessionId: hooks.sessionId,
+          hookType: hooks.hookType,
+          timestamp: hooks.timestamp,
+          toolName: hooks.toolName,
+          toolInput: hooks.toolInput,
+          toolOutput: hooks.toolOutput,
+          durationMs: hooks.durationMs,
+          success: hooks.success,
+          errorMessage: hooks.errorMessage,
+          metadata: hooks.metadata,
+          agentId: sessions.agentId,
+          projectName: projects.name,
+        })
+        .from(hooks)
+        .leftJoin(sessions, eq(hooks.sessionId, sessions.id))
+        .leftJoin(projects, eq(sessions.projectId, projects.id))
+        .orderBy(desc(hooks.timestamp))
+        .limit(limit)
+        .offset(queryOffset)
     }),
 
   // Get hook statistics
@@ -54,68 +65,84 @@ export const hooksRouter = createTRPCRouter({
         })
         .optional()
     )
-    .query(({ ctx, input }) => {
+    .query(async ({ ctx, input }) => {
       const { sessionId } = input || {}
 
+      const baseQuery = ctx.db
+        .select({
+          total: count(),
+          successful: sum(
+            sql<number>`CASE WHEN ${hooks.success} = 1 THEN 1 ELSE 0 END`
+          ),
+          failed: sum(
+            sql<number>`CASE WHEN ${hooks.success} = 0 THEN 1 ELSE 0 END`
+          ),
+          avgDuration: avg(hooks.durationMs),
+          hookType: hooks.hookType,
+          toolName: hooks.toolName,
+        })
+        .from(hooks)
+        .groupBy(hooks.hookType, hooks.toolName)
+
       if (sessionId) {
-        return ctx.db
-          .prepare(
-            `SELECT
-               COUNT(*) as total,
-               SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) as successful,
-               SUM(CASE WHEN success = 0 THEN 1 ELSE 0 END) as failed,
-               AVG(duration_ms) as avg_duration,
-               hook_type,
-               tool_name
-             FROM hooks
-             WHERE session_id = ?
-             GROUP BY hook_type, tool_name`
-          )
-          .all(sessionId)
+        return baseQuery.where(eq(hooks.sessionId, sessionId))
       }
 
-      return ctx.db
-        .prepare(
-          `SELECT
-             COUNT(*) as total,
-             SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) as successful,
-             SUM(CASE WHEN success = 0 THEN 1 ELSE 0 END) as failed,
-             AVG(duration_ms) as avg_duration,
-             hook_type,
-             tool_name
-           FROM hooks
-           GROUP BY hook_type, tool_name`
-        )
-        .all()
+      return baseQuery
     }),
 
-  // Create hook record
-  create: publicProcedure
-    .input(
-      z.object({
-        sessionId: z.number(),
-        hookType: z.string(),
-        toolName: z.string().optional(),
-        durationMs: z.number().optional(),
-        success: z.boolean().default(true),
-      })
-    )
-    .mutation(({ ctx, input }) => {
-      const result = ctx.db
-        .prepare(
-          `INSERT INTO hooks (session_id, hook_type, tool_name, duration_ms, success)
-           VALUES (?, ?, ?, ?, ?)`
-        )
-        .run(
-          input.sessionId,
-          input.hookType,
-          input.toolName || null,
-          input.durationMs || null,
-          input.success ? 1 : 0
-        )
+  // Create hook record (ingest from Python scripts)
+  ingest: publicProcedure
+    .input(ingestHookSchema)
+    .mutation(async ({ ctx, input }) => {
+      const [hook] = await ctx.db
+        .insert(hooks)
+        .values({
+          sessionId: input.sessionId,
+          hookType: input.hookType,
+          toolName: input.toolName,
+          toolInput: input.toolInput,
+          toolOutput: input.toolOutput,
+          durationMs: input.durationMs,
+          success: input.success,
+          errorMessage: input.errorMessage,
+          metadata: input.metadata,
+        })
+        .returning()
 
-      return {
-        id: result.lastInsertRowid,
-      }
+      // Broadcast event to subscribed clients
+      hookEvents.emit('hook:created', hook)
+
+      return hook
+    }),
+
+  // Subscribe to real-time hook events
+  subscribe: publicProcedure
+    .input(
+      z
+        .object({
+          sessionId: z.number().optional(),
+        })
+        .optional()
+    )
+    .subscription(({ input }) => {
+      return observable<typeof hooks.$inferSelect>((emit) => {
+        const { sessionId } = input || {}
+
+        // Event handler - filter by sessionId if provided
+        const onHookCreated = (hook: typeof hooks.$inferSelect) => {
+          if (!sessionId || hook.sessionId === sessionId) {
+            emit.next(hook)
+          }
+        }
+
+        // Subscribe to hook events
+        hookEvents.on('hook:created', onHookCreated)
+
+        // Cleanup on unsubscribe
+        return () => {
+          hookEvents.off('hook:created', onHookCreated)
+        }
+      })
     }),
 })

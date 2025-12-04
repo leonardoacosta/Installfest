@@ -2,6 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@homelab/ui', '@homelab/api', '@homelab/db'],
+  output: 'standalone',
   eslint: {
     ignoreDuringBuilds: true,
   },

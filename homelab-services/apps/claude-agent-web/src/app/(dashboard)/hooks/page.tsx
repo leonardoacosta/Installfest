@@ -1,15 +1,21 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { trpc } from '@/trpc/client'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@homelab/ui/card'
+import { useState, useEffect } from "react";
+import { trpc } from "@/trpc/client";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@homelab/ui/card";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@homelab/ui/select'
+} from "@homelab/ui/select";
 import {
   Table,
   TableBody,
@@ -17,44 +23,103 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@homelab/ui/table'
-import { Badge } from '@homelab/ui/badge'
-import { Webhook, CheckCircle2, XCircle, Clock, TrendingUp } from 'lucide-react'
+} from "@homelab/ui/table";
+import { Badge } from "@homelab/ui/badge";
+import {
+  Webhook,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  TrendingUp,
+  Radio,
+} from "lucide-react";
+import { toast } from "@homelab/ui/use-toast";
 
 export default function HooksPage() {
-  const [selectedSession, setSelectedSession] = useState<string>('all')
+  const [selectedSession, setSelectedSession] = useState<string>("all");
+  const [liveHooks, setLiveHooks] = useState<any[]>([]);
 
-  const { data: sessions } = trpc.sessions.list.useQuery()
+  const utils = trpc.useUtils();
+  const { data: sessions } = trpc.sessions.list.useQuery();
   const { data: hooks, isLoading } = trpc.hooks.list.useQuery(
-    selectedSession !== 'all' ? { sessionId: parseInt(selectedSession) } : undefined
-  )
+    selectedSession !== "all"
+      ? { sessionId: parseInt(selectedSession) }
+      : undefined
+  );
   const { data: stats } = trpc.hooks.stats.useQuery(
-    selectedSession !== 'all' ? { sessionId: parseInt(selectedSession) } : undefined
-  )
+    selectedSession !== "all"
+      ? { sessionId: parseInt(selectedSession) }
+      : undefined
+  );
 
-  const totalHooks = stats?.reduce((acc: number, stat: any) => acc + stat.total, 0) || 0
-  const successfulHooks = stats?.reduce((acc: number, stat: any) => acc + stat.successful, 0) || 0
-  const avgDuration = (stats?.reduce((acc: number, stat: any) => acc + (stat.avg_duration || 0), 0) || 0) / (stats?.length || 1)
-  const successRate = totalHooks > 0 ? ((successfulHooks / totalHooks) * 100).toFixed(1) : '0'
+  // Real-time subscription to hook events
+  trpc.hooks.subscribe.useSubscription(
+    selectedSession !== "all"
+      ? { sessionId: parseInt(selectedSession) }
+      : undefined,
+    {
+      onData: (hook) => {
+        // Add to live hooks list (prepend)
+        setLiveHooks((prev) => [hook, ...prev].slice(0, 50));
+
+        // Invalidate queries to refresh stats
+        utils.hooks.list.invalidate();
+        utils.hooks.stats.invalidate();
+
+        // Show toast notification
+        toast({
+          title: "New Hook Event",
+          description: `${hook.hookType} - ${hook.toolName || "N/A"}`,
+        });
+      },
+      onError: (err) => {
+        console.error("Subscription error:", err);
+      },
+    }
+  );
+
+  const totalHooks =
+    stats?.reduce((acc: number, stat: any) => acc + stat.total, 0) || 0;
+  const successfulHooks =
+    stats?.reduce((acc: number, stat: any) => acc + stat.successful, 0) || 0;
+  const avgDuration =
+    (stats?.reduce(
+      (acc: number, stat: any) => acc + (stat.avg_duration || 0),
+      0
+    ) || 0) / (stats?.length || 1);
+  const successRate =
+    totalHooks > 0 ? ((successfulHooks / totalHooks) * 100).toFixed(1) : "0";
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Hooks Dashboard</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold">Hooks Dashboard</h1>
+            <Badge variant="outline" className="flex items-center gap-1">
+              <Radio className="h-3 w-3 text-green-500 animate-pulse" />
+              Live
+            </Badge>
+          </div>
           <p className="text-muted-foreground">
-            Monitor tool calls and execution statistics
+            Monitor tool calls and execution statistics in real-time
           </p>
         </div>
 
-        <Select value={selectedSession} onValueChange={setSelectedSession}>
+        <Select
+          value={selectedSession}
+          onValueChange={setSelectedSession ?? "all"}
+        >
           <SelectTrigger className="w-[200px]">
             <SelectValue placeholder="Filter by session" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Sessions</SelectItem>
             {sessions?.map((session: any) => (
-              <SelectItem key={session.id} value={session.id.toString()}>
+              <SelectItem
+                key={session.id}
+                value={session.id.toString() ?? "all"}
+              >
                 Session #{session.id} - {session.project_name}
               </SelectItem>
             ))}
@@ -127,11 +192,15 @@ export default function HooksPage() {
                 <TableBody>
                   {stats.map((stat: any, idx: number) => (
                     <TableRow key={idx}>
-                      <TableCell className="font-medium">{stat.hook_type}</TableCell>
-                      <TableCell>{stat.tool_name || 'N/A'}</TableCell>
+                      <TableCell className="font-medium">
+                        {stat.hook_type}
+                      </TableCell>
+                      <TableCell>{stat.tool_name || "N/A"}</TableCell>
                       <TableCell>{stat.total}</TableCell>
                       <TableCell>{stat.successful}</TableCell>
-                      <TableCell>{stat.avg_duration?.toFixed(0) || 0}ms</TableCell>
+                      <TableCell>
+                        {stat.avg_duration?.toFixed(0) || 0}ms
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -148,7 +217,7 @@ export default function HooksPage() {
           <CardHeader>
             <CardTitle>Recent Hook Executions</CardTitle>
             <CardDescription>
-              Latest hook calls with execution details
+              Latest hook calls with execution details (live updates)
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -156,50 +225,75 @@ export default function HooksPage() {
               <div className="text-center py-8 text-muted-foreground">
                 Loading hooks...
               </div>
-            ) : hooks && hooks.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Tool</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Time</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {hooks.slice(0, 10).map((hook: any) => (
-                    <TableRow key={hook.id}>
-                      <TableCell className="font-medium">{hook.hook_type}</TableCell>
-                      <TableCell className="font-mono text-sm">{hook.tool_name}</TableCell>
-                      <TableCell>
-                        <Badge variant={hook.success ? 'default' : 'destructive'}>
-                          {hook.success ? (
-                            <CheckCircle2 className="mr-1 h-3 w-3" />
-                          ) : (
-                            <XCircle className="mr-1 h-3 w-3" />
-                          )}
-                          {hook.success ? 'Success' : 'Failed'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {new Date(hook.timestamp).toLocaleTimeString()}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
             ) : (
-              <div className="text-center py-12">
-                <Webhook className="mx-auto h-12 w-12 text-muted-foreground" />
-                <h3 className="mt-4 text-lg font-semibold">No hooks yet</h3>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Hook executions will appear here once you integrate the SDK.
-                </p>
-              </div>
+              (() => {
+                // Merge live hooks with fetched hooks, removing duplicates
+                const allHooks = [...liveHooks, ...(hooks || [])];
+                const uniqueHooks = allHooks
+                  .filter(
+                    (hook, index, self) =>
+                      self.findIndex((h) => h.id === hook.id) === index
+                  )
+                  .slice(0, 10);
+
+                return uniqueHooks.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Tool</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Time</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {uniqueHooks.map((hook: any) => (
+                        <TableRow
+                          key={hook.id}
+                          className={
+                            liveHooks.includes(hook) ? "animate-in fade-in" : ""
+                          }
+                        >
+                          <TableCell className="font-medium">
+                            {hook.hookType || hook.hook_type}
+                          </TableCell>
+                          <TableCell className="font-mono text-sm">
+                            {hook.toolName || hook.tool_name}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={hook.success ? "default" : "destructive"}
+                            >
+                              {hook.success ? (
+                                <CheckCircle2 className="mr-1 h-3 w-3" />
+                              ) : (
+                                <XCircle className="mr-1 h-3 w-3" />
+                              )}
+                              {hook.success ? "Success" : "Failed"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {new Date(hook.timestamp).toLocaleTimeString()}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="text-center py-12">
+                    <Webhook className="mx-auto h-12 w-12 text-muted-foreground" />
+                    <h3 className="mt-4 text-lg font-semibold">No hooks yet</h3>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Hook executions will appear here once you integrate the
+                      SDK.
+                    </p>
+                  </div>
+                );
+              })()
             )}
           </CardContent>
         </Card>
       </div>
     </div>
-  )
+  );
 }

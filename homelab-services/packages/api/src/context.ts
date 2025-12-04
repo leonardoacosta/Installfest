@@ -6,7 +6,7 @@
  */
 
 import type { FetchCreateContextFnOptions } from '@trpc/server/adapters/fetch'
-import { getSqlite } from '@homelab/db'
+import { getDb } from '@homelab/db'
 
 export interface CreateContextOptions {
   headers: Headers
@@ -18,7 +18,7 @@ export interface CreateContextOptions {
 export const createContextInner = (opts: CreateContextOptions) => {
   return {
     headers: opts.headers,
-    db: getSqlite(),
+    db: getDb(),
   }
 }
 

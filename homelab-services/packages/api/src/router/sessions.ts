@@ -4,115 +4,118 @@
  * Handles Claude agent development sessions.
  */
 
-import { z } from 'zod'
+import { eq, desc, count, sql } from 'drizzle-orm'
 import { createTRPCRouter, publicProcedure } from '../trpc'
+import { sessions, projects, hooks } from '@homelab/db'
+import {
+  createSessionSchema,
+  sessionIdSchema,
+  sessionFilterSchema
+} from '@homelab/validators'
 
 export const sessionsRouter = createTRPCRouter({
   // List all sessions
   list: publicProcedure
-    .input(
-      z
-        .object({
-          projectId: z.number().optional(),
-          limit: z.number().min(1).max(100).default(50),
-        })
-        .optional()
-    )
-    .query(({ ctx, input }) => {
+    .input(sessionFilterSchema.optional())
+    .query(async ({ ctx, input }) => {
       const { projectId, limit = 50 } = input || {}
 
+      const query = ctx.db
+        .select({
+          id: sessions.id,
+          projectId: sessions.projectId,
+          agentId: sessions.agentId,
+          status: sessions.status,
+          startedAt: sessions.startedAt,
+          stoppedAt: sessions.stoppedAt,
+          errorMessage: sessions.errorMessage,
+          projectName: projects.name,
+        })
+        .from(sessions)
+        .leftJoin(projects, eq(sessions.projectId, projects.id))
+        .orderBy(desc(sessions.startedAt))
+        .limit(limit)
+
       if (projectId) {
-        return ctx.db
-          .prepare(
-            `SELECT s.*, p.name as project_name
-             FROM sessions s
-             LEFT JOIN projects p ON s.project_id = p.id
-             WHERE s.project_id = ?
-             ORDER BY s.started_at DESC
-             LIMIT ?`
-          )
-          .all(projectId, limit)
+        return query.where(eq(sessions.projectId, projectId))
       }
 
-      return ctx.db
-        .prepare(
-          `SELECT s.*, p.name as project_name
-           FROM sessions s
-           LEFT JOIN projects p ON s.project_id = p.id
-           ORDER BY s.started_at DESC
-           LIMIT ?`
-        )
-        .all(limit)
+      return query
     }),
 
   // Get session by ID with hook count
   byId: publicProcedure
-    .input(z.object({ id: z.number() }))
-    .query(({ ctx, input }) => {
-      const session = ctx.db
-        .prepare(
-          `SELECT s.*, p.name as project_name
-           FROM sessions s
-           LEFT JOIN projects p ON s.project_id = p.id
-           WHERE s.id = ?`
-        )
-        .get(input.id)
+    .input(sessionIdSchema)
+    .query(async ({ ctx, input }) => {
+      const session = await ctx.db
+        .select({
+          id: sessions.id,
+          projectId: sessions.projectId,
+          agentId: sessions.agentId,
+          status: sessions.status,
+          startedAt: sessions.startedAt,
+          stoppedAt: sessions.stoppedAt,
+          errorMessage: sessions.errorMessage,
+          projectName: projects.name,
+        })
+        .from(sessions)
+        .leftJoin(projects, eq(sessions.projectId, projects.id))
+        .where(eq(sessions.id, input.id))
+        .get()
 
       if (!session) {
         return null
       }
 
-      const hookCount = ctx.db
-        .prepare('SELECT COUNT(*) as count FROM hooks WHERE session_id = ?')
-        .get(input.id) as { count: number }
+      const hookCount = await ctx.db
+        .select({ count: count() })
+        .from(hooks)
+        .where(eq(hooks.sessionId, input.id))
+        .get()
 
       return {
         ...session,
-        hook_count: hookCount.count,
+        hookCount: hookCount?.count ?? 0,
       }
     }),
 
   // Start new session
   start: publicProcedure
-    .input(
-      z.object({
-        projectId: z.number(),
-        agentId: z.string().optional(),
-      })
-    )
-    .mutation(({ ctx, input }) => {
-      const result = ctx.db
-        .prepare(
-          'INSERT INTO sessions (project_id, agent_id, status) VALUES (?, ?, ?)'
-        )
-        .run(input.projectId, input.agentId || null, 'running')
+    .input(createSessionSchema)
+    .mutation(async ({ ctx, input }) => {
+      const [session] = await ctx.db
+        .insert(sessions)
+        .values({
+          projectId: input.projectId,
+          agentId: input.agentId,
+          status: 'running',
+        })
+        .returning()
 
-      return {
-        id: result.lastInsertRowid,
-        project_id: input.projectId,
-        agent_id: input.agentId,
-        status: 'running',
-      }
+      return session
     }),
 
   // Stop session
   stop: publicProcedure
-    .input(z.object({ id: z.number() }))
-    .mutation(({ ctx, input }) => {
-      ctx.db
-        .prepare(
-          'UPDATE sessions SET status = ?, ended_at = CURRENT_TIMESTAMP WHERE id = ?'
-        )
-        .run('stopped', input.id)
+    .input(sessionIdSchema)
+    .mutation(async ({ ctx, input }) => {
+      const [session] = await ctx.db
+        .update(sessions)
+        .set({
+          status: 'stopped',
+          stoppedAt: sql`(strftime('%s', 'now'))`,
+        })
+        .where(eq(sessions.id, input.id))
+        .returning()
 
-      return { success: true }
+      return session
     }),
 
   // Delete session
   delete: publicProcedure
-    .input(z.object({ id: z.number() }))
-    .mutation(({ ctx, input }) => {
-      ctx.db.prepare('DELETE FROM sessions WHERE id = ?').run(input.id)
+    .input(sessionIdSchema)
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db.delete(sessions).where(eq(sessions.id, input.id))
       return { success: true }
     }),
 })

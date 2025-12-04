@@ -1,14 +1,17 @@
 services:
   claude-agent-server:
-    build: ../../claude-agent-server
+    build:
+      context: ../../homelab-services
+      dockerfile: docker/claude.Dockerfile
     container_name: claude-agent-server
     restart: unless-stopped
     environment:
       - PORT=3001
       - DB_PATH=/app/db/claude.db
       - PROJECTS_DIR=/projects
-      - WEB_DIR=/app/web/dist
       - NODE_ENV=production
+      - CORS_ORIGINS=*
+      - LOG_LEVEL=info
     volumes:
       - /home/leo/dev/projects:/projects
       - claude-agent-db:/app/db

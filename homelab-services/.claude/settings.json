@@ -1,0 +1,37 @@
+{
+  "$schema": "https://raw.githubusercontent.com/anthropics/claude-code/main/schema/settings.schema.json",
+  "hooks": {
+    "pre_tool_use": {
+      "command": "python3",
+      "args": [".claude/hooks/pre_tool_use.py"]
+    },
+    "post_tool_use": {
+      "command": "python3",
+      "args": [".claude/hooks/post_tool_use.py"]
+    },
+    "session_start": {
+      "command": "python3",
+      "args": [".claude/hooks/session_start.py"]
+    },
+    "session_end": {
+      "command": "python3",
+      "args": [".claude/hooks/session_end.py"]
+    },
+    "user_prompt_submit": {
+      "command": "python3",
+      "args": [".claude/hooks/user_prompt_submit.py"]
+    },
+    "stop": {
+      "command": "python3",
+      "args": [".claude/hooks/stop.py"]
+    },
+    "subagent_stop": {
+      "command": "python3",
+      "args": [".claude/hooks/subagent_stop.py"]
+    },
+    "pre_compact": {
+      "command": "python3",
+      "args": [".claude/hooks/pre_compact.py"]
+    }
+  }
+}

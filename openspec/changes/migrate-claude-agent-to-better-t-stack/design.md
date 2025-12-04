@@ -130,20 +130,22 @@ const allProjects = await db.select().from(projects);
 - TypeORM: Less type-safe, decorator-based approach not modern
 - Raw SQL: Current state - prone to errors and no type safety
 
-### 4. Next.js vs React + TanStack Router
+### 4. Frontend Framework Choice
 
-**Decision:** Use **React with TanStack Router** for frontend (not Next.js).
+**Decision:** Use **Next.js** for frontend application.
 
 **Why:**
-- TanStack Router provides type-safe routing without Next.js overhead
-- No server-side rendering needed (single deployment in Docker)
-- Faster build times and simpler deployment
-- Full control over bundling with Vite
-- Avoid Next.js App Router complexity for simple dashboard
+- Provides full-stack framework with excellent TypeScript support
+- Built-in optimizations (code splitting, image optimization, bundling)
+- Strong ecosystem and community support for tRPC integration
+- App Router provides modern routing patterns with type safety
+- Simplified deployment with single Next.js server process
+- Better developer experience with Fast Refresh and integrated tooling
+- Can leverage SSR/SSG if needed in future without refactoring
 
 **Alternatives Considered:**
-- Next.js: Overkill for this use case, SSR not needed
-- React Router v6: TanStack Router more type-safe and modern
+- React + TanStack Router: More lightweight but requires additional tooling setup
+- React Router v6: Less type-safe than modern alternatives
 - SvelteKit: Team unfamiliar, React already in use
 
 ### 5. Hook System Architecture
@@ -246,11 +248,11 @@ WebSocket broadcast to subscribed clients
 **Justification:** Type safety prevents entire classes of runtime errors. As project scales, this investment pays dividends in reduced debugging time and fewer production issues.
 
 ### Trade-off: Frontend Framework Choice
-**React + TanStack Router:** More flexible, simpler deployment, faster builds
+**Next.js:** Full-stack framework, built-in optimizations, excellent DX, simpler deployment
 
-**Next.js:** More opinionated, SSR capabilities (not needed), slower builds
+**React + TanStack Router:** More lightweight, requires additional tooling, more configuration
 
-**Justification:** Since this is a single-deployment Docker container with no SSR requirements, React + TanStack Router provides better ROI.
+**Justification:** Next.js provides superior developer experience and integrated tooling that accelerates development. While slightly heavier, the build optimizations and integrated features (routing, bundling, code splitting) outweigh the minimal overhead for a homelab deployment.
 
 ## Migration Plan
 
@@ -295,9 +297,9 @@ WebSocket broadcast to subscribed clients
 ## Open Questions
 
 ### 1. Should we use Next.js or React + TanStack Router?
-**Status:** Decided - React + TanStack Router
+**Status:** Decided - Next.js
 
-**Rationale:** No SSR needed, simpler deployment, faster builds
+**Rationale:** Superior developer experience, built-in optimizations, excellent tRPC integration, integrated tooling accelerates development
 
 ### 2. Should hooks block on API response or fire-and-forget?
 **Status:** Decided - Fire-and-forget with local error logging
