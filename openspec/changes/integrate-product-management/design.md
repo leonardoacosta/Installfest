@@ -547,309 +547,349 @@ export const workerAgents = sqliteTable('worker_agents', {
 3. **Task tool for worker spawning** (original design)
    - **Rejected**: 10 concurrent agent limit, 20k token overhead per agent, batching inefficiency, no lifecycle control
 
-### Decision 11: Claude Agent SDK for Master/Worker Architecture
+### Decision 11: Subscription-Based Claude Code Sessions (Not API/SDK)
 
-**What**: Use Claude Agent SDK instead of Task tool for implementing master and worker agents.
+**What**: Use manual Claude Code sessions (covered by existing Max subscription) instead of Claude Agent SDK or Task tool to avoid API costs.
 
-**Why**:
-- **No concurrency ceiling**: Task tool has hard limit of 10 concurrent agents; SDK scales to support multiple masters with 2-3 workers each
-- **Native tRPC integration**: SDK agents run as in-process MCP servers, perfect for Better-T-Stack architecture
-- **Custom lifecycle management**: SDK provides context managers for proper cleanup, timeouts, and resource limits
-- **Token efficiency**: No 20k overhead per agent like Task tool; we control context size
-- **Non-blocking**: SDK spawns subagents asynchronously; Task tool blocks master until all workers finish
-- **Production-ready**: SDK designed for production agents with fine-grained permissions, working directory isolation
+**Why - Cost Analysis**:
+- **Max 20x subscription**: $200/month (already paid)
+- **API usage (November 2025)**: $1,742.71/month (8.7x subscription cost!)
+- **Savings**: $1,542.71/month by using subscription instead of API
+- **Break-even**: Never - subscription always cheaper for this use case
 
-**Implementation with SDK**:
-```typescript
-// packages/api/src/services/master-agent-sdk.ts
-import { ClaudeSDKClient } from '@anthropic-ai/claude-agent-sdk';
+**Architecture**:
+- **Master agent** = Long-running Claude Code session per project (free on subscription)
+- **Worker agents** = Additional Claude Code sessions spawned manually as needed (free on subscription)
+- **Coordination** = Database + tRPC endpoints for work queue management
+- **Session polling** = Sessions query work queue via tRPC, self-assign tasks
 
-export class MasterAgentSDKService {
-  private client: ClaudeSDKClient;
+**How It Works**:
 
-  constructor(projectId: number, projectPath: string) {
-    this.client = new ClaudeSDKClient({
-      systemPrompt: `You are the master orchestrator for project ${projectId}...`,
-      allowedTools: ['file_operations', 'read', 'write', 'bash'],
-      cwd: projectPath,
-      // Custom memory for state persistence
-      memory: new PostgresMemoryAdapter(projectId)
-    });
-  }
+```bash
+# User opens terminal sessions manually
 
-  async spawnWorker(specId: string, agentType: string): Promise<WorkerAgent> {
-    // Spawn subagent via SDK
-    const worker = await this.client.createSubagent({
-      systemPrompt: this.buildWorkerPrompt(specId, agentType),
-      allowedTools: this.getToolsForAgentType(agentType),
-      cwd: this.projectPath,
-      // Isolated context per worker
-      maxTokens: 150000 // Enforce token budget
-    });
+# Terminal 1: Master for Project A
+claude --project ~/dev/project-a
+> "Review work queue and process next approved spec"
 
-    // Track in database
-    await db.insert(workerAgents).values({
-      id: worker.id,
-      specId,
-      agentType,
-      status: 'spawned',
-      spawnedAt: new Date()
-    });
+# Terminal 2: Worker for Project A (if needed for parallelism)
+claude --project ~/dev/project-a
+> "Get next queued spec and implement it"
 
-    return worker;
-  }
-
-  async monitorWorker(workerId: string): Promise<WorkerStatus> {
-    // SDK provides built-in status tracking
-    const worker = await this.client.getSubagent(workerId);
-    return {
-      status: worker.status,
-      tokensUsed: worker.usage.totalTokens,
-      lastActivity: worker.lastActivityAt
-    };
-  }
-
-  async cleanup(): Promise<void> {
-    // SDK context manager handles proper cleanup
-    await this.client.close();
-  }
-}
+# Terminal 3: Master for Project B
+claude --project ~/dev/project-b
+> "Monitor queue and process specs"
 ```
 
-**SDK vs Task Tool Comparison**:
-| Dimension | Claude Agent SDK | Task Tool (Rejected) |
-|-----------|------------------|----------------------|
-| Concurrent agents | No stated limit (scalable) | 10 max (hard limit) |
-| Token overhead | Configurable | 20k per agent |
-| tRPC integration | Native (in-process MCP) | Limited (blocking) |
-| Lifecycle control | Custom timeouts, cleanup | None (auto-cleanup only) |
-| Dynamic allocation | ✅ Fully supported | ❌ Batching inefficiency |
-| Master blocking | Non-blocking (async) | Blocks until all complete |
-
-**Alternatives Considered**:
-1. **Task tool** (original design)
-   - **Rejected**: 10-agent ceiling unsuitable for multi-project orchestration, 20k token waste per agent, blocking calls prevent master from processing queue
-2. **No SDK, custom Claude API calls**
-   - **Rejected**: Reinventing SDK features (context management, subagents, memory), more complex
-3. **Hybrid: SDK master + Task tool workers**
-   - **Rejected**: Mixing paradigms increases complexity, still limited by Task tool's 10-agent cap
-
-### Decision 12: Dynamic Resource Allocation (2-3 Workers Per Master)
-
-**What**: Allocate 2-3 concurrent workers per master agent, with multiple masters running across projects sharing a global worker pool.
-
-**Why**:
-- **Efficient resource usage**: With Claude Agent SDK removing 10-agent ceiling, can scale to support multiple active projects
-- **Fair allocation**: Each project gets dedicated master + small worker pool, prevents resource starvation
-- **Cost control**: Limit workers per master to contain token costs (200k context × workers)
-- **Queue flexibility**: If project has 10 specs, workers process them sequentially; master manages queue
-
-**Resource Allocation Strategy**:
+**Work Queue Coordination**:
 ```typescript
-// Global resource manager
-export class ResourceAllocator {
-  // Tracks active masters and their worker counts
-  private activeAllocations: Map<number, { // projectId → allocation
-    masterAgentId: string;
-    workerCount: number;
-    maxWorkers: number;
-  }>;
+// packages/api/src/router/work-queue.ts
+export const workQueueRouter = createTRPCRouter({
+  // Session polls this to get next work item
+  getNextSpec: publicProcedure
+    .input(z.object({ projectId: z.number() }))
+    .query(async ({ input, ctx }) => {
+      // Find highest priority approved spec not yet assigned
+      const nextSpec = await ctx.db.select()
+        .from(openspecSpecs)
+        .where(and(
+          eq(openspecSpecs.projectId, input.projectId),
+          eq(openspecSpecs.status, 'approved')
+        ))
+        .orderBy(desc(openspecSpecs.priority))
+        .limit(1);
 
-  async allocateWorkerSlot(projectId: number): Promise<boolean> {
-    const allocation = this.activeAllocations.get(projectId);
-    if (!allocation) return false;
+      if (nextSpec.length === 0) return null;
 
-    // Check if project can spawn more workers
-    if (allocation.workerCount >= allocation.maxWorkers) {
-      return false; // At capacity, worker must queue
-    }
+      // Assign to this session
+      const sessionId = ctx.session?.id; // From Claude Code session context
+      await ctx.db.update(openspecSpecs)
+        .set({
+          status: 'assigned',
+          assignedSessionId: sessionId,
+          assignedAt: new Date()
+        })
+        .where(eq(openspecSpecs.id, nextSpec[0].id));
 
-    allocation.workerCount++;
-    return true;
-  }
+      return nextSpec[0];
+    }),
 
-  async releaseWorkerSlot(projectId: number): Promise<void> {
-    const allocation = this.activeAllocations.get(projectId);
-    if (allocation) {
-      allocation.workerCount--;
-      // Notify master agent that slot available
-      await this.notifyMasterAgentSlotAvailable(allocation.masterAgentId);
-    }
-  }
-
-  async startMasterAgent(projectId: number): Promise<MasterAllocation> {
-    // Default: 3 workers per master (configurable per project)
-    const maxWorkers = await this.getProjectWorkerLimit(projectId) || 3;
-
-    this.activeAllocations.set(projectId, {
-      masterAgentId: generateId(),
-      workerCount: 0,
-      maxWorkers
-    });
-
-    return this.activeAllocations.get(projectId)!;
-  }
-}
+  // Session calls this when work complete
+  markComplete: publicProcedure
+    .input(z.object({
+      specId: z.string(),
+      result: z.string()
+    }))
+    .mutation(async ({ input, ctx }) => {
+      await ctx.db.update(openspecSpecs)
+        .set({
+          status: 'review',
+          completedAt: new Date(),
+          result: input.result
+        })
+        .where(eq(openspecSpecs.id, input.specId));
+    })
+});
 ```
 
-**Resource Limits**:
-- **Per Project**: Max 3 concurrent workers (configurable)
-- **Per Worker**: Max 150k tokens (leaves 50k buffer from 200k context)
-- **Per Master**: Max 200k tokens (full context window)
-- **Global**: No hard limit (constrained by server resources and token budget)
+**Session Workflow**:
 
-**Scaling Example**:
-- 5 projects active = 5 masters + 15 workers max = 20 concurrent agents
-- Each consumes 200k context (master) + 450k total (workers) = 650k tokens per project
-- Total: 3.25M tokens for 5 active projects
+1. **User approves spec** in dashboard → Status: `proposing` → `approved`
+2. **User opens Claude Code session** for project
+3. **Session queries queue**: `curl http://localhost:3002/trpc/workQueue.getNextSpec?projectId=1`
+4. **Session receives spec** with full context (proposal.md, tasks.md, design.md)
+5. **Session implements spec** using normal Claude Code capabilities
+6. **Session reports completion**: `curl -X POST http://localhost:3002/trpc/workQueue.markComplete`
+7. **Repeat** - Session gets next spec from queue
+
+**Dashboard Integration**:
+- Shows which sessions are active per project
+- User can spawn additional sessions for parallelism
+- No programmatic session spawning - user controls all sessions manually
+
+**Cost Comparison**:
+
+| Approach | Monthly Cost | Tokens | Notes |
+|----------|--------------|--------|-------|
+| **Claude Agent SDK** | $1,742.71 | ~2.28B | API charges per token |
+| **Task Tool** | $1,500+ | ~2B+ | API charges + 20k overhead/agent |
+| **Claude Code Sessions** | **$0** | Unlimited* | Max subscription covers all usage |
+
+*Limited by Max 20x capacity: ~20x Pro limits per session
 
 **Alternatives Considered**:
-1. **Single master for all projects**
-   - **Rejected**: Bottleneck, no parallelism, context overload mixing project concerns
-2. **Max 1 master + 9 workers per server**
-   - **Rejected**: Only one project can be active at a time, poor resource utilization
-3. **Unlimited workers per master**
-   - **Rejected**: Runaway token costs, resource exhaustion, hard to debug failures
+1. **Claude Agent SDK** (previous design)
+   - **Rejected**: $1,542.71/month wasted when subscription already paid
+2. **Task tool**
+   - **Rejected**: Still uses API (costs money), plus 10-agent limit
+3. **Fully automated SDK orchestration**
+   - **Rejected**: Cool but costs 8.7x more than subscription
+4. **Hybrid: API for master, sessions for workers**
+   - **Rejected**: Still incurs API costs unnecessarily
 
-### Decision 13: Agent Lifecycle & Cleanup (Heartbeat + Token Budget)
+**Trade-off Accepted**:
+- **Manual session spawning** - User opens terminals/sessions as needed
+- **Less automation** - No programmatic agent spawning
+- **Simpler architecture** - Standard Claude Code sessions, no SDK complexity
+- **$1,542/month savings** - Worth the manual effort
 
-**What**: Implement heartbeat monitoring (5-minute intervals) and token budget enforcement to detect and clean up stale, hung, or runaway agents.
+### Decision 12: Manual Session Management (User-Controlled Parallelism)
+
+**What**: User manually opens Claude Code sessions as needed for parallelism, rather than programmatic resource allocation.
 
 **Why**:
-- **Prevent zombie agents**: Workers that crash or hang consume resources but produce no output
-- **Cost control**: Runaway agents approaching context limits waste tokens
-- **Reliability**: Automatic recovery from agent failures without manual intervention
-- **Observability**: Real-time visibility into agent health and resource usage
+- **No API costs**: All sessions covered by Max subscription ($0 incremental cost)
+- **User control**: User decides when to spawn workers based on actual workload
+- **Max capacity constraint**: Max 20x subscription has capacity limits, so user manages within those bounds
+- **Simpler architecture**: No complex resource allocator, just track active sessions in database
+
+**How It Works**:
+
+```bash
+# User observes workload in dashboard
+# Sees 5 approved specs for Project A, 3 for Project B
+
+# Opens sessions based on priority:
+# Terminal 1: Project A master
+claude --project ~/dev/project-a
+
+# Terminal 2: Project A worker (for parallelism)
+claude --project ~/dev/project-a
+
+# Terminal 3: Project B master
+claude --project ~/dev/project-b
+
+# Each session polls work queue independently
+# Database tracks which session has which spec (prevents conflicts)
+```
+
+**Session Registration**:
+```typescript
+// packages/api/src/router/sessions.ts
+export const sessionsRouter = createTRPCRouter({
+  // Session calls this on startup
+  register: publicProcedure
+    .input(z.object({
+      projectId: z.number(),
+      sessionType: z.enum(['master', 'worker']),
+      metadata: z.any()
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const session = await ctx.db.insert(sessions).values({
+        projectId: input.projectId,
+        sessionType: input.sessionType,
+        status: 'active',
+        lastHeartbeat: new Date(),
+        metadata: JSON.stringify(input.metadata)
+      }).returning();
+
+      return session[0];
+    }),
+
+  // Session calls this every 5 minutes
+  heartbeat: publicProcedure
+    .input(z.object({ sessionId: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      await ctx.db.update(sessions)
+        .set({ lastHeartbeat: new Date() })
+        .where(eq(sessions.id, input.sessionId));
+    })
+});
+```
+
+**Dashboard Visibility**:
+- Shows active sessions per project
+- User sees: "Project A: 2 active sessions, 5 specs queued"
+- User decides: "I'll open one more worker session"
+- No automatic spawning - user-driven
+
+**Recommended Parallelism**:
+- **1 session**: Projects with light workload (1-2 specs)
+- **2-3 sessions**: Projects with moderate workload (3-10 specs)
+- **4+ sessions**: High-priority projects with large queue (10+ specs)
+
+**Max Subscription Capacity Management**:
+- Max 20x = ~20x Pro capacity per 5-hour window
+- User monitors usage via `ccm` (claude-monitor)
+- If approaching limits, close inactive sessions
+- Prioritize high-value work
+
+**Alternatives Considered**:
+1. **Programmatic session spawning** (original SDK design)
+   - **Rejected**: Costs $1,542/month in API charges
+2. **Single session per project** (no parallelism)
+   - **Rejected**: Too slow for projects with large queues
+3. **Fixed allocation** (always 3 sessions per project)
+   - **Rejected**: Wastes subscription capacity on inactive projects
+4. **Automatic session spawning based on queue depth**
+   - **Rejected**: Complex automation not worth it when manual spawning is free and effective
+
+### Decision 13: Session Lifecycle & Cleanup (Heartbeat Monitoring)
+
+**What**: Implement heartbeat monitoring (10-minute intervals) to detect stale Claude Code sessions and clean up abandoned work assignments.
+
+**Why**:
+- **Detect dead sessions**: Sessions that crash or user closes terminal without completing work
+- **Release stuck specs**: Specs assigned to dead sessions can be reassigned to active sessions
+- **Dashboard accuracy**: Show only truly active sessions in dashboard
+- **No token budget needed**: Subscription has no per-token costs, only capacity limits monitored via `ccm`
 
 **Heartbeat Monitoring**:
 ```typescript
-// packages/api/src/services/agent-heartbeat.ts
-export class AgentHeartbeatMonitor {
-  private heartbeats: Map<string, Date>; // agentId → last heartbeat
+// packages/api/src/services/session-monitor.ts
+export class SessionMonitor {
+  // Runs every 2 minutes as background job
+  async cleanupStaleSessions(): Promise<void> {
+    const staleThreshold = new Date(Date.now() - 10 * 60 * 1000); // 10 minutes ago
 
-  async startMonitoring(agentId: string): Promise<void> {
-    this.heartbeats.set(agentId, new Date());
+    // Find sessions with no heartbeat in 10+ minutes
+    const staleSessions = await db.select()
+      .from(sessions)
+      .where(and(
+        eq(sessions.status, 'active'),
+        lt(sessions.lastHeartbeat, staleThreshold)
+      ));
 
-    // Worker agents send heartbeat every 5 minutes
-    // (via custom tRPC endpoint or SDK event)
-  }
+    for (const session of staleSessions) {
+      console.warn(`Detected stale session: ${session.id} (project ${session.projectId})`);
 
-  async checkHeartbeat(agentId: string): Promise<boolean> {
-    const lastHeartbeat = this.heartbeats.get(agentId);
-    if (!lastHeartbeat) return false;
+      // Mark session as inactive
+      await db.update(sessions)
+        .set({
+          status: 'inactive',
+          endedAt: new Date()
+        })
+        .where(eq(sessions.id, session.id));
 
-    const minutesSinceHeartbeat = (Date.now() - lastHeartbeat.getTime()) / 60000;
+      // Release any specs assigned to this session
+      const assignedSpecs = await db.select()
+        .from(openspecSpecs)
+        .where(and(
+          eq(openspecSpecs.assignedSessionId, session.id),
+          inArray(openspecSpecs.status, ['assigned', 'in_progress'])
+        ));
 
-    // If no heartbeat for >5 minutes, consider dead
-    return minutesSinceHeartbeat < 5;
-  }
+      for (const spec of assignedSpecs) {
+        console.info(`Releasing spec ${spec.id} back to queue`);
 
-  async cleanupStaleAgents(): Promise<string[]> {
-    const staleAgents: string[] = [];
-
-    for (const [agentId, lastHeartbeat] of this.heartbeats.entries()) {
-      const minutesSinceHeartbeat = (Date.now() - lastHeartbeat.getTime()) / 60000;
-
-      if (minutesSinceHeartbeat >= 5) {
-        // Mark agent as failed
-        await db.update(workerAgents)
-          .set({ status: 'failed', completedAt: new Date() })
-          .where(eq(workerAgents.id, agentId));
-
-        // Force cleanup via SDK
-        await this.forceTerminateAgent(agentId);
-
-        staleAgents.push(agentId);
-        this.heartbeats.delete(agentId);
+        // Reset to approved so another session can pick it up
+        await db.update(openspecSpecs)
+          .set({
+            status: 'approved',
+            assignedSessionId: null,
+            assignedAt: null
+          })
+          .where(eq(openspecSpecs.id, spec.id));
       }
     }
-
-    return staleAgents;
   }
 
-  // Runs every minute as background job
-  async monitorLoop(): Promise<void> {
-    setInterval(async () => {
-      const stale = await this.cleanupStaleAgents();
-      if (stale.length > 0) {
-        console.warn(`Cleaned up ${stale.length} stale agents:`, stale);
-      }
-    }, 60000); // Every 1 minute
+  // Start background monitor
+  startMonitoring(): void {
+    setInterval(() => {
+      this.cleanupStaleSessions().catch(err => {
+        console.error('Session cleanup error:', err);
+      });
+    }, 2 * 60 * 1000); // Every 2 minutes
   }
 }
 ```
 
-**Token Budget Enforcement**:
+**Session Heartbeat Protocol**:
 ```typescript
-// Track token usage per agent in real-time
-export class TokenBudgetEnforcer {
-  async trackAgentUsage(agentId: string): Promise<void> {
-    // SDK provides token usage via getSubagent().usage.totalTokens
-    const worker = await sdkClient.getSubagent(agentId);
-    const tokensUsed = worker.usage.totalTokens;
+// Claude Code sessions call this every 5 minutes
+// Can be manual: curl http://localhost:3002/trpc/sessions.heartbeat?sessionId=123
+// Or automated via cron in terminal: watch -n 300 'curl ...'
 
-    // Update database
-    await db.update(workerAgents)
-      .set({ tokensUsed })
-      .where(eq(workerAgents.id, agentId));
+export const sessionsRouter = createTRPCRouter({
+  heartbeat: publicProcedure
+    .input(z.object({ sessionId: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      await ctx.db.update(sessions)
+        .set({ lastHeartbeat: new Date() })
+        .where(eq(sessions.id, input.sessionId));
 
-    // Check if approaching budget limit (150k)
-    if (tokensUsed > 140000) {
-      console.warn(`Worker ${agentId} approaching token limit: ${tokensUsed}/150k`);
-
-      // Send warning to master agent
-      await this.notifyMasterAgentTokenWarning(agentId);
-    }
-
-    // Enforce hard limit
-    if (tokensUsed >= 150000) {
-      console.error(`Worker ${agentId} exceeded token budget, terminating`);
-      await this.forceTerminateAgent(agentId, 'token_budget_exceeded');
-    }
-  }
-
-  // Runs every 30 seconds for active workers
-  async monitorLoop(): Promise<void> {
-    setInterval(async () => {
-      const activeWorkers = await db.select()
-        .from(workerAgents)
-        .where(eq(workerAgents.status, 'active'));
-
-      for (const worker of activeWorkers) {
-        await this.trackAgentUsage(worker.id);
-      }
-    }, 30000); // Every 30 seconds
-  }
-}
+      return { success: true };
+    })
+});
 ```
+
+**Dashboard Indicators**:
+- 🟢 **Active** - Heartbeat within 5 minutes
+- 🟡 **Slow** - Heartbeat within 5-10 minutes (warning)
+- 🔴 **Stale** - No heartbeat >10 minutes (will be cleaned up)
 
 **Cleanup Triggers**:
-1. **Heartbeat timeout** (>5 min no heartbeat) → Mark failed, force terminate
-2. **Token budget exceeded** (>150k tokens) → Force terminate with warning
-3. **Max runtime** (>2 hours) → Force terminate, move to manual review
-4. **Session close** → Graceful cleanup via SDK context manager
+1. **Heartbeat timeout** (>10 min no heartbeat) → Mark session inactive, release assigned specs
+2. **User closes terminal** → Session stops sending heartbeats, auto-cleanup after 10 minutes
+3. **Manual session end** → User calls `sessions.end` endpoint, immediate cleanup
+4. **Capacity management** → User monitors via `ccm`, closes low-priority sessions if hitting limits
 
-**Database Schema Additions**:
+**Dashboard Schema Updates**:
 ```typescript
-// Add to workerAgents table
-export const workerAgents = sqliteTable('worker_agents', {
+// Extend sessions table
+export const sessions = sqliteTable('sessions', {
   // ... existing fields
-  tokensUsed: integer('tokens_used').default(0),
   lastHeartbeat: integer('last_heartbeat', { mode: 'timestamp' }),
-  maxRuntime: integer('max_runtime').default(7200), // 2 hours in seconds
-  terminationReason: text('termination_reason'), // 'completed', 'timeout', 'token_limit', 'heartbeat_timeout'
+  status: text('status', {
+    enum: ['active', 'inactive', 'ended']
+  }).default('active'),
+  endedAt: integer('ended_at', { mode: 'timestamp' }),
+  sessionType: text('session_type', {
+    enum: ['master', 'worker']
+  }).default('worker')
 });
 ```
 
 **Alternatives Considered**:
-1. **No heartbeat, rely on SDK auto-cleanup**
-   - **Rejected**: SDK doesn't document automatic hung agent detection, we need explicit monitoring
-2. **Manual intervention only (no auto-cleanup)**
-   - **Rejected**: Requires human monitoring 24/7, not sustainable for production
-3. **Shorter heartbeat interval (1 minute)**
-   - **Rejected**: Too noisy, increases network overhead, 5 minutes sufficient for production
-4. **No token budget enforcement**
-   - **Rejected**: Runaway agents could consume entire context window (200k tokens × $15/M = $3 per agent!)
+1. **No heartbeat monitoring** (trust user to clean up)
+   - **Rejected**: Crashed sessions would leave specs stuck indefinitely
+2. **Manual cleanup only** (user marks sessions as done)
+   - **Rejected**: User forgets to mark done, specs get stuck
+3. **Shorter heartbeat interval** (1 minute)
+   - **Rejected**: Too noisy, 10 minutes is sufficient for detecting crashes
+4. **Token budget enforcement** (from SDK approach)
+   - **Rejected**: Not relevant for subscription-based approach, no per-token costs
 
 ### Decision 14: Three-Tier Memory Architecture (Global → Project → Task)
 
