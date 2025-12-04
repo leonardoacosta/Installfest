@@ -136,14 +136,14 @@
 
 ## 9. Documentation & Cleanup
 
-- [ ] 9.1 Update `CLAUDE.md` with new architecture details
-- [ ] 9.2 Document tRPC API procedures and types
-- [ ] 9.3 Document hook script usage and event schemas
-- [ ] 9.4 Create migration guide for users of old REST API
-- [ ] 9.5 Update README with monorepo build instructions
-- [ ] 9.6 Remove deprecated Express server code
-- [ ] 9.7 Remove old `server/init-db.ts` (replaced by Drizzle migrations)
-- [ ] 9.8 Archive old frontend if completely replaced
+- [x] 9.1 Update `CLAUDE.md` with new architecture details
+- [x] 9.2 Document tRPC API procedures and types (created `API.md`)
+- [x] 9.3 Document hook script usage and event schemas (updated `.claude/README.md`)
+- [x] 9.4 Create migration guide for users of old REST API (N/A - no prior users)
+- [x] 9.5 Update README with monorepo build instructions
+- [x] 9.6 Remove deprecated Express server code (N/A - fresh implementation)
+- [x] 9.7 Remove old `server/init-db.ts` (N/A - never existed)
+- [x] 9.8 Archive old frontend if completely replaced (N/A - fresh implementation)
 
 ## 10. Deployment & Rollout
 

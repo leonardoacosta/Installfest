@@ -98,7 +98,14 @@ claude-code
 
 ## API Endpoint
 
-Hooks POST to: `http://localhost:3001/api/trpc/hooks.ingest`
+Hooks POST to: `http://localhost:3002/api/trpc/hooks.ingest`
+
+**Note**: Port changed from 3001 to 3002 for Next.js server.
+
+Configure via environment variable:
+```bash
+export CLAUDE_API_URL="http://localhost:3002/api/trpc/hooks.ingest"
+```
 
 **Payload Format:**
 ```json

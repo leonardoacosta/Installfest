@@ -92,10 +92,16 @@ bun run dev
 bun run build
 
 # Build specific package
-bun run build --filter=@homelab/claude-agent
+bun run build --filter=@homelab/claude-agent-web
 
 # Run in development mode
 bun run dev
+
+# Database migrations
+cd packages/db
+bun run db:generate  # Generate migration from schema changes
+bun run db:migrate   # Apply migrations to database
+bun run db:studio    # Open Drizzle Studio (database GUI)
 
 # Type check
 bun run type-check

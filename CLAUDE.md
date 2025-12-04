@@ -827,7 +827,7 @@ docker run -p 3000:3000 -v reports:/reports playwright-server
 
 ### Overview
 
-Centralized management dashboard for Claude Code development sessions across multiple projects.
+Centralized management dashboard for Claude Code development sessions across multiple projects. Built with Better-T-Stack architecture for type-safe, scalable development.
 
 **Access**: `http://claude.local` (via Traefik)
 
@@ -835,117 +835,207 @@ Centralized management dashboard for Claude Code development sessions across mul
 
 - **Project Management**: Create and track development projects
 - **Session Tracking**: Start/stop Claude Code agent sessions
-- **Hook History**: View tool calls and execution logs (SDK integration pending)
-- **WebSocket Logs**: Real-time log streaming (infrastructure ready)
+- **Hook History**: Real-time tool call tracking and execution logs
+- **Live Updates**: tRPC subscriptions for real-time event streaming
+- **Type-Safe API**: End-to-end type safety from frontend to database
 
 ### Architecture
 
-- **Backend**: TypeScript + Express + SQLite + WebSocket
-- **Frontend**: Vanilla JS dashboard
-- **Database**: SQLite for projects, sessions, hooks
-- **Volume Mount**: `/home/leo/dev/projects:/projects` for workspace access
+**Monorepo Structure** (`homelab-services/`):
+- **Frontend**: Next.js 14 with App Router (`apps/claude-agent-web/`)
+- **API**: tRPC routers with Hono adapter (`packages/api/`)
+- **Database**: Drizzle ORM + SQLite (`packages/db/`)
+- **Validators**: Shared Zod schemas (`packages/validators/`)
+- **UI Components**: Shared React components (`packages/ui/`)
+- **Hook System**: Python scripts in `.claude/hooks/` for event capture
+
+**Tech Stack**:
+- Next.js 14 (frontend framework)
+- tRPC 11 (type-safe API layer)
+- Drizzle ORM (database ORM)
+- Better-SQLite3 (database driver)
+- Zod (schema validation)
+- Turborepo (monorepo build orchestration)
 
 ### Database Schema
 
-```sql
-CREATE TABLE projects (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL UNIQUE,
-  path TEXT NOT NULL,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE sessions (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  project_id INTEGER,
-  agent_id TEXT,
-  status TEXT DEFAULT 'running',
-  started_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  ended_at DATETIME,
-  FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
-);
-
-CREATE TABLE hooks (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  session_id INTEGER,
-  hook_type TEXT,
-  tool_name TEXT,
-  duration_ms INTEGER,
-  success BOOLEAN,
-  timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
-);
-```
-
-### API Endpoints
-
-- `GET/POST /api/projects` - Manage projects
-- `GET/POST /api/sessions` - Manage sessions
-- `DELETE /api/sessions/:id` - Stop session
-- `GET /api/hooks` - Hook history (filterable by session)
-- `GET /api/hooks/stats` - Aggregated statistics
-
-### WebSocket Events
+Managed by Drizzle ORM with automatic migrations (`packages/db/src/schema/`):
 
 ```typescript
-// Client connects
-ws.send(JSON.stringify({ type: 'subscribe', sessionId: 123 }));
+// projects table
+export const projects = sqliteTable('projects', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull().unique(),
+  path: text('path').notNull(),
+  description: text('description'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`),
+});
 
-// Server streams logs (when SDK integrated)
+// sessions table
+export const sessions = sqliteTable('sessions', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  projectId: integer('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
+  agentId: text('agent_id').notNull().unique(),
+  status: text('status', { enum: ['running', 'stopped'] }).default('stopped').notNull(),
+  startedAt: integer('started_at', { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`),
+  stoppedAt: integer('stopped_at', { mode: 'timestamp' }),
+  errorMessage: text('error_message'),
+});
+
+// hooks table
+export const hooks = sqliteTable('hooks', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  sessionId: integer('session_id').notNull().references(() => sessions.id, { onDelete: 'cascade' }),
+  hookType: text('hook_type').notNull(),
+  timestamp: integer('timestamp', { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`),
+  toolName: text('tool_name'),
+  toolInput: text('tool_input'),
+  toolOutput: text('tool_output'),
+  durationMs: integer('duration_ms'),
+  success: integer('success', { mode: 'boolean' }),
+  errorMessage: text('error_message'),
+  metadata: text('metadata'),
+}, (table) => ({
+  sessionIdx: index('idx_hooks_session').on(table.sessionId, table.timestamp),
+  typeIdx: index('idx_hooks_type').on(table.hookType, table.timestamp),
+  toolIdx: index('idx_hooks_tool').on(table.toolName, table.timestamp),
+}));
+```
+
+**Schema Features**:
+- Type-safe table definitions with TypeScript
+- Automatic timestamps and default values
+- Foreign key constraints with cascade deletes
+- Indexed columns for query performance
+- Enum types for status fields
+
+### tRPC API Procedures
+
+All API endpoints are type-safe tRPC procedures (`packages/api/src/router/`):
+
+**Projects Router** (`projects.*`):
+- `projects.list()` - List all projects (ordered by creation date)
+- `projects.byId({ id })` - Get single project by ID
+- `projects.create({ name, path, description? })` - Create new project
+- `projects.update({ id, name?, path?, description? })` - Update project
+- `projects.delete({ id })` - Delete project (cascades to sessions and hooks)
+
+**Sessions Router** (`sessions.*`):
+- `sessions.list({ projectId? })` - List sessions (optionally filtered by project)
+- `sessions.byId({ id })` - Get single session with hook count
+- `sessions.start({ projectId, agentId })` - Start new session
+- `sessions.stop({ id })` - Stop running session
+
+**Hooks Router** (`hooks.*`):
+- `hooks.list({ sessionId?, hookType?, limit?, offset? })` - List hooks with filtering and pagination
+- `hooks.stats({ sessionId? })` - Get aggregated statistics (grouped by hook type and tool)
+- `hooks.ingest({ sessionId, hookType, toolName?, ... })` - Ingest hook event from Python scripts
+- `hooks.subscribe({ sessionId? })` - Real-time subscription for new hook events
+
+**Type Safety Example**:
+
+```typescript
+// Frontend automatically knows the return types
+const { data: projects } = trpc.projects.list.useQuery();
+//    ^? Project[] (fully typed!)
+
+// Input validation via Zod schemas
+const createProject = trpc.projects.create.useMutation();
+await createProject.mutateAsync({
+  name: 'My Project',
+  path: '/tmp/project',
+  // TypeScript error if required fields missing!
+});
+```
+
+### Hook System
+
+Python-based hook scripts in `homelab-services/.claude/hooks/` capture Claude Code events and POST them to the tRPC API.
+
+**Available Hooks**:
+- `pre_tool_use.py` - Before tool execution
+- `post_tool_use.py` - After tool execution (with duration/output)
+- `session_start.py` - When Claude Code session starts
+- `session_end.py` - When session ends
+- `user_prompt_submit.py` - When user submits a prompt
+- `stop.py` - When session is stopped
+- `subagent_stop.py` - When subagent completes
+- `pre_compact.py` - Before context compaction
+
+**Configuration** (`.claude/settings.json`):
+
+```json
 {
-  type: 'log',
-  sessionId: 123,
-  timestamp: '2025-01-15T10:30:00Z',
-  level: 'info',
-  message: 'Tool call: Read file.txt'
+  "hooks": {
+    "pre_tool_use": {
+      "command": "python3",
+      "args": [".claude/hooks/pre_tool_use.py"]
+    },
+    "post_tool_use": {
+      "command": "python3",
+      "args": [".claude/hooks/post_tool_use.py"]
+    }
+    // ... other hooks
+  }
+}
+```
+
+**Event Flow**:
+
+1. Claude Code triggers hook (e.g., before tool use)
+2. Hook script receives event data via stdin (JSON)
+3. Script calls `send_event.py` to POST to tRPC API
+4. tRPC `hooks.ingest` procedure saves to database
+5. Real-time subscribers receive event via `hooks.subscribe`
+
+**Hook Event Schema**:
+
+```typescript
+{
+  sessionId: number;
+  hookType: 'pre_tool_use' | 'post_tool_use' | 'session_start' | ...;
+  timestamp?: number;
+  toolName?: string;
+  toolInput?: string;
+  toolOutput?: string;
+  durationMs?: number;
+  success?: boolean;
+  errorMessage?: string;
+  metadata?: string; // JSON
 }
 ```
 
 ### Configuration
 
-File: `homelab/compose/claude-agent-server.yml`
+**Docker Compose** (`homelab/compose/claude-agent-server.yml`):
 
 Environment:
-- `PORT=3001` - Internal port
-- `DB_PATH=/app/db/claude.db` - SQLite database
-- `PROJECTS_DIR=/projects` - Workspace mount point
+- `PORT=3002` - Next.js server port
+- `DB_PATH=/app/db/claude.db` - SQLite database path
+- `CLAUDE_API_URL=http://localhost:3002/api/trpc/hooks.ingest` - Hook ingestion endpoint
 - `NODE_ENV=production`
+- `CORS_ORIGINS=http://localhost:3002,http://claude.local` - Allowed origins
+- `LOG_LEVEL=info` - Logging verbosity
 
 Volumes:
-- `/home/leo/dev/projects:/projects` - Development workspace
+- `/home/leo/dev/projects:/projects` - Development workspace access
 - `claude-agent-db:/app/db` - Database persistence
+- `.claude:/app/.claude` - Hook scripts
 
-### Integration with Claude Agent SDK
+**Build & Deployment**:
 
-**Status**: Infrastructure ready, SDK integration pending
+```bash
+# Development
+cd homelab-services
+bun install
+bun run dev  # Starts all apps with Turborepo
 
-To integrate:
+# Production build
+docker build -f docker/claude.Dockerfile -t claude-agent-web .
 
-1. Install `@anthropic-ai/sdk` in `claude-agent-server`
-2. Implement hook interceptors in SDK config
-3. POST hook data to `/api/hooks` endpoint
-4. Enable WebSocket log streaming
-
-Example SDK integration (pseudocode):
-
-```typescript
-import { ClaudeAgent } from '@anthropic-ai/sdk';
-
-const agent = new ClaudeAgent({
-  hooks: {
-    onToolCall: async (data) => {
-      await fetch('http://localhost:3001/api/hooks', {
-        method: 'POST',
-        body: JSON.stringify({
-          session_id: sessionId,
-          hook_type: 'tool_call',
-          tool_name: data.tool,
-          timestamp: new Date().toISOString()
-        })
-      });
-    }
-  }
-});
+# Deploy via homelab script
+cd homelab && ./homelab.sh deploy
 ```
 
 ## Steam Headless Setup
