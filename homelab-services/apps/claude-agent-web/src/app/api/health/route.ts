@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
-import { getDb } from '@homelab/db'
+import { getSqlite } from '@homelab/db'
 
 export async function GET() {
   try {
     // Check database connectivity
-    const db = getDb()
-    const result = db.prepare('SELECT 1 as health').get() as { health: number } | undefined
+    const sqlite = getSqlite()
+    const result = sqlite.prepare('SELECT 1 as health').get() as { health: number } | undefined
 
     if (!result || result.health !== 1) {
       throw new Error('Database health check failed')

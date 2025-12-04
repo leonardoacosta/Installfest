@@ -6,13 +6,14 @@ Posts hook events to the tRPC backend API for ingestion and real-time broadcasti
 """
 
 import json
+import os
 import sys
 import urllib.request
 import urllib.error
 from typing import Any, Dict, Optional
 
 # Configuration
-API_URL = "http://localhost:3001/api/trpc/hooks.ingest"
+API_URL = os.getenv("CLAUDE_API_URL", "http://localhost:3002/api/trpc/hooks.ingest")
 TIMEOUT = 5  # seconds
 
 
