@@ -21,6 +21,12 @@ The current CLAUDE.md file has grown to 1443 lines, containing detailed document
   - Mac Setup Environment
   - Homelab Deployment Orchestration
   - GitHub Actions Workflows
+- **NEW**: Create comprehensive documentation structure for homelab-services monorepo:
+  - Architecture documentation (Better-T-Stack, tRPC, Drizzle ORM)
+  - Development guide (setup, workflows, testing)
+  - Contributing guide (code style, PR process, monorepo conventions)
+  - Package documentation (shared UI components, database utilities)
+  - Deployment guide (Docker builds, CI/CD integration)
 - Establish documentation standards in project.md
 - Create cross-reference index linking CLAUDE.md → service docs → OpenSpec specs
 
@@ -31,6 +37,8 @@ The current CLAUDE.md file has grown to 1443 lines, containing detailed document
 - New specs (6 capabilities): DNS, Home Assistant, Coolify, Mac Setup, Deployment, GitHub Workflows
 
 **Affected code/files**:
+
+**Installfest Repository:**
 - `CLAUDE.md` - Reduced from 1443 to ~150 lines
 - `openspec/project.md` - Add documentation standards
 - New: `docs/dns/README.md` - DNS configuration
@@ -41,6 +49,17 @@ The current CLAUDE.md file has grown to 1443 lines, containing detailed document
 - New: `mac/README.md` - Mac setup documentation
 - New: `docs/INDEX.md` - Documentation cross-reference map
 - Existing: All OpenSpec specs - Add documentation references section
+
+**homelab-services Repository:**
+- `README.md` - Update to reference detailed documentation
+- New: `docs/architecture.md` - Better-T-Stack architecture overview
+- New: `docs/development.md` - Development guide and workflows
+- New: `docs/contributing.md` - Contributing guidelines
+- New: `docs/packages/ui.md` - Shared UI components documentation
+- New: `docs/packages/db.md` - Database utilities documentation
+- New: `docs/packages/validators.md` - Validation schemas documentation
+- New: `docs/deployment.md` - Docker builds and deployment
+- New: `docs/INDEX.md` - Documentation navigation
 
 **Benefits**:
 - **Faster navigation**: Users find information in 1-2 clicks instead of scrolling
