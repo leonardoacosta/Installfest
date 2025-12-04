@@ -281,3 +281,137 @@ Core service images (pulled from Docker Hub):
 - Home Assistant integration docs
 - *arr wiki (media automation setup)
 - Coolify documentation (PaaS deployment)
+
+## Documentation Standards
+
+### Documentation Hierarchy
+
+The project uses a three-tier documentation structure with clear separation of concerns:
+
+1. **CLAUDE.md** - Minimal quick reference (~150 lines)
+   - OpenSpec instructions
+   - Essential commands only
+   - Cross-references to detailed documentation
+   - Target audience: Claude Code AI assistant and users needing quick lookups
+
+2. **docs/[service]/README.md** - Detailed service documentation
+   - Comprehensive setup instructions
+   - Configuration details
+   - Troubleshooting guides
+   - Links to OpenSpec specifications
+   - Target audience: Users implementing and maintaining services
+
+3. **openspec/specs/[capability]/spec.md** - Formal specifications
+   - Requirements with scenarios (WHEN/THEN format)
+   - Behavioral specifications
+   - Design decisions (in design.md when applicable)
+   - Target audience: Developers and contributors needing formal behavior definitions
+
+### Service Documentation Template
+
+Each service SHALL have documentation in `docs/[service]/README.md` with the following structure:
+
+```markdown
+# [Service Name]
+
+## Overview
+Brief description of the service and its purpose (2-3 sentences).
+
+## Setup
+Step-by-step instructions for initial setup and configuration.
+
+## Configuration
+Detailed configuration options, environment variables, and customization.
+
+## Usage
+Common operations and examples.
+
+## Troubleshooting
+Common issues and their solutions.
+
+## References
+- Link to OpenSpec specification: `openspec/specs/[capability]/spec.md`
+- Link to external documentation
+- Link to related services
+```
+
+### Cross-Reference Linking Conventions
+
+Use consistent link formats for cross-referencing documentation:
+
+**Linking to service documentation:**
+- Format: `docs/[service]/README.md`
+- Example: `See docs/dns/README.md for DNS configuration`
+- Use descriptive link text, not bare URLs
+
+**Linking to OpenSpec specifications:**
+- Format: `openspec/specs/[capability]/spec.md`
+- Example: `See openspec/specs/bluetooth-automation/spec.md for formal requirements`
+- Link specific sections with anchors when applicable
+
+**Linking to code locations:**
+- Format: `file.ts:42` or `path/to/file.ts:42`
+- Example: `Implementation at homelab/scripts/deploy-ci.sh:156`
+
+**Linking in CLAUDE.md:**
+- Keep cross-references inline and minimal
+- Example: `## DNS Configuration\n\nSee docs/dns/README.md for detailed setup.`
+
+### Documentation File Naming Conventions
+
+**Service documentation:**
+- Main doc: `docs/[service]/README.md` (always README.md)
+- Specialized docs: `docs/[service]/[specific-topic].md` (lowercase with hyphens)
+- Examples: `docs/deployment/rollback-procedures.md`, `docs/dns/advanced-configuration.md`
+
+**OpenSpec specifications:**
+- Capability spec: `openspec/specs/[capability]/spec.md`
+- Design doc: `openspec/specs/[capability]/design.md` (optional)
+- Use kebab-case for capability names
+- Examples: `bluetooth-automation`, `usb-boot-automation`
+
+**Documentation index:**
+- Cross-reference map: `docs/INDEX.md`
+- Lists all capabilities with links to specs and detailed docs
+
+### Required Documentation Sections
+
+**Service documentation must include:**
+- Overview (purpose and context)
+- Setup (installation and initial configuration)
+- Configuration (options and customization)
+- Troubleshooting (common issues and solutions)
+- References (links to specs and related docs)
+
+**OpenSpec specifications must include:**
+- At least one requirement with scenarios
+- Scenarios in `#### Scenario:` format (4 hashtags)
+- WHEN/THEN clauses for acceptance criteria
+- Must validate with `openspec validate --strict`
+
+### Content Preservation Policy
+
+When refactoring or reorganizing documentation:
+- All existing content must be preserved (no information loss)
+- Removed sections must be archived in `openspec/changes/archive/`
+- Git history provides version tracking
+- Validate content migration with checklist before deletion
+
+### Documentation Maintenance
+
+**When adding new services:**
+1. Create OpenSpec specification in `openspec/specs/[capability]/`
+2. Create detailed documentation in `docs/[service]/README.md`
+3. Add entry to `docs/INDEX.md` with cross-references
+4. Add quick reference to CLAUDE.md (if essential command)
+
+**When updating services:**
+1. Update relevant `docs/[service]/README.md`
+2. If behavior changes, create OpenSpec change proposal
+3. Update CLAUDE.md only if essential commands change
+4. Keep cross-references synchronized
+
+**Documentation validation:**
+- Run `openspec validate --strict` on all specs
+- Verify all internal links resolve correctly
+- Check that required sections are present in service docs
