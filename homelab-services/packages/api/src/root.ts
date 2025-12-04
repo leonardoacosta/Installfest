@@ -16,6 +16,7 @@ import { testFailuresRouter } from './router/testFailures'
 import { syncRouter } from './router/sync'
 import { lifecycleRouter } from './router/lifecycle'
 import { workQueueRouter } from './router/work-queue'
+import { workerAgentRouter } from './router/worker-agent'
 
 export const appRouter = createTRPCRouter({
   projects: projectsRouter,
@@ -29,6 +30,7 @@ export const appRouter = createTRPCRouter({
   sync: syncRouter,
   lifecycle: lifecycleRouter,
   workQueue: workQueueRouter,
+  workerAgent: workerAgentRouter,
 })
 
 export type AppRouter = typeof appRouter

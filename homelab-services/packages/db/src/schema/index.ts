@@ -9,3 +9,4 @@ export * from './openspec';
 export * from './sync';
 export * from './lifecycle';
 export * from './work-queue';
+export * from './worker-agents';

@@ -3,203 +3,203 @@
 ## Phase 4.1: Worker Agent Database Schema
 
 ### 4.1.1 Worker Agents Table
-- [ ] Create `workerAgents` table in `packages/db/src/schema/worker-agents.ts`
-  - [ ] Add id (text, primary key - Task tool agent ID)
-  - [ ] Add sessionId (foreign key to sessions - who spawned this)
-  - [ ] Add specId (foreign key to openspecSpecs - what are they working on)
-  - [ ] Add agentType (text - subagent_type: t3-stack-developer, e2e-test-engineer, etc.)
-  - [ ] Add status enum: 'spawned' | 'active' | 'completed' | 'failed' | 'cancelled'
-  - [ ] Add spawnedAt, startedAt (nullable), completedAt (nullable) timestamps
-  - [ ] Add result (JSON text - {filesChanged: [], testsRun, testsPassed, errors})
-  - [ ] Add retryCount (integer, default 0)
-  - [ ] Add errorMessage (nullable text, if failed)
-  - [ ] Add indexes: (sessionId), (specId), (status), (spawnedAt)
+- [x] Create `workerAgents` table in `packages/db/src/schema/worker-agents.ts`
+  - [x] Add id (text, primary key - Task tool agent ID)
+  - [x] Add sessionId (foreign key to sessions - who spawned this)
+  - [x] Add specId (foreign key to openspecSpecs - what are they working on)
+  - [x] Add agentType (text - subagent_type: t3-stack-developer, e2e-test-engineer, etc.)
+  - [x] Add status enum: 'spawned' | 'active' | 'completed' | 'failed' | 'cancelled'
+  - [x] Add spawnedAt, startedAt (nullable), completedAt (nullable) timestamps
+  - [x] Add result (JSON text - {filesChanged: [], testsRun, testsPassed, errors})
+  - [x] Add retryCount (integer, default 0)
+  - [x] Add errorMessage (nullable text, if failed)
+  - [x] Add indexes: (sessionId), (specId), (status), (spawnedAt)
 
 ### 4.1.2 Schema Export and Migration
-- [ ] Export workerAgents schema from `packages/db/src/schema/index.ts`
+- [x] Export workerAgents schema from `packages/db/src/schema/index.ts`
 - [ ] Run migrations to create table
 
 ## Phase 4.2: Zod Validators
 
 ### 4.2.1 Worker Agent Validators
-- [ ] Create `packages/validators/src/worker-agent.ts`
-  - [ ] `workerAgentConfigSchema` - Spawn request (sessionId, specId, agentType?)
-  - [ ] `workerAgentStatusSchema` - Status response
-  - [ ] `workerAgentProgressSchema` - Progress metrics
-  - [ ] `agentTypeEnum` - Valid agent types
+- [x] Create `packages/validators/src/worker-agent.ts`
+  - [x] `workerAgentConfigSchema` - Spawn request (sessionId, specId, agentType?)
+  - [x] `workerAgentStatusSchema` - Status response
+  - [x] `workerAgentProgressSchema` - Progress metrics
+  - [x] `agentTypeEnum` - Valid agent types
 
 ### 4.2.2 Validation Testing
-- [ ] Test validators with valid/invalid inputs
+- [x] Test validators with valid/invalid inputs
 
 ## Phase 4.3: Agent Selection Service
 
 ### 4.3.1 Create Agent Selection Logic
-- [ ] Create `packages/api/src/services/worker-selector.ts`
-  - [ ] `selectAgentType(spec)` - Analyze spec and return best agentType
-  - [ ] Extract content from proposal.md, tasks.md, design.md
-  - [ ] Search for keywords in content:
-    - [ ] tRPC/Better-T-Stack/TypeScript → `t3-stack-developer`
-    - [ ] test/e2e/playwright/vitest → `e2e-test-engineer`
-    - [ ] database/schema/migration/drizzle/SQL → `database-architect`
-    - [ ] UI/component/design/React/CSS → `ux-design-specialist`
-    - [ ] docker/compose/container/network → `docker-network-architect`
-    - [ ] cache/redis/upstash/performance → `redis-cache-architect`
-  - [ ] Fallback: `general-purpose` if no clear keywords
-  - [ ] Return: { agentType, confidence, reasoning }
-  - [ ] Log reasoning for debugging
+- [x] Create `packages/api/src/services/worker-selector.ts`
+  - [x] `selectAgentType(spec)` - Analyze spec and return best agentType
+  - [x] Extract content from proposal.md, tasks.md, design.md
+  - [x] Search for keywords in content:
+    - [x] tRPC/Better-T-Stack/TypeScript → `t3-stack-developer`
+    - [x] test/e2e/playwright/vitest → `e2e-test-engineer`
+    - [x] database/schema/migration/drizzle/SQL → `database-architect`
+    - [x] UI/component/design/React/CSS → `ux-design-specialist`
+    - [x] docker/compose/container/network → `docker-network-architect`
+    - [x] cache/redis/upstash/performance → `redis-cache-architect`
+  - [x] Fallback: `general-purpose` if no clear keywords
+  - [x] Return: { agentType, confidence, reasoning }
+  - [x] Log reasoning for debugging
 
 ### 4.3.2 Keyword Matching
-- [ ] Create keyword mapping object
-  - [ ] Case-insensitive matching
-  - [ ] Support partial matches (e.g., "playwright" contains "test")
-- [ ] Test with sample spec content
+- [x] Create keyword mapping object
+  - [x] Case-insensitive matching
+  - [x] Support partial matches (e.g., "playwright" contains "test")
+- [x] Test with sample spec content
 
 ## Phase 4.4: Worker Spawning Service
 
 ### 4.4.1 Create WorkerAgentService
-- [ ] Create `packages/api/src/services/worker-agent.ts`
-  - [ ] Constructor accepts DB client and workerSelector
-  - [ ] `spawnWorker(sessionId, specId, agentType?)` - Main spawn method
-  - [ ] `buildWorkerPrompt(spec, agentType)` - Construct Task tool prompt
-  - [ ] `getWorkerStatus(workerId)` - Query current status
-  - [ ] `cancelWorker(workerId)` - Stop worker
-  - [ ] `markWorkerComplete(workerId, result)` - Record completion
+- [x] Create `packages/api/src/services/worker-agent.ts`
+  - [x] Constructor accepts DB client and workerSelector
+  - [x] `spawnWorker(sessionId, specId, agentType?)` - Main spawn method
+  - [x] `buildWorkerPrompt(spec, agentType)` - Construct Task tool prompt
+  - [x] `getWorkerStatus(workerId)` - Query current status
+  - [x] `cancelWorker(workerId)` - Stop worker
+  - [x] `markWorkerComplete(workerId, result)` - Record completion
 
 ### 4.4.2 Prompt Building
-- [ ] `buildWorkerPrompt(spec, agentType)` should include:
-  - [ ] Spec title and ID
-  - [ ] Full "Why" section from proposal.md
-  - [ ] "What Changes" section
-  - [ ] Full tasks.md list (work items)
-  - [ ] Project path and key file paths
-  - [ ] "Complete all tasks marked [ ], update their status to [x], report when done"
-  - [ ] "If you encounter errors, report them clearly"
-  - [ ] Clear, step-by-step instructions
+- [x] `buildWorkerPrompt(spec, agentType)` should include:
+  - [x] Spec title and ID
+  - [x] Full "Why" section from proposal.md
+  - [x] "What Changes" section
+  - [x] Full tasks.md list (work items)
+  - [x] Project path and key file paths
+  - [x] "Complete all tasks marked [ ], update their status to [x], report when done"
+  - [x] "If you encounter errors, report them clearly"
+  - [x] Clear, step-by-step instructions
 
 ### 4.4.3 Task Tool Integration
-- [ ] Create `packages/api/src/utils/task-tool.ts`
-  - [ ] `callTaskTool(subagent_type, prompt, description)` - Call Task tool
-  - [ ] Return: agent_id (for tracking)
-  - [ ] Handle errors: tool unavailable, invalid agent type, network errors
+- [x] Create `packages/api/src/utils/task-tool.ts`
+  - [x] `callTaskTool(subagent_type, prompt, description)` - Call Task tool
+  - [x] Return: agent_id (for tracking)
+  - [x] Handle errors: tool unavailable, invalid agent type, network errors
 
 ### 4.4.4 Spawning Implementation
-- [ ] In `spawnWorker`:
-  - [ ] Validate session exists and currentWorkItemId matches specId
-  - [ ] Select agent type if not specified
-  - [ ] Build worker prompt
-  - [ ] Call Task tool to spawn agent
-  - [ ] Create workerAgents table entry with status='spawned'
-  - [ ] Set spawnedAt timestamp
-  - [ ] Return created worker record
-  - [ ] Emit subscription event: worker_spawned
+- [x] In `spawnWorker`:
+  - [x] Validate session exists and currentWorkItemId matches specId
+  - [x] Select agent type if not specified
+  - [x] Build worker prompt
+  - [x] Call Task tool to spawn agent
+  - [x] Create workerAgents table entry with status='spawned'
+  - [x] Set spawnedAt timestamp
+  - [x] Return created worker record
+  - [x] Emit subscription event: worker_spawned
 
 ## Phase 4.5: Worker Monitoring Service
 
 ### 4.5.1 Create WorkerMonitorService
-- [ ] Create `packages/api/src/services/worker-monitor.ts`
-  - [ ] `monitorWorker(workerId)` - Start continuous monitoring
-  - [ ] `getProgress(workerId)` - Return current progress metrics
-  - [ ] `detectCompletion(workerId)` - Check if worker finished
-  - [ ] `detectFailure(workerId)` - Check if worker failed
+- [x] Create `packages/api/src/services/worker-monitor.ts`
+  - [x] `monitorWorker(workerId)` - Start continuous monitoring
+  - [x] `getProgress(workerId)` - Return current progress metrics
+  - [x] `detectCompletion(workerId)` - Check if worker finished
+  - [x] `detectFailure(workerId)` - Check if worker failed
 
 ### 4.5.2 Progress Tracking via Hooks
-- [ ] On first hook for worker session → status='active', startedAt=now()
-- [ ] For each hook event:
-  - [ ] Extract: tool_name, success, duration_ms
-  - [ ] If tool is Edit/Write → Track file changes
-  - [ ] If tool is Bash with test pattern → Track test execution
-  - [ ] Accumulate metrics
-- [ ] Query latest 50 hooks for worker session for timeline view
+- [x] On first hook for worker session → status='active', startedAt=now()
+- [x] For each hook event:
+  - [x] Extract: tool_name, success, duration_ms
+  - [x] If tool is Edit/Write → Track file changes
+  - [x] If tool is Bash with test pattern → Track test execution
+  - [x] Accumulate metrics
+- [x] Query latest 50 hooks for worker session for timeline view
 
 ### 4.5.3 Progress Metrics Calculation
-- [ ] `getProgress(workerId)` should return:
-  - [ ] `toolsExecuted` - Count of hook events
-  - [ ] `successRate` - % of successful hooks
-  - [ ] `filesChanged` - Array of file paths from Edit/Write tools
-  - [ ] `testsRun` - Count of detected test executions
-  - [ ] `elapsedMs` - completedAt - spawnedAt
-  - [ ] `taskCompletion` - Parse latest tasks.md, count [x] vs [ ]
-  - [ ] `status` - Current status
-  - [ ] `statusChangedAt` - Last status change timestamp
+- [x] `getProgress(workerId)` should return:
+  - [x] `toolsExecuted` - Count of hook events
+  - [x] `successRate` - % of successful hooks
+  - [x] `filesChanged` - Array of file paths from Edit/Write tools
+  - [x] `testsRun` - Count of detected test executions
+  - [x] `elapsedMs` - completedAt - spawnedAt
+  - [x] `taskCompletion` - Parse latest tasks.md, count [x] vs [ ]
+  - [x] `status` - Current status
+  - [x] `statusChangedAt` - Last status change timestamp
 
 ### 4.5.4 Completion Detection
-- [ ] `detectCompletion(workerId)` logic:
-  - [ ] Check if last hook has completion signal (specific text)
-  - [ ] OR check if all tasks marked [x] in tasks.md
-  - [ ] OR check idle time: if no hooks for 10+ min AND tasks complete
-  - [ ] If complete: status='completed', completedAt=now()
-  - [ ] Emit: worker_completed event
-  - [ ] Trigger lifecycle transition: spec in_progress → review
+- [x] `detectCompletion(workerId)` logic:
+  - [x] Check if last hook has completion signal (specific text)
+  - [x] OR check if all tasks marked [x] in tasks.md
+  - [x] OR check idle time: if no hooks for 10+ min AND tasks complete
+  - [x] If complete: status='completed', completedAt=now()
+  - [x] Emit: worker_completed event
+  - [x] Trigger lifecycle transition: spec in_progress → review
 
 ### 4.5.5 Failure Detection
-- [ ] `detectFailure(workerId)` logic:
-  - [ ] Check if last hook has success=false with error
-  - [ ] OR check idle time: if no hooks for 20+ min (timeout)
-  - [ ] OR check if last hook is error tool (e.g., Bash failed)
-  - [ ] If failed: status='failed', errorMessage set
-  - [ ] Emit: worker_failed event
-  - [ ] Trigger retry logic (or manual intervention)
+- [x] `detectFailure(workerId)` logic:
+  - [x] Check if last hook has success=false with error
+  - [x] OR check idle time: if no hooks for 20+ min (timeout)
+  - [x] OR check if last hook is error tool (e.g., Bash failed)
+  - [x] If failed: status='failed', errorMessage set
+  - [x] Emit: worker_failed event
+  - [x] Trigger retry logic (or manual intervention)
 
 ## Phase 4.6: Worker Retry Logic
 
 ### 4.6.1 Implement Retry Service
-- [ ] In WorkerAgentService, add `retryWorker(workerId)` method
-- [ ] `retryWorker` logic:
-  - [ ] Fetch failed worker
-  - [ ] If retryCount < 3: Spawn new worker with same agentType, increment retryCount
-  - [ ] If retryCount >= 3: Try fallback agent (general-purpose)
-  - [ ] If fallback fails: Create clarification request (manual intervention)
-  - [ ] Log all retry attempts
+- [x] In WorkerAgentService, add `retryWorker(workerId)` method
+- [x] `retryWorker` logic:
+  - [x] Fetch failed worker
+  - [x] If retryCount < 3: Spawn new worker with same agentType, increment retryCount
+  - [x] If retryCount >= 3: Try fallback agent (general-purpose)
+  - [x] If fallback fails: Create clarification request (manual intervention)
+  - [x] Log all retry attempts
 
 ### 4.6.2 Automatic Retry Trigger
-- [ ] On worker_failed event
-  - [ ] Call `retryWorker` automatically
-  - [ ] Dashboard shows retry attempts
-  - [ ] If all retries exhausted: Dashboard shows "Manual intervention needed"
+- [x] On worker_failed event
+  - [x] Call `retryWorker` automatically
+  - [x] Dashboard shows retry attempts
+  - [x] If all retries exhausted: Dashboard shows "Manual intervention needed"
 
 ## Phase 4.7: Worker tRPC Router
 
 ### 4.7.1 Create Router File
-- [ ] Create `packages/api/src/router/worker-agent.ts`
-  - [ ] Import WorkerAgentService, validators, tRPC
+- [x] Create `packages/api/src/router/worker-agent.ts`
+  - [x] Import WorkerAgentService, validators, tRPC
 
 ### 4.7.2 Query Procedures
-- [ ] `workerAgent.getStatus` procedure
-  - [ ] Input: `{ workerId: string }`
-  - [ ] Return: Worker status, timestamps, error message
-- [ ] `workerAgent.getProgress` procedure
-  - [ ] Input: `{ workerId: string }`
-  - [ ] Return: Progress metrics (tools, files, tests, completion %)
-- [ ] `workerAgent.listActive` procedure
-  - [ ] Input: `{ projectId?: number, sessionId?: string, specId?: string }`
-  - [ ] Return: Array of active workers filtered by criteria
-- [ ] `workerAgent.getHookTimeline` procedure
-  - [ ] Input: `{ workerId: string, limit?: number }`
-  - [ ] Return: Last N hooks for worker (tool calls, timestamps, results)
+- [x] `workerAgent.getStatus` procedure
+  - [x] Input: `{ workerId: string }`
+  - [x] Return: Worker status, timestamps, error message
+- [x] `workerAgent.getProgress` procedure
+  - [x] Input: `{ workerId: string }`
+  - [x] Return: Progress metrics (tools, files, tests, completion %)
+- [x] `workerAgent.listActive` procedure
+  - [x] Input: `{ projectId?: number, sessionId?: string, specId?: string }`
+  - [x] Return: Array of active workers filtered by criteria
+- [x] `workerAgent.getHookTimeline` procedure
+  - [x] Input: `{ workerId: string, limit?: number }`
+  - [x] Return: Last N hooks for worker (tool calls, timestamps, results)
 
 ### 4.7.3 Mutation Procedures
-- [ ] `workerAgent.spawn` procedure
-  - [ ] Input: `{ sessionId: string, specId: string, agentType?: string }`
-  - [ ] Call: WorkerAgentService.spawnWorker()
-  - [ ] Return: Created worker record with id
-- [ ] `workerAgent.cancel` procedure
-  - [ ] Input: `{ workerId: string }`
-  - [ ] Call: WorkerAgentService.cancelWorker()
-  - [ ] Return: Updated worker with status='cancelled'
-- [ ] `workerAgent.retry` procedure
-  - [ ] Input: `{ workerId: string }`
-  - [ ] Call: WorkerAgentService.retryWorker()
-  - [ ] Return: New worker record for retry attempt
+- [x] `workerAgent.spawn` procedure
+  - [x] Input: `{ sessionId: string, specId: string, agentType?: string }`
+  - [x] Call: WorkerAgentService.spawnWorker()
+  - [x] Return: Created worker record with id
+- [x] `workerAgent.cancel` procedure
+  - [x] Input: `{ workerId: string }`
+  - [x] Call: WorkerAgentService.cancelWorker()
+  - [x] Return: Updated worker with status='cancelled'
+- [x] `workerAgent.retry` procedure
+  - [x] Input: `{ workerId: string }`
+  - [x] Call: WorkerAgentService.retryWorker()
+  - [x] Return: New worker record for retry attempt
 
 ### 4.7.4 Subscription Procedure
-- [ ] `workerAgent.subscribe` procedure
-  - [ ] Input: `{ sessionId?: string, specId?: string, projectId?: number }`
-  - [ ] Stream events: worker_spawned, worker_started, worker_progress, worker_completed, worker_failed
-  - [ ] Include: workerId, status, progress metrics in each event
+- [x] `workerAgent.subscribe` procedure
+  - [x] Input: `{ sessionId?: string, specId?: string, projectId?: number }`
+  - [x] Stream events: worker_spawned, worker_started, worker_progress, worker_completed, worker_failed
+  - [x] Include: workerId, status, progress metrics in each event
 
 ### 4.7.5 Integration with Root Router
-- [ ] Import workerAgentRouter in `packages/api/src/root.ts`
-- [ ] Export as part of appRouter
+- [x] Import workerAgentRouter in `packages/api/src/root.ts`
+- [x] Export as part of appRouter
 
 ## Phase 4.8: Session and Lifecycle Integration
 
@@ -208,20 +208,20 @@
   - [ ] Add UI option: "Spawn Worker" or "Do Manually"
   - [ ] "Spawn Worker" calls workerAgent.spawn({ sessionId, specId })
   - [ ] "Do Manually" keeps session.currentWorkItemId but doesn't spawn
-- [ ] When session stops
-  - [ ] Query workerAgents where sessionId = stopped session
-  - [ ] Cancel all active workers
-  - [ ] Mark as 'cancelled' with reason 'session_stopped'
+- [x] When session stops
+  - [x] Query workerAgents where sessionId = stopped session
+  - [x] Cancel all active workers
+  - [x] Mark as 'cancelled' with reason 'session_stopped'
 
 ### 4.8.2 Lifecycle Integration
-- [ ] On `worker_completed` event
-  - [ ] Fetch spec for worker
-  - [ ] If spec status='assigned': Transition to 'in_progress'
-  - [ ] Transition to 'review' (all tasks complete)
+- [x] On `worker_completed` event
+  - [x] Fetch spec for worker
+  - [x] If spec status='assigned': Transition to 'in_progress'
+  - [x] Transition to 'review' (all tasks complete)
   - [ ] Emit: spec_ready_for_review notification
-- [ ] On `worker_failed` event with retries exhausted
-  - [ ] Create clarification request in dashboard
-  - [ ] Session paused until user decides (retry different agent, fix manually, etc.)
+- [x] On `worker_failed` event with retries exhausted
+  - [x] Create clarification request in dashboard
+  - [x] Session paused until user decides (retry different agent, fix manually, etc.)
 
 ## Phase 4.9: Dashboard Worker Grid
 

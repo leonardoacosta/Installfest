@@ -4,14 +4,15 @@
  * Handles Claude agent development sessions.
  */
 
-import { eq, desc, count, sql } from 'drizzle-orm'
+import { eq, desc, count, sql, inArray } from 'drizzle-orm'
 import { createTRPCRouter, publicProcedure } from '../trpc'
-import { sessions, projects, hooks } from '@homelab/db'
+import { sessions, projects, hooks, workerAgents } from '@homelab/db'
 import {
   createSessionSchema,
   sessionIdSchema,
   sessionFilterSchema
 } from '@homelab/validators'
+import { WorkerAgentService } from '../services/worker-agent'
 
 export const sessionsRouter = createTRPCRouter({
   // List all sessions
@@ -99,6 +100,34 @@ export const sessionsRouter = createTRPCRouter({
   stop: publicProcedure
     .input(sessionIdSchema)
     .mutation(async ({ ctx, input }) => {
+      // Cancel all active workers spawned by this session
+      const activeWorkers = await ctx.db
+        .select()
+        .from(workerAgents)
+        .where(eq(workerAgents.sessionId, input.id))
+        .all()
+
+      const workerService = new WorkerAgentService(ctx.db)
+
+      for (const worker of activeWorkers) {
+        if (['spawned', 'active'].includes(worker.status)) {
+          try {
+            await workerService.cancelWorker(worker.id)
+            console.log('[Session] Cancelled worker on session stop', {
+              sessionId: input.id,
+              workerId: worker.id,
+            })
+          } catch (error) {
+            console.error('[Session] Failed to cancel worker', {
+              sessionId: input.id,
+              workerId: worker.id,
+              error,
+            })
+          }
+        }
+      }
+
+      // Update session status
       const [session] = await ctx.db
         .update(sessions)
         .set({
