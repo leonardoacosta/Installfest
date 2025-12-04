@@ -13,6 +13,9 @@ import { failuresRouter } from './router/failures'
 import { remediationRouter } from './router/remediation'
 import { configRouter } from './router/config'
 import { testFailuresRouter } from './router/testFailures'
+import { syncRouter } from './router/sync'
+import { lifecycleRouter } from './router/lifecycle'
+import { workQueueRouter } from './router/work-queue'
 
 export const appRouter = createTRPCRouter({
   projects: projectsRouter,
@@ -23,6 +26,9 @@ export const appRouter = createTRPCRouter({
   remediation: remediationRouter,
   config: configRouter,
   testFailures: testFailuresRouter,
+  sync: syncRouter,
+  lifecycle: lifecycleRouter,
+  workQueue: workQueueRouter,
 })
 
 export type AppRouter = typeof appRouter

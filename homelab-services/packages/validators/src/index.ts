@@ -7,3 +7,6 @@ export * from './reports';
 export * from './failure';
 export * from './remediation';
 export * from './config';
+export * from './sync';
+export * from './lifecycle';
+export * from './work-queue';

@@ -5,3 +5,7 @@ export * from './reports';
 export * from './failures';
 export * from './remediation';
 export * from './config';
+export * from './openspec';
+export * from './sync';
+export * from './lifecycle';
+export * from './work-queue';

@@ -15,6 +15,20 @@
       "when": 1764825404866,
       "tag": "0001_luxuriant_mockingbird",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1764887640366,
+      "tag": "0002_fine_boomer",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1764888868717,
+      "tag": "0003_flaky_phalanx",
+      "breakpoints": true
     }
   ]
 }

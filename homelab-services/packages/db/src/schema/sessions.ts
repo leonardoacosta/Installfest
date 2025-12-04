@@ -11,6 +11,8 @@ export const sessions = sqliteTable('sessions', {
   status: text('status', { enum: ['running', 'stopped', 'error'] })
     .notNull()
     .default('stopped'),
+  currentWorkItemId: integer('current_work_item_id'),
+  lastActivityAt: integer('last_activity_at', { mode: 'timestamp' }),
   startedAt: integer('started_at', { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`),
   stoppedAt: integer('stopped_at', { mode: 'timestamp' }),
   errorMessage: text('error_message'),

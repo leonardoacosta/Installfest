@@ -2,6 +2,22 @@
 
 This document describes the architecture of the homelab-services monorepo, built with the **Better-T-Stack** for type-safe, scalable development.
 
+## Recent Changes
+
+### Work Queue and Session Management (Change 3)
+
+Added prioritized work queue infrastructure for coordinating OpenSpec implementation:
+
+- **Work Queue Table**: Stores prioritized work items with status tracking (queued/assigned/blocked/completed)
+- **Priority Calculation**: Auto-calculates priority based on error classification (PERSISTENT=5, RECURRING=4, FLAKY=3, NEW=2) plus age bonus
+- **Dependency Management**: Block work items on prerequisite specs, auto-unblock when dependencies complete
+- **Session Activity Monitoring**: Track session activity via hook events, detect idle/active/stopped status
+- **Work Queue Service**: Full CRUD operations, reordering, assignment, blocking/unblocking
+- **tRPC Router**: Real-time subscriptions for work queue updates
+- **Dashboard UI**: Work queue page with stats, filtering, and manual management
+
+See `openspec/changes/3-add-work-queue-sessions/` for full implementation details.
+
 ## Tech Stack
 
 The Better-T-Stack provides end-to-end type safety from database to frontend:
@@ -820,6 +836,380 @@ Future bottlenecks:
 - File watcher performance (mitigate: Message queue)
 - Single-instance deployment (mitigate: Kubernetes)
 
+## OpenSpec Bidirectional Sync Architecture
+
+### Overview
+
+The OpenSpec sync system maintains bidirectional synchronization between the filesystem (source of truth) and database, enabling:
+- **Queryable spec data**: Filter and sort specs by status, priority, project
+- **Web-based editing**: Edit proposals, tasks, and design docs through UI
+- **Work queue foundation**: Database enables intelligent work prioritization
+- **Real-time updates**: File watcher detects changes for immediate sync
+
+### Sync Strategy
+
+**Filesystem → Database**:
+- **Immediate sync**: File watcher (chokidar) syncs active specs instantly on file changes
+- **Periodic sync**: Batch sync archived/inactive specs every 30 seconds
+
+**Database → Filesystem**:
+- UI edits write to DB, then immediately flush to filesystem
+- Atomic writes with backups to prevent data loss
+
+**Conflict Resolution**:
+- Filesystem always wins when both modified since last sync
+- DB changes discarded if conflict detected
+- Sync history tracks all operations for audit trail
+
+### Database Schema
+
+**`openspec_specs` table**:
+```typescript
+{
+  id: string,                    // Change ID (e.g., "1-add-feature")
+  projectId: number,             // Foreign key to projects
+  title: string,                 // Extracted from proposal.md
+  status: string,                // proposing, approved, in_progress, etc.
+  proposalContent: string,       // Full proposal.md markdown
+  tasksContent: string,          // Full tasks.md markdown
+  designContent: string,         // Full design.md markdown (nullable)
+  lastSyncedAt: timestamp,       // Last successful sync
+  filesystemModifiedAt: timestamp, // File mtime
+  dbModifiedAt: timestamp,       // DB edit timestamp
+  syncError: string,             // Last error message (nullable)
+}
+```
+
+**`sync_history` table**:
+```typescript
+{
+  id: number,
+  specId: string,
+  syncDirection: 'fs_to_db' | 'db_to_fs',
+  triggeredBy: 'file_watcher' | 'periodic' | 'user_edit' | 'manual',
+  success: boolean,
+  errorMessage: string,
+  filesChanged: string[],        // JSON array
+  syncedAt: timestamp,
+}
+```
+
+### Services
+
+**`OpenSpecSyncService`**:
+- Core sync logic with conflict detection
+- `syncFromFilesystem(specId, immediate)` - Read files, write to DB
+- `syncToFilesystem(specId)` - Read DB, write to files
+- `detectConflicts(specId)` - Compare timestamps, detect changes
+- `forceFilesystemWins(specId)` - Resolve conflict by using filesystem version
+- `syncBatch(specIds)` - Parallel sync with concurrency limit (10)
+
+**`FileWatcherService`**:
+- Chokidar-based file watching for immediate sync
+- Watches `proposal.md`, `tasks.md`, `design.md` in `changes/*/`
+- Debounces rapid changes (100ms)
+- Emits events: `file_changed`, `file_added`, `file_deleted`
+
+**`SyncScheduler`**:
+- Periodic batch sync for stale specs (every 30 seconds)
+- Batch size: 50 specs per run
+- Parallelized syncs with concurrency limit
+- Manual sync triggers via tRPC
+
+### API Endpoints
+
+**Sync Router** (`packages/api/src/router/sync.ts`):
+```typescript
+sync.getStatus({ id: string })
+// Returns: { lastSyncedAt, syncError, hasConflict, isStale }
+
+sync.forceSync({ specId?, projectId? })
+// Triggers immediate sync, returns summary
+
+sync.resolveConflict({ specId, resolution: 'filesystem_wins' | 'db_wins' })
+// Force conflict resolution
+
+sync.getSyncHistory({ specId, limit: 20 })
+// Returns paginated sync history
+
+sync.listSpecs()
+// Returns all specs with sync status
+
+sync.getSpec({ id: string })
+// Returns full spec including content
+```
+
+### File Parsing Utilities
+
+**Markdown Parser** (`packages/api/src/utils/markdown.ts`):
+- `parseProposalMd(content)` - Extract title, why, whatChanges, impact
+- `parseTasksMd(content)` - Extract tasks with checkbox status
+- `parseDesignMd(content)` - Extract design sections
+- `serializeTasksMd(tasks)` - Convert tasks back to markdown
+
+**Filesystem Utilities** (`packages/api/src/utils/filesystem.ts`):
+- `readOpenSpecFile(path)` - Read file with error handling
+- `writeOpenSpecFile(path, content)` - Atomic write with backup
+- `getFileMtime(path)` - Get last modified timestamp
+- `backupFile(path)` - Create `.bak` copy before overwrite
+
+### Data Flow
+
+**File Change → Database**:
+```
+File Modified → chokidar detects → Debounce 100ms → syncFromFilesystem()
+                                                    ↓
+                                            Read files (proposal, tasks, design)
+                                                    ↓
+                                            Parse markdown for metadata
+                                                    ↓
+                                            DB transaction: upsert spec + log history
+                                                    ↓
+                                            Emit sync_completed event
+```
+
+**UI Edit → Filesystem**:
+```
+User edits in UI → Update DB → syncToFilesystem() → Check conflicts
+                                                    ↓
+                                            Atomic write with backup
+                                                    ↓
+                                            Update timestamps in DB
+                                                    ↓
+                                            Log to sync history
+```
+
+**Periodic Sync**:
+```
+Every 30s → Get stale specs (lastSyncedAt > 30s ago)
+                    ↓
+            Batch sync up to 50 specs (10 concurrent)
+                    ↓
+            Log summary: X synced, Y errors, Z ms
+```
+
+### Conflict Resolution
+
+**Detection**:
+```typescript
+const filesystemChanged = filesystemMtime > spec.lastSyncedAt;
+const dbChanged = spec.dbModifiedAt > spec.lastSyncedAt;
+
+if (filesystemChanged && dbChanged) {
+  // CONFLICT: Both modified since last sync
+  return { conflictType: 'both_modified', ... };
+}
+```
+
+**Resolution**:
+- **Filesystem wins** (default): Discard DB changes, sync from files
+- **DB wins** (manual): Overwrite files with DB content
+- UI shows warning when conflict detected
+- Sync history records resolution method
+
+### Performance Optimizations
+
+1. **File Watcher Debouncing**: 100ms delay prevents rapid successive syncs
+2. **Batch Sync Parallelization**: 10 concurrent syncs for periodic job
+3. **Selective Watching**: Only watch active specs immediately, batch sync archives
+4. **Transaction Safety**: All DB operations in transactions with rollback
+5. **Stale Detection**: Skip specs recently synced (<30s ago)
+
+### Error Handling
+
+**Filesystem Errors**:
+- File not found: Log error to `syncError` field
+- Permission denied: Retry with exponential backoff
+- Malformed markdown: Store raw content, log parse error
+
+**Database Errors**:
+- Transaction rollback on failure
+- Sync history records error message
+- Service continues processing remaining specs
+
+**Recovery**:
+- Periodic sync catches missed file watcher events
+- Manual sync trigger available via tRPC
+- Server startup forces full sync of active specs
+
+### Environment Variables
+
+```bash
+OPENSPEC_PROJECTS_DIR=/path/to/projects  # Root directory for projects
+FILE_WATCHER_ENABLED=true                # Enable file watcher (default: true)
+PERIODIC_SYNC_ENABLED=true               # Enable periodic sync (default: true)
+SYNC_SCHEDULE="*/30 * * * * *"           # Cron expression (default: every 30s)
+SYNC_BATCH_SIZE=50                       # Max specs per periodic sync run
+```
+
+### Monitoring
+
+**Metrics to Track**:
+- Sync success/failure rate
+- Average sync duration
+- Conflict detection frequency
+- File watcher uptime
+- Stale spec count
+
+**Logging**:
+- All sync operations logged to console
+- Sync history table provides audit trail
+- Error messages stored in `syncError` field
+
+## OpenSpec Lifecycle Management
+
+The lifecycle management system provides a 7-state workflow for tracking OpenSpec specifications from proposal through implementation to archival.
+
+### State Machine
+
+```
+proposing ──(manual)──> approved ──(auto)──> assigned ──(auto)──> in_progress
+    ↑                       ↑          ↑          ↑                    ↓
+    │                       │          │          │              (auto when tasks done)
+    └───────(reject)────────┴──────────┴──────────┴                    ↓
+                                                                     review
+                                                                        ↓
+                                                                   (manual)
+                                                                        ↓
+                                                                     applied
+                                                                        ↓
+                                                                  (user trigger)
+                                                                        ↓
+                                                                    archived
+```
+
+### States
+
+1. **proposing**: Auto-generated from errors or manually created, awaiting review
+2. **approved**: User approved, waiting for worker assignment
+3. **assigned**: Worker assigned, preparing to start
+4. **in_progress**: Worker actively implementing tasks
+5. **review**: All tasks complete, awaiting user validation
+6. **applied**: User confirmed implementation successful, tests pass
+7. **archived**: Moved to archive/ directory, complete
+
+### Manual Approval Gates
+
+Two critical decision points require explicit user approval:
+
+1. **proposing → approved**: User reviews and approves spec proposal
+2. **review → applied**: User validates implementation and confirms tests pass
+
+### Automatic Transitions
+
+Specs advance automatically when objective criteria met:
+
+1. **approved → assigned**: Worker picks up from queue
+2. **assigned → in_progress**: Worker starts first task (first tool execution)
+3. **in_progress → review**: All tasks marked `[x]` complete in tasks.md
+
+### Database Tables
+
+**specLifecycle**: Complete audit trail of state transitions
+- `specId`: Foreign key to openspecSpecs
+- `fromState`, `toState`: State transition
+- `triggeredBy`: user, system, or worker
+- `triggerUserId`, `triggerSessionId`: Attribution
+- `transitionedAt`: Timestamp
+- `notes`: Optional context
+
+**appliedSpecs**: Track which specs implemented in which projects
+- `specId`: Foreign key to openspecSpecs
+- `projectId`: Foreign key to projects
+- `appliedAt`: Timestamp
+- `appliedBy`: Session that applied the spec
+- `verificationStatus`: pending, tests_passed, tests_failed
+- `verificationNotes`: Optional notes
+
+### Services
+
+**TransitionRulesEngine**: Validates state transitions
+- State machine graph as adjacency list
+- Manual gate detection
+- Task completion parsing from tasks.md
+- Automatic transition detection
+
+**SpecLifecycleService**: Main lifecycle operations
+- State transition with validation
+- Approval/rejection workflows
+- Applied spec tracking
+- Verification status updates
+
+**LifecycleMonitor**: Background job (30s interval)
+- Monitors specs in `in_progress` state
+- Detects task completion (all checkboxes `[x]`)
+- Auto-transitions to `review` state
+- Continues on errors, logs issues
+
+### API Endpoints
+
+**tRPC Router: `lifecycle`**
+
+Queries:
+- `getStatus({ specId })`: Current status, history, task completion %
+- `getAppliedSpecs({ projectId })`: All specs applied to project
+- `getSpecApplications({ specId })`: All projects where spec applied
+- `requiresApproval({ specId })`: Check if at manual gate
+- `getNextStates({ specId })`: Possible next states
+
+Mutations:
+- `approve({ specId, userId })`: Approve proposal
+- `reject({ specId, reason, userId })`: Reject spec
+- `markApplied({ specId, projectId, verificationNotes })`: Mark as applied
+- `updateVerification({ specId, projectId, status, notes })`: Update test status
+- `transitionTo({ specId, toState, notes })`: Manual transition
+
+### Task Completion Detection
+
+Background monitor parses `tasks.md` every 30 seconds:
+- Task format: `- [ ]` (incomplete) or `- [x]` (complete)
+- Completion percentage: `(completed / total) * 100`
+- Auto-transition when: All tasks have `[x]`
+
+**Error Handling**:
+- Malformed tasks.md: Log error, skip auto-transition
+- Manual override available: User can force transition
+- Background job continues on errors, doesn't crash
+
+### Workflow Example
+
+1. **Create Proposal**: Spec created in `proposing` state
+2. **User Review**: User reads proposal, clicks "Approve" → `approved`
+3. **Worker Assignment**: Worker claims spec → `assigned`
+4. **Implementation**: Worker starts, clicks first task → `in_progress`
+5. **Complete Tasks**: Worker marks all tasks `[x]` → auto-transitions to `review`
+6. **User Validation**: User runs tests, clicks "Mark Applied" → `applied`
+7. **Verification**: User updates verification status to `tests_passed`
+8. **Archive**: User triggers archive → `archived`
+
+### State History Audit Trail
+
+Every state transition recorded with:
+- Timestamp
+- Previous and new state
+- Who/what triggered the transition
+- Optional notes for context
+
+Enables:
+- Compliance auditing
+- Debugging workflow issues
+- Understanding spec progression
+- Rollback planning
+
+### Applied Spec Tracking
+
+When spec marked as applied:
+- Record created linking spec to project
+- Attribution to applying session
+- Verification status set to `pending`
+- User can update to `tests_passed` or `tests_failed`
+
+Benefits:
+- Know which projects have which specs
+- Track test results per project
+- Audit trail of implementations
+- Rollback planning if spec fails
+
 ## Related Documentation
 
 - [Development Guide](./development.md) - Setup and workflows
@@ -827,3 +1217,4 @@ Future bottlenecks:
 - [Deployment Guide](./deployment.md) - Docker builds and CI/CD
 - [Package Documentation](./packages/) - Detailed package APIs
 - [Main CLAUDE.md](../../CLAUDE.md) - Overall project documentation
+- [Spec Lifecycle Management](../../openspec/specs/spec-lifecycle-management/spec.md) - Detailed spec

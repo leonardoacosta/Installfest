@@ -14,6 +14,7 @@ import {
   hookFilterSchema
 } from '@homelab/validators'
 import { hookEvents } from '../events'
+import { SessionMonitorService } from '../services/session-monitor'
 
 export const hooksRouter = createTRPCRouter({
   // List hooks with filtering
@@ -109,6 +110,15 @@ export const hooksRouter = createTRPCRouter({
           metadata: input.metadata,
         })
         .returning()
+
+      // Update session activity timestamp
+      const sessionMonitor = new SessionMonitorService(ctx.db);
+      try {
+        await sessionMonitor.updateSessionActivity(input.sessionId);
+      } catch (error) {
+        console.error(`Failed to update session activity for session ${input.sessionId}:`, error);
+        // Don't fail the hook ingest if activity update fails
+      }
 
       // Broadcast event to subscribed clients
       hookEvents.emit('hook:created', hook)
