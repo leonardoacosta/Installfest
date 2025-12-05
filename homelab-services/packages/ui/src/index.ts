@@ -26,6 +26,7 @@ export { Avatar, AvatarImage, AvatarFallback } from "./components/ui/avatar"
 export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "./components/ui/tooltip"
 export { Tabs, TabsList, TabsTrigger, TabsContent } from "./components/ui/tabs"
 export { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "./components/ui/accordion"
+export { ScrollArea, ScrollBar } from "./components/ui/scroll-area"
 
 // Feedback Components
 export { useToast, toast } from "./hooks/use-toast"

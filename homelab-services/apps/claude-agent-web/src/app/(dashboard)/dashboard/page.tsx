@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@homelab/ui/tabs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@homelab/ui/card'
@@ -20,7 +20,7 @@ export type DashboardFilters = {
   search?: string
 }
 
-export default function DashboardPage() {
+function DashboardContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [filters, setFilters] = useState<DashboardFilters>({})
@@ -91,5 +91,13 @@ export default function DashboardPage() {
         </div>
       </div>
     </>
+  )
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading dashboard...</div>}>
+      <DashboardContent />
+    </Suspense>
   )
 }

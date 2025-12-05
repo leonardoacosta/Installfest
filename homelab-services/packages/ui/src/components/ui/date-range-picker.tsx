@@ -1,10 +1,9 @@
 'use client'
 
-import * as React from 'react'
 import { Calendar } from './calendar'
 import { Popover, PopoverContent, PopoverTrigger } from './popover'
 import { Button } from './button'
-import { cn } from '../../utils/cn'
+import { cn } from '../../lib/utils'
 import { format } from 'date-fns'
 import { CalendarIcon } from 'lucide-react'
 
