@@ -2,445 +2,316 @@
 
 ## Purpose
 
-Personal dotfiles and homelab infrastructure automation for self-hosted services. Two main objectives:
+Personal dotfiles and homelab infrastructure automation combining:
 
-1. **Homelab Infrastructure**: Complete Docker-based self-hosted service stack on Arch Linux with automated deployment, monitoring, and rollback capabilities
-2. **Mac Development Environment**: Automated macOS setup with dotfiles, Homebrew packages, and system configuration
+1. **Mac Development Environment** (`/mac`) - macOS dotfiles, Homebrew packages, system configuration for development productivity
+2. **Homelab Infrastructure** (`/homelab`) - Docker-based self-hosted services on Arch Linux server for home automation, media, security, and AI workloads
+3. **Better-T-Stack Services** (`/homelab-services`) - Type-safe monorepo with Claude Agent management and Playwright test orchestration
 
-**Primary Focus**: The homelab stack is the main component, featuring 20+ self-hosted services including media automation, home automation, AI services, VPN, reverse proxy, and PaaS platform.
+**Goals:**
+- Reproducible development environments across machines
+- Self-hosted alternative to cloud services
+- Automated error detection and remediation via AI agents
+- OpenSpec-driven change management for infrastructure evolution
+- CI/CD automation via self-hosted GitHub Actions runners
 
 ## Tech Stack
 
-### Homelab (Primary)
-- **Infrastructure**: Docker Compose, Arch Linux, Bash scripting
-- **CI/CD**: GitHub Actions with self-hosted runner
-- **Networking**: Traefik (reverse proxy), Tailscale (VPN), Gluetun (VPN tunnel)
-- **Core Services**:
-  - Home Assistant (home automation)
-  - AdGuard Home (DNS/ad-blocking)
-  - Jellyfin (media server)
-  - *arr stack (Radarr, Sonarr, Lidarr, Prowlarr - media automation)
-  - Ollama (local AI)
-  - Coolify (self-hosted PaaS)
-  - Vaultwarden (password manager)
-  - Glance (dashboard)
+### Core Languages & Runtimes
+- **TypeScript** - Primary language for all applications
+- **Bun** - Package manager and runtime (v1.1+)
+- **Node.js** - Secondary runtime for compatibility
+- **Bash** - Shell scripts for deployment and automation
+- **Zsh** - Interactive shell with Starship prompt
 
-### Mac Setup
-- **Shell**: Zsh with custom configuration
-- **Package Management**: Homebrew
-- **Terminal**: WezTerm
-- **Prompt**: Starship
-- **Scripting**: Bash
+### Frontend Stack (Better-T-Stack)
+- **Next.js 15** - React framework with App Router
+- **React 19** - UI library with Server Components
+- **Tailwind CSS** - Utility-first styling
+- **ShadCN UI** - Component library (customized)
+- **Framer Motion** - Animation library
+- **Monaco Editor** - Code editor component
+
+### Backend Stack (Better-T-Stack)
+- **tRPC v11** - Type-safe API layer
+- **Drizzle ORM** - Type-safe database ORM
+- **SQLite** - Database (claude.db)
+- **Better-Auth** - Authentication (planned)
+- **React Query** - Data fetching and caching
+
+### Infrastructure & DevOps
+- **Docker & Docker Compose** - Container orchestration
+- **Traefik** - Reverse proxy and load balancer
+- **GitHub Actions** - CI/CD pipelines
+- **Self-hosted Runners** - Build and deployment agents
+- **Coolify** - PaaS for service management (optional)
+- **Tailscale** - VPN and service mesh
+
+### Homelab Services
+- **Home Assistant** - Home automation hub
+- **AdGuard Home** - DNS server and ad blocker
+- **Vaultwarden** - Password manager
+- **Jellyfin** - Media server
+- **Arr Stack** - Media automation (Sonarr, Radarr, Prowlarr, etc.)
+- **qBittorrent** - Download client with VPN
+- **Gluetun** - VPN container
+- **Ollama** - Local LLM inference
+- **Glance** - Dashboard aggregator
+
+### Testing & Quality
+- **Playwright** - E2E testing framework
+- **Bun Test** - Unit testing
+- **TypeScript ESLint** - Linting
+- **Prettier** - Code formatting
 
 ### Development Tools
-- GitHub Actions (self-hosted runner)
-- Docker & Docker Compose
-- rsync (deployment)
-- systemd (service management)
+- **Turbo** - Monorepo build system
+- **WezTerm** - Terminal emulator
+- **Zed** - Code editor
+- **Git** - Version control
 
 ## Project Conventions
 
 ### Code Style
 
-**Bash Scripts**:
-- Use `#!/usr/bin/env bash` shebang
-- Enable strict mode: `set -euo pipefail` (except where error handling requires flexibility)
-- Descriptive function names in `snake_case`
-- Global variables in `UPPER_CASE`
-- Local variables in `lower_case`
-- Comprehensive error handling with clear messages
-- Color-coded output (success=green, warning=yellow, error=red, info=blue)
-- Logging functions: `log_success`, `log_error`, `log_warning`, `log_info`
+**TypeScript:**
+- Strict mode enabled (`"strict": true`)
+- Prefer `interface` over `type` for object shapes
+- Use explicit return types for exported functions
+- Prefer functional components and hooks
+- Use `const` assertions for immutable objects
 
-**Docker Compose**:
-- Split compose files by service category (infrastructure, media, ai, monitoring, etc.)
-- Use named networks with explicit subnets
-- Static IP assignments for critical services
-- Volume mounts prefer named volumes over bind mounts (except config)
-- Environment variables always sourced from `.env`, never hardcoded
-- Health checks for all critical services
-- Restart policy: `unless-stopped` for production services
+**Naming Conventions:**
+- Files: `kebab-case.ts` or `kebab-case.tsx`
+- Components: `PascalCase.tsx`
+- Functions/variables: `camelCase`
+- Constants: `UPPER_SNAKE_CASE`
+- Database tables: `snake_case`
+- tRPC routers: `camelCase` procedures
 
-**File Organization**:
-- Configuration files in service-specific directories
-- Shared utilities in `scripts/common-utils.sh`
-- Deployment scripts prefixed with `deploy-`
-- Setup scripts prefixed with `setup-`
+**Formatting:**
+- Prettier with default settings
+- Single quotes for strings
+- Semicolons required
+- 2-space indentation
+- Trailing commas in multi-line
+
+**Import Order:**
+1. React/Next.js imports
+2. Third-party libraries
+3. Internal packages (`@/...`)
+4. Relative imports
+5. Type imports last
 
 ### Architecture Patterns
 
-**Network Isolation**:
-- Two isolated Docker networks: `homelab` (172.20.0.0/16) and `media` (172.21.0.0/16)
-- Cross-network services explicitly connect both networks
-- VPN-protected services use `network_mode: service:gluetun`
-- All traffic for download clients routes through Gluetun VPN tunnel
+**Monorepo Structure:**
+```
+homelab-services/
+├── apps/           # Next.js applications
+├── packages/       # Shared libraries
+│   ├── api/        # tRPC routers and business logic
+│   ├── db/         # Database schema and client
+│   ├── ui/         # Shared UI components
+│   └── validators/ # Zod schemas
+```
 
-**State Management**:
-- Setup wizard tracks progress in `.setup_state` file
-- State transitions: `fresh` → `prerequisites_installed` → `runner_configured` → `directories_created` → `environment_configured` → `services_configured` → `deployed`
-- Resumable setup after interruptions or permission changes
+**Better-T-Stack Patterns:**
+- **App Router** - Use server components by default, client components only when needed
+- **Server Actions** - Prefer tRPC over Next.js server actions for mutations
+- **tRPC Subscriptions** - Real-time updates via EventEmitter + observables
+- **Drizzle Queries** - Use prepared statements for performance
+- **Zod Schemas** - Single source of truth for validation (reuse in validators package)
 
-**Deployment Pattern**:
-1. Validation (environment, permissions, docker-compose syntax)
-2. Pre-deployment backup
-3. Graceful service shutdown
-4. Image updates
-5. Service deployment with health checks
-6. Automatic rollback on failure
-7. Backup retention (keep last 5)
+**API Layer:**
+- All database logic in `packages/api/src/router/*.ts`
+- Services in `packages/api/src/services/*.ts` for complex business logic
+- Utils in `packages/api/src/utils/*.ts` for pure functions
+- Context in `packages/api/src/context.ts` for shared state
 
-**Permission Handling**:
-- Attempt operations without sudo first
-- Graceful fallback to sudo for directory operations
-- Continue deployment on non-critical permission errors
-- Exit code 23 (rsync permission errors) treated as warning
-- Uses `rsync --ignore-errors` for resilient file copying
+**UI Components:**
+- ShadCN UI as base, customize in `packages/ui/src/components/ui/*.tsx`
+- Composite components in `packages/ui/src/components/*/` (charts, navigation, etc.)
+- Export all components via `packages/ui/src/index.ts`
+- Dark mode via next-themes (system default)
 
-**Service Discovery**:
-- Traefik routes defined in `traefik/dynamic/*.yml`
-- Services accessed via domain names (not IP:port)
-- Internal DNS resolution via Docker network names
+**Database:**
+- Drizzle schema in `packages/db/src/schema/*.ts` (one file per domain)
+- Migrations in `packages/db/migrations/*.sql`
+- Transactions via `packages/db/src/transactions.ts` helpers
+- Pagination via `packages/db/src/pagination.ts` utilities
+
+**Docker Homelab:**
+- Service definitions split by category (`compose/*.yml`)
+- Environment variables in `.env` (auto-generated by wizard)
+- Dynamic Traefik config in `traefik/dynamic/*.yml`
+- Service state preserved in Docker volumes
+
+**OpenSpec Change Management:**
+- All changes start with `/openspec:proposal`
+- Specs in `openspec/specs/<name>/spec.md`
+- Active changes in `openspec/changes/<id>-<name>/`
+- Archive completed changes via `/openspec:archive`
 
 ### Testing Strategy
 
-**Pre-Deployment Validation**:
-```bash
-# Validate compose configuration
-docker compose config -q
+**Unit Tests (Bun Test):**
+- Co-locate tests with source: `src/__tests__/*.test.ts`
+- Use descriptive test names: `"should return error proposals sorted by priority"`
+- Mock external dependencies (database, filesystem)
+- Aim for >80% coverage on business logic
 
-# Validate without .env (ensure no hardcoded values)
-docker compose -f docker-compose.yml config --dry-run
-```
+**Integration Tests:**
+- Test API routers with real database (in-memory SQLite)
+- Use `beforeEach` to reset database state
+- Test happy paths and error cases
+- File: `packages/api/src/services/__tests__/*.integration.test.ts`
 
-**Health Checks**:
-- Critical services: traefik, adguardhome, homeassistant
-- HTTP endpoint checks with retries
-- Service-specific health commands (e.g., `ollama list` for AI service)
-- Monitoring workflow runs every 30 minutes
+**E2E Tests (Playwright):**
+- Test critical user flows end-to-end
+- Use Page Object Model for reusability
+- Run against local dev server (port 3002, 3000)
+- File: `apps/*/e2e/*.spec.ts`
+- Generate reports to `playwright-reports/*.json`
 
-**Local Testing**:
-```bash
-# Simulate CI deployment locally
-export GITHUB_WORKSPACE=$(pwd)/..
-export HOMELAB_PATH=~/homelab
-bash scripts/deploy-ci-streamlined.sh
-```
+**Test Data:**
+- Use factories for consistent test data
+- Avoid hardcoded IDs (use auto-increment)
+- Clean up after tests (transactions + rollback)
 
-**Rollback Testing**:
-- Automated rollback on deployment failure
-- Backup restoration validated before deletion
+**CI/CD Testing:**
+- Run unit tests on every commit
+- Run integration tests on PR
+- Run E2E tests before deployment
+- Auto-generate error proposals from failures
 
 ### Git Workflow
 
-**Branching Strategy**:
-- `main` - production-ready state
-- `dev` - development branch (triggers homelab deployment)
-- Feature branches merged to `dev` for testing
+**Branching Strategy:**
+- `main` - Production-ready code
+- Feature branches: `feature/<description>`
+- Hotfix branches: `hotfix/<description>`
+- No develop branch (CI/CD from main)
 
-**Deployment Triggers**:
-- Push to `dev` affecting `homelab/**` → triggers deployment workflow
-- Manual dispatch available for both deploy and monitor workflows
+**Commit Conventions:**
+- Use conventional commits format:
+  - `feat: add unified work dashboard`
+  - `fix: resolve race condition in worker monitor`
+  - `docs: update deployment guide`
+  - `refactor: extract error analysis to utils`
+  - `test: add E2E tests for dashboard filtering`
+  - `chore: update dependencies`
 
-**Commit Conventions**:
-- Descriptive commit messages focusing on "why" not "what"
-- Co-authored commits include: `Co-Authored-By: Claude <noreply@anthropic.com>`
-- Generated commits tagged with: `🤖 Generated with Claude Code`
+**OpenSpec Commits:**
+- Include change ID in commits: `feat: implement change 6 - unified dashboard`
+- Reference tasks: `Complete Phase 6.5: Real-time subscriptions`
+- Archive marker: `Archive Change 5: Error automation system`
 
-**CI/CD Workflows**:
-- `deploy-homelab.yml` - Full deployment with rollback support
-- `monitor-homelab.yml` - Service health monitoring (scheduled)
-- Both run on self-hosted runner (Arch Linux server)
+**PR Requirements:**
+- Link to OpenSpec change if applicable
+- Include screenshots for UI changes
+- Pass all CI checks (lint, test, build)
+- Update documentation if needed
 
 ## Domain Context
 
-### Docker Networking
-Two isolated networks prevent service interference and improve security:
-- **homelab network**: Core infrastructure (DNS, reverse proxy, home automation, AI)
-- **media network**: Media services (download clients, media servers, requests)
-- Cross-network services bridge both for necessary communication
+**OpenSpec Workflow:**
+- **Proposing** → User reviews proposal.md and tasks.md
+- **Approved** → Added to work queue with priority
+- **Assigned** → Linked to session, worker spawned
+- **In Progress** → Worker executing tasks
+- **Review** → Worker completed, awaiting validation
+- **Applied** → User validated, change deployed
+- **Archived** → Rejected or superseded
 
-### VPN Architecture
-**Gluetun VPN Tunnel**:
-- All download clients route through Gluetun using `network_mode: service:gluetun`
-- Services include: qBittorrent, Prowlarr, NZBGet, Byparr
-- Accessed via Gluetun's published ports (not individual container ports)
-- Provides privacy and security for torrent/usenet traffic
+**Work Queue Priority:**
+- 1 (Lowest) - Nice-to-have improvements
+- 2 (Low) - Non-critical bugs
+- 3 (Medium) - Standard features
+- 4 (High) - Important fixes
+- 5 (Highest) - Critical errors
 
-### Service Dependencies
-Critical startup order managed via Docker Compose `depends_on`:
-1. Traefik (reverse proxy) - must start before services with routes
-2. AdGuard Home (DNS) - required for domain resolution
-3. Gluetun (VPN) - required before download clients
-4. Databases - required before dependent applications
+**Worker Agent Types:**
+- `t3-stack-developer` - Full-stack Better-T-Stack work
+- `nextjs-frontend-specialist` - UI/UX implementation
+- `trpc-backend-engineer` - API and business logic
+- `database-architect` - Schema and query optimization
+- `e2e-test-engineer` - Playwright test creation
+- `ux-design-specialist` - Design system work
+- `docker-network-architect` - Container orchestration
 
-### Home Automation
-**Home Assistant**: Central hub for smart home devices
-- Integrations: HACS (community store), MTR-1 (presence detection)
-- Configuration as code in `homeassistant/config/`
-- Zones visualization with Plotly Graph Card
+**Error Classification:**
+- `type-error` - TypeScript compilation errors
+- `missing-property` - Undefined property access
+- `assertion-failure` - Test expectation failures
+- `network-error` - API/network timeouts
+- `configuration-error` - Invalid config/env
 
-### Media Automation
-***arr Stack** (request → download → organize → serve):
-1. Jellyseerr - User requests media
-2. Radarr/Sonarr/Lidarr - Search indexers via Prowlarr
-3. Download clients (qBittorrent/NZBGet) - Download content
-4. Automatic organization and renaming
-5. Jellyfin - Stream organized content
+**Homelab Networks:**
+- `homelab` (172.20.0.0/16) - Core services
+- `media` (172.21.0.0/16) - VPN-protected media stack
 
-### PaaS Platform
-**Coolify**: Self-hosted Platform-as-a-Service
-- Deploy apps from Git repos or Docker images
-- Automatic builds, deployments, and SSL
-- Integrates with homelab network for service communication
-- Replaces need for manual Docker Compose for new apps
+**Service Discovery:**
+- Internal: `http://<service-name>:<port>`
+- External: `https://<service>.tail<redacted>.ts.net` (Tailscale)
+- Traefik: `https://<service>.local` (via AdGuard DNS rewrite)
 
 ## Important Constraints
 
-### Security Requirements
-- **Never commit `.env` files** - contain sensitive credentials
-- **Use `.env.example`** as template for required variables
-- **Firewall configuration**: Allow only ports 22 (SSH), 80 (HTTP), 443 (HTTPS), 51820 (Tailscale)
-- **HTTPS enforcement**: Configure Traefik TLS before internet exposure
-- **VPN protection**: All download traffic must route through Gluetun
-- **Tailscale access**: Prefer Tailscale for secure remote access over port forwarding
-- **Default exposure**: 27+ ports exposed by default - production hardening required
+**Technical Constraints:**
+- Homelab runs on single Arch Linux server (resource-limited)
+- Mac setup must work without network access
+- Database is SQLite (no PostgreSQL for simplicity)
+- No public internet exposure (Tailscale VPN only)
+- Self-hosted runners have limited concurrency
 
-### Permission Management
-- Containers run as non-root with `PUID`/`PGID` from environment
-- Deployment scripts handle permission escalation gracefully
-- GitHub Actions runner requires docker group membership
-- Service directories must be owned by deployment user
-- Backup directories require write permissions
+**Security Constraints:**
+- All secrets in `.env` files (never commit)
+- Traefik certificates stored in Docker volumes
+- VPN required for all external access
+- AdGuard Home blocks ads and malware domains
+- Vaultwarden for password management
 
-### Resource Constraints
-- **Arch Linux server**: Single physical machine hosting all services
-- **Network subnets**: Fixed CIDR blocks (172.20.0.0/16, 172.21.0.0/16)
-- **Port conflicts**: Avoid conflicts with host services (e.g., port 53 with systemd-resolved)
-- **Storage**: Media services require substantial disk space
-- **Memory**: AI services (Ollama) memory-intensive
+**Operational Constraints:**
+- Deployments must be atomic (rollback on failure)
+- Service downtime must be minimal (<30s)
+- Logs must be accessible via `docker compose logs`
+- Configuration must be declarative (GitOps)
+- State must survive container restarts
 
-### Deployment Constraints
-- **Self-hosted runner**: Deployments must run on Arch Linux server (can't use GitHub-hosted)
-- **Idempotent deployments**: Scripts must be safe to run repeatedly
-- **Zero-downtime impossible**: Some services require restart during updates
-- **Backup retention**: Keep only last 5 backups to conserve space
-- **Environment dependencies**: All variables must be set before deployment
-
-### Operational Constraints
-- **Setup wizard required**: First-time setup must complete wizard before service usage
-- **State persistence**: `.setup_state` must not be deleted during normal operations
-- **Docker group requirement**: User must be in docker group for non-root access
-- **Systemd integration**: GitHub runner installed as systemd service
+**Development Constraints:**
+- Use Bun for all package management (no npm/yarn)
+- TypeScript strict mode required
+- All APIs must be type-safe (tRPC)
+- Real-time features require tRPC subscriptions
+- Monaco editor must load dynamically (SSR issue)
 
 ## External Dependencies
 
-### Docker Hub Images
-Core service images (pulled from Docker Hub):
-- `traefik:latest` - Reverse proxy
-- `adguard/adguardhome:latest` - DNS/ad-blocking
-- `homeassistant/home-assistant:stable` - Home automation
-- `jellyfin/jellyfin:latest` - Media server
-- `linuxserver/*` images - *arr stack and media services
-- `ollama/ollama:latest` - Local AI
-- `coollabsio/coolify:latest` - PaaS platform
-- `qmcgaw/gluetun:latest` - VPN tunnel
-- `tailscale/tailscale:latest` - VPN mesh network
+**Cloud Services:**
+- **GitHub** - Git hosting and CI/CD (self-hosted runners)
+- **Anthropic Claude API** - AI agent automation (via Claude Code CLI)
+- **Tailscale** - VPN and service mesh
 
-### External Services
-- **GitHub**: Repository hosting, Actions CI/CD
-- **VPN Provider**: Commercial VPN for Gluetun (user-configured)
-- **Tailscale**: Mesh VPN for secure remote access
-- **Indexers**: Torrent/Usenet indexers for media automation (user-configured)
-- **SMTP Server**: Email delivery for Vaultwarden (user-configured)
+**External APIs:**
+- **TheTVDB** - TV show metadata (via Sonarr)
+- **TheMovieDB** - Movie metadata (via Radarr)
+- **MusicBrainz** - Music metadata (via Lidarr)
+- **OpenSubtitles** - Subtitle downloads (via Bazarr)
+- **Usenet Indexers** - Content search (via Prowlarr)
 
-### APIs and Integrations
-- **Prowlarr API**: Indexer management and search aggregation
-- ***arr APIs**: Inter-service communication for media automation
-- **Jellyfin API**: Media playback and metadata
-- **Home Assistant API**: Smart home control and automation
-- **Ollama API**: Local AI model inference
-- **Traefik API**: Dynamic routing and service discovery
+**DNS Dependencies:**
+- **Cloudflare DNS** - Public DNS fallback (1.1.1.1)
+- **AdGuard Home** - Local DNS server and filtering
+- **Tailscale MagicDNS** - VPN DNS resolution
 
-### System Dependencies (Arch Linux)
-- Docker & Docker Compose
-- systemd (service management)
-- rsync (file synchronization)
-- OpenSSL (credential generation)
-- curl/wget (health checks)
-- git (GitHub Actions runner)
+**Infrastructure Dependencies:**
+- **Docker Hub** - Container images
+- **GitHub Container Registry** - Custom images (future)
+- **Homebrew** - macOS package manager
+- **AUR** - Arch Linux package repository
 
-### macOS Dependencies
-- Xcode Command Line Tools
-- Homebrew (package management)
-- Zsh (shell)
-- System preferences access (for `osx-defaults.sh`)
-
-### Documentation Resources
-- Traefik v3 documentation (reverse proxy configuration)
-- Docker Compose v2 specification
-- Home Assistant integration docs
-- *arr wiki (media automation setup)
-- Coolify documentation (PaaS deployment)
-
-## Documentation Standards
-
-### Documentation Hierarchy
-
-The project uses a three-tier documentation structure with clear separation of concerns:
-
-1. **CLAUDE.md** - Minimal quick reference (~150 lines)
-   - OpenSpec instructions
-   - Essential commands only
-   - Cross-references to detailed documentation
-   - Target audience: Claude Code AI assistant and users needing quick lookups
-
-2. **docs/[service]/README.md** - Detailed service documentation
-   - Comprehensive setup instructions
-   - Configuration details
-   - Troubleshooting guides
-   - Links to OpenSpec specifications
-   - Target audience: Users implementing and maintaining services
-
-3. **openspec/specs/[capability]/spec.md** - Formal specifications
-   - Requirements with scenarios (WHEN/THEN format)
-   - Behavioral specifications
-   - Design decisions (in design.md when applicable)
-   - Target audience: Developers and contributors needing formal behavior definitions
-
-### Service Documentation Template
-
-Each service SHALL have documentation in `docs/[service]/README.md` with the following structure:
-
-```markdown
-# [Service Name]
-
-## Overview
-Brief description of the service and its purpose (2-3 sentences).
-
-## Setup
-Step-by-step instructions for initial setup and configuration.
-
-## Configuration
-Detailed configuration options, environment variables, and customization.
-
-## Usage
-Common operations and examples.
-
-## Troubleshooting
-Common issues and their solutions.
-
-## References
-- Link to OpenSpec specification: `openspec/specs/[capability]/spec.md`
-- Link to external documentation
-- Link to related services
-```
-
-### Cross-Reference Linking Conventions
-
-Use consistent link formats for cross-referencing documentation:
-
-**Linking to service documentation:**
-- Format: `docs/[service]/README.md`
-- Example: `See docs/dns/README.md for DNS configuration`
-- Use descriptive link text, not bare URLs
-
-**Linking to OpenSpec specifications:**
-- Format: `openspec/specs/[capability]/spec.md`
-- Example: `See openspec/specs/bluetooth-automation/spec.md for formal requirements`
-- Link specific sections with anchors when applicable
-
-**Linking to code locations:**
-- Format: `file.ts:42` or `path/to/file.ts:42`
-- Example: `Implementation at homelab/scripts/deploy-ci.sh:156`
-
-**Linking in CLAUDE.md:**
-- Keep cross-references inline and minimal
-- Example: `## DNS Configuration\n\nSee docs/dns/README.md for detailed setup.`
-
-### Documentation File Naming Conventions
-
-**Service documentation:**
-- Main doc: `docs/[service]/README.md` (always README.md)
-- Specialized docs: `docs/[service]/[specific-topic].md` (lowercase with hyphens)
-- Examples: `docs/deployment/rollback-procedures.md`, `docs/dns/advanced-configuration.md`
-
-**OpenSpec specifications:**
-- Capability spec: `openspec/specs/[capability]/spec.md`
-- Design doc: `openspec/specs/[capability]/design.md` (optional)
-- Use kebab-case for capability names
-- Examples: `bluetooth-automation`, `usb-boot-automation`
-
-**Documentation index:**
-- Cross-reference map: `docs/INDEX.md`
-- Lists all capabilities with links to specs and detailed docs
-
-### Required Documentation Sections
-
-**Service documentation must include:**
-- Overview (purpose and context)
-- Setup (installation and initial configuration)
-- Configuration (options and customization)
-- Troubleshooting (common issues and solutions)
-- References (links to specs and related docs)
-
-**OpenSpec specifications must include:**
-- At least one requirement with scenarios
-- Scenarios in `#### Scenario:` format (4 hashtags)
-- WHEN/THEN clauses for acceptance criteria
-- Must validate with `openspec validate --strict`
-
-### Content Preservation Policy
-
-When refactoring or reorganizing documentation:
-- All existing content must be preserved (no information loss)
-- Removed sections must be archived in `openspec/changes/archive/`
-- Git history provides version tracking
-- Validate content migration with checklist before deletion
-
-### Documentation Maintenance
-
-**When adding new services:**
-1. Create OpenSpec specification in `openspec/specs/[capability]/`
-2. Create detailed documentation in `docs/[service]/README.md`
-3. Add entry to `docs/INDEX.md` with cross-references
-4. Add quick reference to CLAUDE.md (if essential command)
-
-**When updating services:**
-1. Update relevant `docs/[service]/README.md`
-2. If behavior changes, create OpenSpec change proposal
-3. Update CLAUDE.md only if essential commands change
-4. Keep cross-references synchronized
-
-**Documentation validation:**
-- Run `openspec validate --strict` on all specs
-- Verify all internal links resolve correctly
-- Check that required sections are present in service docs
-
-### Homelab Services Documentation Standards
-
-The `homelab-services/` monorepo (Better-T-Stack) follows additional documentation conventions:
-
-**Architecture documentation** (`homelab-services/docs/architecture.md`):
-- System design and data flow
-- Tech stack justification
-- Design patterns and trade-offs
-
-**Development documentation** (`homelab-services/docs/development.md`):
-- Local setup instructions
-- Development workflows
-- Common issues and solutions
-
-**Contributing documentation** (`homelab-services/docs/contributing.md`):
-- Code standards and best practices
-- Pull request process
-- Testing guidelines
-
-**Package documentation** (`homelab-services/docs/packages/[name].md`):
-- API documentation for shared packages
-- Usage examples
-- Best practices
-
-**Cross-repository linking:**
-- Main CLAUDE.md → homelab-services/docs/ for monorepo details
-- homelab-services docs → Main specs for formal requirements
-- Both documentation trees have INDEX.md for navigation
+**Development Dependencies:**
+- **Context7** - Documentation lookup (MCP server)
+- **Playwright MCP** - Browser automation (MCP server)
+- **Sequential Thinking MCP** - AI reasoning (MCP server)
