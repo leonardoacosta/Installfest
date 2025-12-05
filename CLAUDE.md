@@ -174,6 +174,275 @@ The `homelab-services/` directory contains a Better-T-Stack monorepo with type-s
 - [Deployment Guide](./homelab-services/docs/deployment.md) - Docker builds and CI/CD
 - [Documentation Index](./homelab-services/docs/INDEX.md) - Complete navigation
 
+## Unified Work Dashboard
+
+The Claude Agent Web application includes a unified dashboard for managing OpenSpec changes, work queue, and agent coordination. Access at `http://localhost:3002/dashboard`.
+
+**OpenSpec Reference:** [specs/unified-work-dashboard](./openspec/specs/unified-work-dashboard/)
+
+### Dashboard Navigation
+
+The dashboard is organized into four main tabs:
+
+1. **Work Queue** - View and manage all work items (specs + error proposals)
+2. **Approvals** - Review and approve/reject specs in proposing and review states
+3. **Master Agents** - Monitor active worker agents and view clarifications
+4. **Lifecycle** - Visualize spec state transitions and history
+
+**Tab Persistence:** The active tab is persisted to the URL (e.g., `?tab=work-queue`) for easy bookmarking and sharing.
+
+### Work Queue Tab
+
+Manage all work items in a unified table with drag-and-drop prioritization.
+
+**Features:**
+- **Combined View:** Specs and error proposals in one table
+- **Sortable Columns:** Priority, Age, Status (click headers to sort)
+- **Type Badges:** Blue "Spec" (manual), Red "Error" (auto-generated)
+- **Status Badges:** queued, assigned, blocked, completed
+- **Priority Display:** 1-5 star icons
+- **Real-time Updates:** New items and status changes appear instantly via tRPC subscriptions
+
+**Actions:**
+- **View** (Eye icon) - Navigate to lifecycle page
+- **Edit** (Edit icon) - Open spec editor
+- **Approve** (CheckCircle2) - Move from proposing → approved (shows for queued items)
+- **Assign to Me** (UserPlus) - Assign work item to your session
+- **Complete** (Manual) - Mark as done (shows for assigned items)
+- **Reject** (XCircle) - Archive spec with reason
+
+**Drag-and-Drop Reordering:**
+- Click and hold the grip icon (≡) on any row
+- Drag to new position
+- Release to reorder (syncs to server immediately)
+- Optimistic UI updates with rollback on error
+
+### Approvals Tab
+
+Review specs waiting for user approval or validation.
+
+**Two Sections:**
+
+1. **Needs Approval** (proposing state)
+   - Specs awaiting initial review before work starts
+   - View full proposal.md content (rendered markdown)
+   - View tasks.md checklist
+   - Actions: View, Approve, Edit, Reject
+
+2. **Needs Validation** (review state)
+   - Specs completed by workers, awaiting confirmation
+   - View tasks.md with completion status
+   - View proposal.md for reference
+   - Actions: View, Validate & Apply
+
+**Approval Workflow:**
+1. Click "View" on any spec to open detail modal
+2. Review proposal content and tasks
+3. **Approve:** Adds to work queue (transitions proposing → approved)
+4. **Edit & Approve:** Navigate to spec editor, save changes, then approve
+5. **Reject:** Provide reason, archives spec (transitions proposing → archived)
+
+**Validation Workflow:**
+1. Worker completes spec (transitions in_progress → review)
+2. User reviews completed tasks in validation section
+3. **Validate & Apply:** Marks spec as applied (transitions review → applied)
+4. **Request Changes:** Send feedback to agent (placeholder for future implementation)
+
+**Real-time Updates:** New specs automatically appear when they enter proposing or review states via lifecycle subscriptions.
+
+### Master Agents Tab
+
+Monitor active worker agents spawned by master sessions.
+
+**Worker Cards Display:**
+- **Agent Type Badge:** T3 Stack, E2E Tests, Database, UX Design, Docker, Redis, General
+- **Status Badge:** Spawned (blue), Working (green), Completed (gray), Failed (red), Cancelled (gray)
+- **Spec Info:** Spec ID link, Session ID
+- **Time Elapsed:** "Started 5m ago" or "Spawned 10s ago"
+- **Progress Bar:** Shows completion percentage for active workers
+- **Error Messages:** Displayed for failed workers
+
+**Actions:**
+- **Cancel** (Square icon) - Stop active worker
+- **Retry** (Zap icon) - Restart failed worker
+- **View Details** (Activity icon) - Open worker detail modal
+
+**Worker Detail Modal:**
+- **Progress Metrics:** Tools executed, success rate, files changed, tests run
+- **Timing:** Spawned, started, completed timestamps
+- **Hook Timeline:** Last 50 tool events with names and results
+- **Files Changed:** List of modified files during execution
+- **Error Details:** Full error message for failed workers
+
+**Clarifications Panel:**
+- Placeholder for future implementation
+- Will display pending questions from workers requiring user input
+- Empty state: "No pending clarifications"
+
+**Real-time Updates:** Worker events (spawned, completed, failed) trigger toast notifications and automatic UI refresh via workerAgent subscriptions.
+
+### Lifecycle Tab
+
+Visualize spec state transitions and history with an interactive timeline.
+
+**Features:**
+- **Spec Selector:** Dropdown to choose which spec to visualize
+- **Timeline View:** Vertical timeline showing all state transitions
+- **State Badges:** Color-coded badges for each lifecycle state
+  - proposing (blue), approved (gray), assigned (gray), in_progress (yellow), review (orange), applied (green), archived (gray)
+- **Triggered By Icons:** User (👤), Worker (🤖), System (⚙️)
+- **Transition Details:** From/to states, timestamp, notes
+- **Duration Display:** Time spent in each state
+- **Task Completion:** Progress bar showing overall task completion percentage
+
+**Lifecycle States:**
+1. **proposing** - Awaiting user approval
+2. **approved** - Added to work queue
+3. **assigned** - Linked to a session
+4. **in_progress** - Worker actively executing
+5. **review** - Worker completed, awaiting validation
+6. **applied** - User validated and marked as done
+7. **archived** - Rejected or superseded
+
+**Real-time Updates:** Timeline refreshes when the selected spec changes state via lifecycle subscriptions.
+
+### Filter Sidebar
+
+Shared filtering controls across all tabs (persists across navigation).
+
+**Available Filters:**
+- **Project Dropdown:** Single-select project filter
+- **Status Multi-select:** Checkbox filters for lifecycle states
+- **Priority Range Slider:** Filter by priority (1-5)
+- **Date Range Picker:** From/to date selection
+- **Search Input:** Text search across spec titles
+- **Apply Filters / Reset Buttons:** Apply changes or clear all filters
+
+**Note:** Not all filters apply to all tabs (e.g., lifecycle tab uses spec selector instead of general filters).
+
+### Stats Cards
+
+Dashboard header shows aggregate statistics:
+- **Total Specs:** Count of all OpenSpec changes
+- **Active Work:** Number of items in work queue
+- **Pending Approvals:** Specs awaiting review (proposing + review states)
+- **Error Proposals:** Auto-generated proposals from test failures
+
+Stats auto-refresh when data changes via query invalidation.
+
+### Keyboard Shortcuts (Spec Editor)
+
+The Monaco-based spec editor supports standard keyboard shortcuts:
+- **Ctrl/Cmd + S:** Save current file
+- **Ctrl/Cmd + F:** Find in file
+- **Ctrl/Cmd + H:** Find and replace
+- **Ctrl/Cmd + /:** Toggle line comment
+- **Alt + Up/Down:** Move line up/down
+- **Ctrl/Cmd + D:** Add selection to next find match
+- **Ctrl/Cmd + Shift + K:** Delete line
+- **Ctrl/Cmd + Z:** Undo
+- **Ctrl/Cmd + Shift + Z:** Redo
+
+**Editor Tabs:**
+- **Proposal:** Edit proposal.md (required sections: Why, What Changes, Impact)
+- **Tasks:** Edit tasks.md with live task completion percentage
+- **Design:** Edit design.md (optional, create via "Create Design" button if missing)
+
+**Save Options:**
+- **Save:** Updates spec content and syncs to filesystem
+- **Save & Approve:** Saves then approves (shows for proposing specs)
+- **Cancel:** Discard changes with confirmation if unsaved
+
+### Common Workflows
+
+**Approving a New Spec:**
+1. Navigate to **Approvals** tab
+2. Find spec in "Needs Approval" section
+3. Click "View" to review proposal and tasks
+4. Click "Approve" to add to work queue
+5. Spec moves to **Work Queue** tab automatically
+
+**Assigning Work to Your Session:**
+1. Navigate to **Work Queue** tab
+2. Find queued item
+3. Click "Assign to Me"
+4. Worker automatically spawned (visible in **Master Agents** tab)
+
+**Validating Completed Work:**
+1. Navigate to **Approvals** tab
+2. Find spec in "Needs Validation" section
+3. Click "View" to review completed tasks
+4. Click "Validate & Apply"
+5. Spec marked as applied and archived
+
+**Monitoring Worker Progress:**
+1. Navigate to **Master Agents** tab
+2. View active worker cards
+3. Check progress bars and status
+4. Click "View Details" for metrics and tool timeline
+5. Cancel if needed or let worker complete
+
+**Editing a Spec:**
+1. From any tab, click "Edit" on a spec
+2. Opens Monaco editor with Proposal/Tasks/Design tabs
+3. Make changes in markdown
+4. Click "Save" or "Save & Approve"
+5. Changes sync to filesystem immediately
+
+### Real-time Features
+
+All dashboard tabs use tRPC subscriptions for live updates:
+- **Work Queue:** New items, status changes, reordering
+- **Approvals:** State transitions (proposing, review, applied)
+- **Master Agents:** Worker spawned, completed, failed events
+- **Lifecycle:** State changes for selected spec
+- **Errors:** New error proposals, priority escalation
+
+**Toast Notifications:** Important events trigger toast messages (top-right):
+- "New spec awaiting approval"
+- "Worker spawned: T3 Stack"
+- "Worker completed: worker-abc123"
+- "Spec approved and added to work queue"
+- "Work item removed from queue"
+
+### Troubleshooting
+
+**Dashboard not loading:**
+```bash
+cd homelab-services/apps/claude-agent-web
+bun run dev  # Start dev server on port 3002
+```
+
+**Subscriptions not updating:**
+- Check browser console for WebSocket errors
+- Verify tRPC server is running
+- Refresh page to reconnect
+
+**Worker detail modal empty:**
+- Worker data may not have progress metrics yet
+- Check if worker has started executing tools
+- Completed workers retain full history
+
+**Spec editor not saving:**
+- Check file permissions on openspec/changes/
+- Verify spec ID exists
+- Check server logs for sync errors
+
+**Drag-and-drop not working:**
+- Ensure @dnd-kit packages installed
+- Check for JavaScript errors in console
+- Try refreshing page
+
+### Notes for Claude Code
+
+- Dashboard uses tRPC for type-safe client-server communication
+- All mutations automatically invalidate relevant queries
+- tRPC subscriptions handle cleanup on component unmount
+- Monaco editor loaded via dynamic import to avoid SSR issues
+- E2E tests available in `apps/claude-agent-web/e2e/dashboard.spec.ts`
+- Real-time updates use EventEmitter with tRPC observables
+- Filter state not yet persisted to localStorage (future enhancement)
+
 ## Error-to-Spec Auto-Generation
 
 The `homelab-services` monorepo includes an automated error detection and proposal generation system that converts Playwright test failures into actionable OpenSpec change proposals.

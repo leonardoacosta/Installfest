@@ -6,6 +6,7 @@ Complete navigation guide for homelab-services monorepo documentation.
 
 - **Getting Started**: [Development Guide](./development.md)
 - **System Design**: [Architecture Guide](./architecture.md)
+- **Using Dashboard**: [Dashboard User Guide](./dashboard-user-guide.md)
 - **Contributing**: [Contributing Guide](./contributing.md)
 - **Production**: [Deployment Guide](./deployment.md)
 
@@ -19,6 +20,7 @@ Complete navigation guide for homelab-services monorepo documentation.
 | [Development](./development.md) | Setup, workflows, debugging, tools | New developers |
 | [Contributing](./contributing.md) | Code standards, PR process, testing | Contributors |
 | [Deployment](./deployment.md) | Docker builds, CI/CD, production operations | DevOps/Maintainers |
+| [Dashboard User Guide](./dashboard-user-guide.md) | Unified work dashboard usage, workflows, keyboard shortcuts | All users |
 
 ### Package Documentation
 
@@ -195,6 +197,7 @@ docs/
 ├── development.md        # Development guide
 ├── contributing.md       # Contributing guide
 ├── deployment.md         # Deployment guide
+├── dashboard-user-guide.md # Dashboard usage guide
 └── packages/
     ├── ui.md            # UI package docs
     ├── db.md            # Database package docs
@@ -224,7 +227,7 @@ Use your editor's search to find documentation:
 
 ---
 
-**Last Updated**: 2025-12-04
+**Last Updated**: 2025-12-05
 
 **Maintained by**: Project maintainers
 
