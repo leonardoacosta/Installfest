@@ -104,6 +104,34 @@ export function ApprovalsTab({ filters }: ApprovalsTabProps) {
     },
   })
 
+  // Subscribe to lifecycle events for real-time updates
+  trpc.lifecycle.subscribe.useSubscription(
+    { projectId },
+    {
+      onData: (event) => {
+        console.log('[ApprovalsTab] Lifecycle event:', event)
+
+        // Invalidate queries to refresh data
+        utils.lifecycle.listByStatus.invalidate()
+
+        // Show toast notification for important events
+        if (event.event === 'state_changed') {
+          const { specId, fromState, toState } = event.data || {}
+          if (toState === 'proposing') {
+            toast('New spec awaiting approval')
+          } else if (toState === 'review') {
+            toast.success('Spec ready for validation')
+          } else if (toState === 'applied') {
+            toast.success(`Spec ${specId} has been applied`)
+          }
+        }
+      },
+      onError: (err) => {
+        console.error('[ApprovalsTab] Subscription error:', err)
+      },
+    }
+  )
+
   const handleReject = (specId: string) => {
     setSelectedSpec(specId)
     setShowRejectDialog(true)

@@ -18,6 +18,7 @@ interface LifecycleTabProps {
 export function LifecycleTab({ filters }: LifecycleTabProps) {
   const projectId = filters.projectId || 1
   const [selectedSpecId, setSelectedSpecId] = useState<string | null>(null)
+  const utils = trpc.useUtils()
 
   // Get list of specs for the project
   const { data: workQueue } = trpc.workQueue.getQueue.useQuery({ projectId })
@@ -26,6 +27,24 @@ export function LifecycleTab({ filters }: LifecycleTabProps) {
   const { data: lifecycleData, isLoading } = trpc.lifecycle.getStatus.useQuery(
     { specId: selectedSpecId! },
     { enabled: !!selectedSpecId }
+  )
+
+  // Subscribe to lifecycle events for real-time updates
+  trpc.lifecycle.subscribe.useSubscription(
+    { projectId },
+    {
+      onData: (event) => {
+        console.log('[LifecycleTab] Lifecycle event:', event)
+
+        // If event is for the currently selected spec, refresh its history
+        if (event.event === 'state_changed' && event.data?.specId === selectedSpecId) {
+          utils.lifecycle.getStatus.invalidate({ specId: selectedSpecId })
+        }
+      },
+      onError: (err) => {
+        console.error('[LifecycleTab] Subscription error:', err)
+      },
+    }
   )
 
   const getTriggeredByIcon = (triggeredBy: string) => {
