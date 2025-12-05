@@ -204,10 +204,10 @@
 ## Phase 4.8: Session and Lifecycle Integration
 
 ### 4.8.1 Session Integration
-- [ ] When session is assigned to work item (Change 3)
-  - [ ] Add UI option: "Spawn Worker" or "Do Manually"
-  - [ ] "Spawn Worker" calls workerAgent.spawn({ sessionId, specId })
-  - [ ] "Do Manually" keeps session.currentWorkItemId but doesn't spawn
+- [x] When session is assigned to work item (Change 3)
+  - [x] Add UI option: "Spawn Worker" or "Do Manually"
+  - [x] "Spawn Worker" calls workerAgent.spawn({ sessionId, specId })
+  - [x] "Do Manually" keeps session.currentWorkItemId but doesn't spawn
 - [x] When session stops
   - [x] Query workerAgents where sessionId = stopped session
   - [x] Cancel all active workers
@@ -218,7 +218,7 @@
   - [x] Fetch spec for worker
   - [x] If spec status='assigned': Transition to 'in_progress'
   - [x] Transition to 'review' (all tasks complete)
-  - [ ] Emit: spec_ready_for_review notification
+  - [x] Emit: spec_ready_for_review notification
 - [x] On `worker_failed` event with retries exhausted
   - [x] Create clarification request in dashboard
   - [x] Session paused until user decides (retry different agent, fix manually, etc.)
@@ -226,36 +226,36 @@
 ## Phase 4.9: Dashboard Worker Grid
 
 ### 4.9.1 Worker Status Cards
-- [ ] Create `apps/claude-agent-web/src/components/WorkerGrid.tsx`
-  - [ ] Grid layout: responsive (3 cols desktop, 2 tablet, 1 mobile)
-  - [ ] Each card shows: Worker ID, Type badge, Spec title (link), Status badge, Progress bar
-  - [ ] Card colors:
-    - [ ] Green: status='active'
-    - [ ] Yellow: status='active' but idle for 5+ min
-    - [ ] Red: status='failed'
-    - [ ] Gray: status='completed' or 'cancelled'
+- [x] Create `apps/claude-agent-web/src/components/WorkerGrid.tsx`
+  - [x] Grid layout: responsive (3 cols desktop, 2 tablet, 1 mobile)
+  - [x] Each card shows: Worker ID, Type badge, Spec title (link), Status badge, Progress bar
+  - [x] Card colors:
+    - [x] Green: status='active'
+    - [x] Yellow: status='active' but idle for 5+ min
+    - [x] Red: status='failed'
+    - [x] Gray: status='completed' or 'cancelled'
 
 ### 4.9.2 Worker Progress Display
-- [ ] Progress bar showing task completion %
-- [ ] Mini stats: "{N} tools executed, {N} files changed, {N} tests run"
-- [ ] Time elapsed: "Working for 5m 23s"
-- [ ] Active tool (if available): "Currently running tests..."
+- [x] Progress bar showing task completion %
+- [x] Mini stats: "{N} tools executed, {N} files changed, {N} tests run"
+- [x] Time elapsed: "Working for 5m 23s"
+- [x] Active tool (if available): "Currently running tests..."
 
 ### 4.9.3 Worker Detail Modal
-- [ ] Click worker card to open detail modal
-  - [ ] Header: Worker ID, Type, Spec title, Status
-  - [ ] Progress section: Task completion %, metrics breakdown
-  - [ ] Hook timeline: Last 20 hooks with tool names, timestamps, success/fail indicators
-  - [ ] Errors section: If failed, show error message and stack trace
-  - [ ] Actions: Retry (if failed), Cancel (if active), View Spec (link)
+- [x] Click worker card to open detail modal
+  - [x] Header: Worker ID, Type, Spec title, Status
+  - [x] Progress section: Task completion %, metrics breakdown
+  - [x] Hook timeline: Last 20 hooks with tool names, timestamps, success/fail indicators
+  - [x] Errors section: If failed, show error message and stack trace
+  - [x] Actions: Retry (if failed), Cancel (if active), View Spec (link)
 
 ### 4.9.4 Real-Time Updates
-- [ ] Use subscription: `workerAgent.subscribe({ projectId? })`
-- [ ] On worker_spawned: Add card to grid with animation
-- [ ] On worker_progress: Update progress bar and time elapsed in real-time
-- [ ] On worker_completed: Move card to "Completed" section, highlight in green
-- [ ] On worker_failed: Show error badge, highlight in red
-- [ ] On worker_started: Update to show active tools and first hook
+- [x] Use subscription: `workerAgent.subscribe({ projectId? })`
+- [x] On worker_spawned: Add card to grid with animation
+- [x] On worker_progress: Update progress bar and time elapsed in real-time
+- [x] On worker_completed: Move card to "Completed" section, highlight in green
+- [x] On worker_failed: Show error badge, highlight in red
+- [x] On worker_started: Update to show active tools and first hook
 
 ## Phase 4.10: Testing
 

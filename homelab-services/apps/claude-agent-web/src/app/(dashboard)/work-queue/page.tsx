@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from '@homelab/ui/select'
 import { Badge } from '@homelab/ui/badge'
-import { CheckCircle2, Circle, Lock, AlertCircle, Star } from 'lucide-react'
+import { CheckCircle2, Circle, Lock, AlertCircle, Star, Bot, User } from 'lucide-react'
 import { toast } from '@homelab/ui/use-toast'
 
 export default function WorkQueuePage() {
@@ -28,12 +28,31 @@ export default function WorkQueuePage() {
 
   const utils = trpc.useUtils()
   const { data: projects } = trpc.projects.list.useQuery()
+  const { data: sessions } = trpc.sessions.list.useQuery()
   const { data: workQueue, isLoading } = trpc.workQueue.getQueue.useQuery(
     selectedProject !== 'all' ? { projectId: parseInt(selectedProject) } : { projectId: 1 }
   )
   const { data: stats } = trpc.workQueue.stats.useQuery(
     selectedProject !== 'all' ? { projectId: parseInt(selectedProject) } : { projectId: 1 }
   )
+
+  const spawnWorker = trpc.workerAgent.spawn.useMutation({
+    onSuccess: () => {
+      utils.workQueue.getQueue.invalidate()
+      utils.workerAgent.listActive.invalidate()
+      toast({
+        title: 'Worker spawned',
+        description: 'A specialized worker agent has been spawned for this spec.',
+      })
+    },
+    onError: (error) => {
+      toast({
+        title: 'Failed to spawn worker',
+        description: error.message,
+        variant: 'destructive',
+      })
+    },
+  })
 
   const completeItem = trpc.workQueue.complete.useMutation({
     onSuccess: () => {
@@ -56,6 +75,13 @@ export default function WorkQueuePage() {
       })
     },
   })
+
+  // Find active session for project
+  const getActiveSessionId = (projectId: number): number | undefined => {
+    return sessions?.find(
+      (s: any) => s.projectId === projectId && s.status === 'running'
+    )?.id
+  }
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { variant: any; icon: any }> = {
@@ -222,13 +248,42 @@ export default function WorkQueuePage() {
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         {item.status === 'assigned' && (
-                          <Button
-                            size="sm"
-                            onClick={() => completeItem.mutate({ workItemId: item.id })}
-                            disabled={completeItem.isPending}
-                          >
-                            Complete
-                          </Button>
+                          <>
+                            <Button
+                              size="sm"
+                              variant="default"
+                              onClick={() => {
+                                const sessionId = getActiveSessionId(item.projectId)
+                                if (!sessionId) {
+                                  toast({
+                                    title: 'No active session',
+                                    description: 'Please start a session first to spawn workers.',
+                                    variant: 'destructive',
+                                  })
+                                  return
+                                }
+                                spawnWorker.mutate({
+                                  sessionId,
+                                  specId: item.specId,
+                                })
+                              }}
+                              disabled={spawnWorker.isPending}
+                              className="flex items-center gap-1"
+                            >
+                              <Bot className="h-3 w-3" />
+                              Spawn Worker
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => completeItem.mutate({ workItemId: item.id })}
+                              disabled={completeItem.isPending}
+                              className="flex items-center gap-1"
+                            >
+                              <User className="h-3 w-3" />
+                              Do Manually
+                            </Button>
+                          </>
                         )}
                         <Button
                           size="sm"

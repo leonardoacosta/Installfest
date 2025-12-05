@@ -4,6 +4,7 @@ import { workerAgents, openspecSpecs, sessions } from '@homelab/db';
 import type { AgentType, WorkerAgentConfig } from '@homelab/validators';
 import { WorkerSelectorService } from './worker-selector';
 import { TaskToolClient } from '../utils/task-tool';
+import { workerEvents } from '../events';
 
 /**
  * Worker Agent Management Service
@@ -86,7 +87,13 @@ export class WorkerAgentService {
       agentType,
     });
 
-    // TODO: Emit subscription event: worker_spawned
+    workerEvents.emit('worker:event', {
+      event: 'worker_spawned',
+      workerId: worker.id,
+      status: 'spawned',
+      timestamp: new Date(),
+      data: { agentType, specId, sessionId }
+    });
 
     return worker;
   }
@@ -199,7 +206,13 @@ export class WorkerAgentService {
 
     console.log('[WorkerAgent] Cancelled worker', { workerId });
 
-    // TODO: Emit subscription event: worker_cancelled
+    workerEvents.emit('worker:event', {
+      event: 'worker_failed',
+      workerId,
+      status: 'cancelled',
+      timestamp: new Date(),
+      data: { reason: 'cancelled by user' }
+    });
 
     return updated;
   }
@@ -228,8 +241,13 @@ export class WorkerAgentService {
 
     console.log('[WorkerAgent] Worker completed', { workerId, result });
 
-    // TODO: Emit subscription event: worker_completed
-    // TODO: Trigger spec lifecycle transition to 'review'
+    workerEvents.emit('worker:event', {
+      event: 'worker_completed',
+      workerId,
+      status: 'completed',
+      timestamp: new Date(),
+      data: result
+    });
 
     return updated;
   }
@@ -250,8 +268,13 @@ export class WorkerAgentService {
 
     console.log('[WorkerAgent] Worker failed', { workerId, errorMessage });
 
-    // TODO: Emit subscription event: worker_failed
-    // TODO: Trigger retry logic
+    workerEvents.emit('worker:event', {
+      event: 'worker_failed',
+      workerId,
+      status: 'failed',
+      timestamp: new Date(),
+      data: { errorMessage }
+    });
 
     return updated;
   }
@@ -391,7 +414,19 @@ export class WorkerAgentService {
       retryCount: newWorker.retryCount,
     });
 
-    // TODO: Emit subscription event: worker_retry_spawned
+    workerEvents.emit('worker:event', {
+      event: 'worker_spawned',
+      workerId: newWorker.id,
+      status: 'spawned',
+      timestamp: new Date(),
+      data: {
+        agentType: retryAgentType,
+        specId: failedWorker.specId,
+        sessionId: failedWorker.sessionId,
+        retryCount: newWorker.retryCount,
+        originalWorkerId: workerId
+      }
+    });
 
     return newWorker;
   }

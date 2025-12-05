@@ -9,6 +9,8 @@ import { observable } from '@trpc/server/observable';
 import { createTRPCRouter, publicProcedure } from '../trpc';
 import { WorkerAgentService } from '../services/worker-agent';
 import { WorkerMonitorService } from '../services/worker-monitor';
+import { workerEvents } from '../events';
+import type { WorkerEvent } from '../events';
 import {
   workerAgentConfigSchema,
   workerIdSchema,
@@ -150,15 +152,41 @@ export const workerAgentRouter = createTRPCRouter({
         timestamp: Date;
         data?: any;
       }>((emit) => {
-        // TODO: Implement real-time subscription using EventEmitter or similar
-        // For now, this is a placeholder that would need to be wired to
-        // the actual worker monitoring system
-
         console.log('[WorkerAgent] Subscription started', input);
 
-        // Cleanup function
+        // Event listener function
+        const handleWorkerEvent = (event: WorkerEvent) => {
+          // Filter by sessionId if provided
+          if (input.sessionId && event.data?.sessionId !== input.sessionId) {
+            return;
+          }
+
+          // Filter by specId if provided
+          if (input.specId && event.data?.specId !== input.specId) {
+            return;
+          }
+
+          // Filter by projectId if provided
+          // Note: projectId filtering would require looking up session->project relationship
+          // For now, skip this filter (TODO: implement if needed)
+
+          // Emit the event to the subscriber
+          emit.next({
+            event: event.event,
+            workerId: event.workerId,
+            status: event.status,
+            timestamp: event.timestamp,
+            data: event.data,
+          });
+        };
+
+        // Subscribe to worker events
+        workerEvents.on('worker:event', handleWorkerEvent);
+
+        // Cleanup function - unsubscribe when client disconnects
         return () => {
           console.log('[WorkerAgent] Subscription ended', input);
+          workerEvents.off('worker:event', handleWorkerEvent);
         };
       });
     }),

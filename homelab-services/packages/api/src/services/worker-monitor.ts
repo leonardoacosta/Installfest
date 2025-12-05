@@ -4,6 +4,7 @@ import { workerAgents, hooks, sessions, openspecSpecs } from '@homelab/db';
 import type { WorkerAgentProgress } from '@homelab/validators';
 import { SpecLifecycleService } from './spec-lifecycle';
 import { WorkerAgentService } from './worker-agent';
+import { workerEvents } from '../events';
 
 /**
  * Worker progress metrics from hook analysis
@@ -74,16 +75,25 @@ export class WorkerMonitorService {
 
     // If worker is 'spawned' and has hooks, transition to 'active'
     if (worker.status === 'spawned' && workerHooks.length > 0) {
+      const startedAt = workerHooks[workerHooks.length - 1]?.timestamp ?? new Date();
+
       await this.db
         .update(workerAgents)
         .set({
           status: 'active',
-          startedAt: workerHooks[workerHooks.length - 1]?.timestamp ?? new Date(),
+          startedAt,
         })
         .where(eq(workerAgents.id, workerId));
 
       console.log('[WorkerMonitor] Worker started', { workerId });
-      // TODO: Emit worker_started event
+
+      workerEvents.emit('worker:event', {
+        event: 'worker_started',
+        workerId,
+        status: 'active',
+        timestamp: startedAt,
+        data: { sessionId: worker.sessionId, specId: worker.specId }
+      });
     }
 
     // Check for completion
@@ -319,7 +329,17 @@ export class WorkerMonitorService {
         });
       }
 
-      // TODO: Emit worker_completed event
+      workerEvents.emit('worker:event', {
+        event: 'worker_completed',
+        workerId,
+        status: 'completed',
+        timestamp: new Date(),
+        data: {
+          specId: worker.specId,
+          sessionId: worker.sessionId,
+          transitionedToReview: true
+        }
+      });
 
       return true;
     }
@@ -378,6 +398,14 @@ export class WorkerMonitorService {
 
     console.log('[WorkerMonitor] Worker failed', { workerId, errorMessage });
 
+    workerEvents.emit('worker:event', {
+      event: 'worker_failed',
+      workerId,
+      status: 'failed',
+      timestamp: new Date(),
+      data: { errorMessage }
+    });
+
     // Attempt automatic retry
     try {
       const workerService = new WorkerAgentService(this.db, { mockMode: true });
@@ -398,8 +426,6 @@ export class WorkerMonitorService {
     } catch (error) {
       console.error('[WorkerMonitor] Failed to retry worker', { workerId, error });
     }
-
-    // TODO: Emit worker_failed event
   }
 
   /**

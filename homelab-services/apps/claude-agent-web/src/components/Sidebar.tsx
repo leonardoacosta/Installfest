@@ -10,12 +10,14 @@ import {
   Activity,
   Webhook,
   Settings,
+  Bot,
 } from 'lucide-react'
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Projects', href: '/projects', icon: FolderKanban },
   { name: 'Sessions', href: '/sessions', icon: Activity },
+  { name: 'Workers', href: '/workers', icon: Bot },
   { name: 'Hooks', href: '/hooks', icon: Webhook },
 ]
 
