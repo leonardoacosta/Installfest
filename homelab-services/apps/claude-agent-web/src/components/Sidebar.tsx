@@ -11,10 +11,13 @@ import {
   Webhook,
   Settings,
   Bot,
+  AlertTriangle,
 } from 'lucide-react'
 
 const navigation = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Work Queue', href: '/work-queue', icon: FolderKanban },
+  { name: 'Errors', href: '/errors', icon: AlertTriangle },
   { name: 'Projects', href: '/projects', icon: FolderKanban },
   { name: 'Sessions', href: '/sessions', icon: Activity },
   { name: 'Workers', href: '/workers', icon: Bot },

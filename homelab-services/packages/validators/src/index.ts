@@ -11,3 +11,4 @@ export * from './sync';
 export * from './lifecycle';
 export * from './work-queue';
 export * from './worker-agent';
+export * from './error-proposals';

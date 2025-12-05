@@ -15,6 +15,9 @@ export { Select, SelectGroup, SelectValue, SelectTrigger, SelectContent, SelectL
 export { Checkbox } from "./components/ui/checkbox"
 export { RadioGroup, RadioGroupItem } from "./components/ui/radio-group"
 export { Switch } from "./components/ui/switch"
+export { Slider } from "./components/ui/slider"
+export { Calendar, type CalendarProps } from "./components/ui/calendar"
+export { DateRangePicker, type DateRange } from "./components/ui/date-range-picker"
 
 // Data Display
 export { Table, TableHeader, TableBody, TableFooter, TableHead, TableRow, TableCell, TableCaption } from "./components/ui/table"

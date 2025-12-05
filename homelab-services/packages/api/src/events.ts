@@ -6,6 +6,7 @@
 
 import { EventEmitter } from 'events'
 import type { Hook } from '@homelab/db'
+import type { ErrorProposalEvent } from '@homelab/validators'
 
 export interface HookEvent {
   type: 'hook:created'
@@ -48,6 +49,21 @@ class WorkerEventEmitter extends EventEmitter {
   }
 }
 
+class ErrorProposalEventEmitter extends EventEmitter {
+  emit(event: 'error-proposal:event', data: ErrorProposalEvent): boolean {
+    return super.emit(event, data)
+  }
+
+  on(event: 'error-proposal:event', listener: (data: ErrorProposalEvent) => void): this {
+    return super.on(event, listener)
+  }
+
+  off(event: 'error-proposal:event', listener: (data: ErrorProposalEvent) => void): this {
+    return super.off(event, listener)
+  }
+}
+
 // Singleton instances
 export const hookEvents = new HookEventEmitter()
 export const workerEvents = new WorkerEventEmitter()
+export const errorProposalEvents = new ErrorProposalEventEmitter()

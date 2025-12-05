@@ -18,7 +18,7 @@ export class WorkQueueService {
     specId: string,
     priority?: number
   ): Promise<WorkQueueItem> {
-    // Verify spec exists and is approved
+    // Verify spec exists and is approved or proposing (for error proposals)
     const spec = await this.db
       .select()
       .from(openspecSpecs)
@@ -29,8 +29,8 @@ export class WorkQueueService {
       throw new Error(`Spec ${specId} not found`);
     }
 
-    if (spec.status !== 'approved') {
-      throw new Error(`Spec ${specId} must be approved to add to queue (current: ${spec.status})`);
+    if (spec.status !== 'approved' && spec.status !== 'proposing') {
+      throw new Error(`Spec ${specId} must be approved or proposing to add to queue (current: ${spec.status})`);
     }
 
     // Find max position for this project
@@ -314,6 +314,22 @@ export class WorkQueueService {
           .where(eq(workQueue.id, item.id))
       )
     );
+  }
+
+  /**
+   * Update priority of a work item
+   */
+  async updatePriority(specId: string, newPriority: number): Promise<void> {
+    const result = await this.db
+      .update(workQueue)
+      .set({ priority: newPriority })
+      .where(eq(workQueue.specId, specId))
+      .returning()
+      .get();
+
+    if (!result) {
+      throw new Error(`Work item for spec ${specId} not found in queue`);
+    }
   }
 
   /**

@@ -17,6 +17,7 @@ import { syncRouter } from './router/sync'
 import { lifecycleRouter } from './router/lifecycle'
 import { workQueueRouter } from './router/work-queue'
 import { workerAgentRouter } from './router/worker-agent'
+import { errorProposalsRouter } from './router/error-proposals'
 
 export const appRouter = createTRPCRouter({
   projects: projectsRouter,
@@ -31,6 +32,7 @@ export const appRouter = createTRPCRouter({
   lifecycle: lifecycleRouter,
   workQueue: workQueueRouter,
   workerAgent: workerAgentRouter,
+  errorProposals: errorProposalsRouter,
 })
 
 export type AppRouter = typeof appRouter

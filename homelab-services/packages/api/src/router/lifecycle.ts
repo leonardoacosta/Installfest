@@ -154,4 +154,51 @@ export const lifecycleRouter = createTRPCRouter({
         nextStates,
       };
     }),
+
+  /**
+   * Get lifecycle statistics by project
+   */
+  stats: publicProcedure
+    .input(z.object({ projectId: z.number() }))
+    .query(async ({ input, ctx }) => {
+      const specs = await ctx.db.query.openspecSpecs.findMany({
+        where: (specs, { eq }) => eq(specs.projectId, input.projectId),
+      });
+
+      const statusCounts = specs.reduce((acc: any, spec: any) => {
+        const status = spec.status || 'proposing';
+        acc[status] = (acc[status] || 0) + 1;
+        return acc;
+      }, {});
+
+      return {
+        total: specs.length,
+        proposing: statusCounts.proposing || 0,
+        approved: statusCounts.approved || 0,
+        assigned: statusCounts.assigned || 0,
+        in_progress: statusCounts.in_progress || 0,
+        review: statusCounts.review || 0,
+        applied: statusCounts.applied || 0,
+        archived: statusCounts.archived || 0,
+      };
+    }),
+
+  /**
+   * List specs by status
+   */
+  listByStatus: publicProcedure
+    .input(z.object({
+      projectId: z.number(),
+      status: z.string(),
+    }))
+    .query(async ({ input, ctx }) => {
+      const specs = await ctx.db.query.openspecSpecs.findMany({
+        where: (specs, { eq, and }) => and(
+          eq(specs.projectId, input.projectId),
+          eq(specs.status, input.status)
+        ),
+      });
+
+      return specs;
+    }),
 });

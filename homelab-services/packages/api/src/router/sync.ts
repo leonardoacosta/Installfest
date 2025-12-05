@@ -4,6 +4,7 @@
  * Handles OpenSpec bidirectional sync operations between filesystem and database.
  */
 
+import { z } from 'zod';
 import { eq } from 'drizzle-orm';
 import { createTRPCRouter, publicProcedure } from '../trpc';
 import { openspecSpecs, projects } from '@homelab/db';
@@ -246,5 +247,84 @@ export const syncRouter = createTRPCRouter({
       }
 
       return spec;
+    }),
+
+  /**
+   * Get spec content (proposal, tasks, design files)
+   */
+  getSpecContent: publicProcedure
+    .input(stringIdParamSchema)
+    .query(async ({ ctx, input }) => {
+      const spec = await ctx.db
+        .select()
+        .from(openspecSpecs)
+        .where(eq(openspecSpecs.id, input.id))
+        .get();
+
+      if (!spec) {
+        throw new Error(`Spec ${input.id} not found`);
+      }
+
+      return {
+        proposal: spec.proposalContent,
+        tasks: spec.tasksContent,
+        design: spec.designContent,
+      };
+    }),
+
+  /**
+   * Update spec content and sync to filesystem
+   */
+  updateSpecContent: publicProcedure
+    .input(z.object({
+      id: z.string(),
+      proposal: z.string().optional(),
+      tasks: z.string().optional(),
+      design: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const spec = await ctx.db
+        .select()
+        .from(openspecSpecs)
+        .where(eq(openspecSpecs.id, input.id))
+        .get();
+
+      if (!spec) {
+        throw new Error(`Spec ${input.id} not found`);
+      }
+
+      // Update DB
+      await ctx.db
+        .update(openspecSpecs)
+        .set({
+          proposalContent: input.proposal ?? spec.proposalContent,
+          tasksContent: input.tasks ?? spec.tasksContent,
+          designContent: input.design ?? spec.designContent,
+          updatedAt: new Date(),
+        })
+        .where(eq(openspecSpecs.id, input.id))
+        .run();
+
+      // Get project for sync service
+      const project = await ctx.db
+        .select()
+        .from(projects)
+        .where(eq(projects.id, spec.projectId))
+        .get();
+
+      if (!project) {
+        throw new Error(`Project ${spec.projectId} not found`);
+      }
+
+      // Sync to filesystem
+      const syncService = new OpenSpecSyncService(ctx.db, {
+        projectId: project.id,
+        projectPath: project.path,
+        openspecPath: `${project.path}/openspec`,
+      });
+
+      await syncService.syncToFilesystem(input.id);
+
+      return { success: true };
     }),
 });
