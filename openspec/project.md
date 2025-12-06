@@ -2,316 +2,258 @@
 
 ## Purpose
 
-Personal dotfiles and homelab infrastructure automation combining:
+Personal dotfiles and homelab infrastructure automation for macOS and Arch Linux environments. This repository manages:
 
-1. **Mac Development Environment** (`/mac`) - macOS dotfiles, Homebrew packages, system configuration for development productivity
-2. **Homelab Infrastructure** (`/homelab`) - Docker-based self-hosted services on Arch Linux server for home automation, media, security, and AI workloads
-3. **Better-T-Stack Services** (`/homelab-services`) - Type-safe monorepo with Claude Agent management and Playwright test orchestration
+1. **Mac Development Environment** (`/mac`) - macOS dotfiles, Homebrew packages, system configuration, and terminal setup
+2. **Homelab Stack** (`/homelab`) - Docker-based self-hosted services for Arch Linux server with automated deployment
+3. **Homelab Services** (`/homelab-services`) - Better-T-Stack monorepo with type-safe web applications for CI/CD and test management
 
-**Goals:**
-- Reproducible development environments across machines
-- Self-hosted alternative to cloud services
-- Automated error detection and remediation via AI agents
-- OpenSpec-driven change management for infrastructure evolution
-- CI/CD automation via self-hosted GitHub Actions runners
+**Key Goals:**
+- Reproducible development environment setup
+- Self-hosted infrastructure with minimal external dependencies
+- Automated CI/CD pipeline with GitHub Actions
+- Centralized test report aggregation and monitoring
+- Type-safe full-stack applications with modern tooling
 
 ## Tech Stack
 
-### Core Languages & Runtimes
-- **TypeScript** - Primary language for all applications
-- **Bun** - Package manager and runtime (v1.1+)
-- **Node.js** - Secondary runtime for compatibility
-- **Bash** - Shell scripts for deployment and automation
-- **Zsh** - Interactive shell with Starship prompt
+### Mac Environment
+- **OS**: macOS (Darwin)
+- **Package Manager**: Homebrew
+- **Shell**: Zsh with Starship prompt
+- **Terminal**: WezTerm
+- **Configuration**: Dotfiles-based setup
 
-### Frontend Stack (Better-T-Stack)
-- **Next.js 15** - React framework with App Router
-- **React 19** - UI library with Server Components
-- **Tailwind CSS** - Utility-first styling
-- **ShadCN UI** - Component library (customized)
-- **Framer Motion** - Animation library
-- **Monaco Editor** - Code editor component
+### Homelab Infrastructure
+- **OS**: Arch Linux
+- **Containerization**: Docker + Docker Compose
+- **Reverse Proxy**: Traefik (dynamic routing, TLS)
+- **CI/CD**: GitHub Actions (self-hosted runners)
+- **Networking**: Two isolated Docker networks (homelab: 172.20.0.0/16, media: 172.21.0.0/16)
+- **DNS**: AdGuard Home
+- **Home Automation**: Home Assistant
+- **PaaS**: Coolify
 
-### Backend Stack (Better-T-Stack)
-- **tRPC v11** - Type-safe API layer
-- **Drizzle ORM** - Type-safe database ORM
-- **SQLite** - Database (claude.db)
-- **Better-Auth** - Authentication (planned)
-- **React Query** - Data fetching and caching
+### Homelab Services (Better-T-Stack Monorepo)
+- **Framework**: Next.js 15 (App Router)
+- **Language**: TypeScript (strict mode)
+- **API Layer**: tRPC (type-safe client-server communication)
+- **Database**: PostgreSQL with Drizzle ORM
+- **Package Manager**: Bun (monorepo workspace)
+- **Styling**: Tailwind CSS + ShadCN UI
+- **Forms**: react-hook-form + Zod validation
+- **Testing**: Playwright (E2E), Vitest (unit tests)
+- **Real-time**: tRPC subscriptions with EventEmitter
 
-### Infrastructure & DevOps
-- **Docker & Docker Compose** - Container orchestration
-- **Traefik** - Reverse proxy and load balancer
-- **GitHub Actions** - CI/CD pipelines
-- **Self-hosted Runners** - Build and deployment agents
-- **Coolify** - PaaS for service management (optional)
-- **Tailscale** - VPN and service mesh
-
-### Homelab Services
-- **Home Assistant** - Home automation hub
-- **AdGuard Home** - DNS server and ad blocker
-- **Vaultwarden** - Password manager
-- **Jellyfin** - Media server
-- **Arr Stack** - Media automation (Sonarr, Radarr, Prowlarr, etc.)
-- **qBittorrent** - Download client with VPN
-- **Gluetun** - VPN container
-- **Ollama** - Local LLM inference
-- **Glance** - Dashboard aggregator
-
-### Testing & Quality
-- **Playwright** - E2E testing framework
-- **Bun Test** - Unit testing
-- **TypeScript ESLint** - Linting
-- **Prettier** - Code formatting
-
-### Development Tools
-- **Turbo** - Monorepo build system
-- **WezTerm** - Terminal emulator
-- **Zed** - Code editor
-- **Git** - Version control
+### Applications
+1. **Claude Agent Web** (port 3002) - Claude Code session management with unified work dashboard
+2. **Playwright Server** (port 3000) - Test report aggregation and visualization
 
 ## Project Conventions
 
 ### Code Style
-
-**TypeScript:**
-- Strict mode enabled (`"strict": true`)
-- Prefer `interface` over `type` for object shapes
-- Use explicit return types for exported functions
-- Prefer functional components and hooks
-- Use `const` assertions for immutable objects
-
-**Naming Conventions:**
-- Files: `kebab-case.ts` or `kebab-case.tsx`
-- Components: `PascalCase.tsx`
-- Functions/variables: `camelCase`
-- Constants: `UPPER_SNAKE_CASE`
-- Database tables: `snake_case`
-- tRPC routers: `camelCase` procedures
-
-**Formatting:**
-- Prettier with default settings
-- Single quotes for strings
-- Semicolons required
-- 2-space indentation
-- Trailing commas in multi-line
-
-**Import Order:**
-1. React/Next.js imports
-2. Third-party libraries
-3. Internal packages (`@/...`)
-4. Relative imports
-5. Type imports last
+- **TypeScript**: Strict mode enabled, no implicit any
+- **Formatting**: Prettier with 2-space indentation
+- **Naming**:
+  - camelCase for functions/variables
+  - PascalCase for components/types
+  - kebab-case for file names
+  - SCREAMING_SNAKE_CASE for constants
+- **Imports**: Absolute imports via `@/` alias
+- **Comments**: JSDoc for public APIs, inline comments for complex logic
 
 ### Architecture Patterns
 
-**Monorepo Structure:**
-```
-homelab-services/
-├── apps/           # Next.js applications
-├── packages/       # Shared libraries
-│   ├── api/        # tRPC routers and business logic
-│   ├── db/         # Database schema and client
-│   ├── ui/         # Shared UI components
-│   └── validators/ # Zod schemas
-```
+#### Homelab
+- **Service Isolation**: Separate Docker Compose files per service category (compose/*.yml)
+- **Configuration Management**: Environment variables via .env (auto-generated by wizard)
+- **State Tracking**: `.setup_state` file for resumable wizard operations
+- **Network Segmentation**: Core infrastructure vs. media services isolation
+- **Secrets Management**: .env files excluded from version control
 
-**Better-T-Stack Patterns:**
-- **App Router** - Use server components by default, client components only when needed
-- **Server Actions** - Prefer tRPC over Next.js server actions for mutations
-- **tRPC Subscriptions** - Real-time updates via EventEmitter + observables
-- **Drizzle Queries** - Use prepared statements for performance
-- **Zod Schemas** - Single source of truth for validation (reuse in validators package)
-
-**API Layer:**
-- All database logic in `packages/api/src/router/*.ts`
-- Services in `packages/api/src/services/*.ts` for complex business logic
-- Utils in `packages/api/src/utils/*.ts` for pure functions
-- Context in `packages/api/src/context.ts` for shared state
-
-**UI Components:**
-- ShadCN UI as base, customize in `packages/ui/src/components/ui/*.tsx`
-- Composite components in `packages/ui/src/components/*/` (charts, navigation, etc.)
-- Export all components via `packages/ui/src/index.ts`
-- Dark mode via next-themes (system default)
-
-**Database:**
-- Drizzle schema in `packages/db/src/schema/*.ts` (one file per domain)
-- Migrations in `packages/db/migrations/*.sql`
-- Transactions via `packages/db/src/transactions.ts` helpers
-- Pagination via `packages/db/src/pagination.ts` utilities
-
-**Docker Homelab:**
-- Service definitions split by category (`compose/*.yml`)
-- Environment variables in `.env` (auto-generated by wizard)
-- Dynamic Traefik config in `traefik/dynamic/*.yml`
-- Service state preserved in Docker volumes
-
-**OpenSpec Change Management:**
-- All changes start with `/openspec:proposal`
-- Specs in `openspec/specs/<name>/spec.md`
-- Active changes in `openspec/changes/<id>-<name>/`
-- Archive completed changes via `/openspec:archive`
+#### Homelab Services (Monorepo)
+- **Monorepo Structure**:
+  - `apps/` - Next.js applications
+  - `packages/` - Shared libraries (api, db, ui, config)
+  - `tooling/` - Build configuration (eslint, typescript, tailwind)
+- **API Design**: tRPC routers with queries, mutations, subscriptions
+- **Database Access**: Drizzle ORM with type-safe queries
+- **Component Library**: ShadCN UI components with Tailwind theming
+- **State Management**: React Query (via tRPC) for server state
+- **Real-time Updates**: tRPC subscriptions for live data
 
 ### Testing Strategy
 
-**Unit Tests (Bun Test):**
-- Co-locate tests with source: `src/__tests__/*.test.ts`
-- Use descriptive test names: `"should return error proposals sorted by priority"`
-- Mock external dependencies (database, filesystem)
-- Aim for >80% coverage on business logic
+#### E2E Testing (Playwright)
+- **Location**: `apps/*/e2e/*.spec.ts`
+- **Naming**: Descriptive test names matching user workflows
+- **Coverage**: Critical user paths, dashboard interactions, real-time features
+- **CI Integration**: Runs on GitHub Actions, reports stored in artifacts
+- **Failure Handling**: Auto-generates OpenSpec proposals via FailureWatcher
 
-**Integration Tests:**
-- Test API routers with real database (in-memory SQLite)
-- Use `beforeEach` to reset database state
-- Test happy paths and error cases
-- File: `packages/api/src/services/__tests__/*.integration.test.ts`
+#### Unit Testing (Vitest)
+- **Location**: `packages/*/src/**/__tests__/*.test.ts`
+- **Naming**: Mirror source file structure
+- **Coverage**: Utilities, services, business logic
+- **Mocking**: Minimal mocking, prefer integration-style tests
 
-**E2E Tests (Playwright):**
-- Test critical user flows end-to-end
-- Use Page Object Model for reusability
-- Run against local dev server (port 3002, 3000)
-- File: `apps/*/e2e/*.spec.ts`
-- Generate reports to `playwright-reports/*.json`
-
-**Test Data:**
-- Use factories for consistent test data
-- Avoid hardcoded IDs (use auto-increment)
-- Clean up after tests (transactions + rollback)
-
-**CI/CD Testing:**
-- Run unit tests on every commit
-- Run integration tests on PR
-- Run E2E tests before deployment
-- Auto-generate error proposals from failures
+#### Integration Testing
+- **Database Tests**: Use test database with Drizzle migrations
+- **API Tests**: tRPC caller pattern for type-safe testing
+- **Service Tests**: Full workflow simulation with real dependencies
 
 ### Git Workflow
 
-**Branching Strategy:**
-- `main` - Production-ready code
-- Feature branches: `feature/<description>`
-- Hotfix branches: `hotfix/<description>`
-- No develop branch (CI/CD from main)
+#### Branch Strategy
+- **Main Branch**: `main` (protected, production-ready)
+- **Feature Branches**: Not typically used (direct commits to main)
+- **Deployment**: CI/CD triggers on push to main
 
-**Commit Conventions:**
-- Use conventional commits format:
-  - `feat: add unified work dashboard`
-  - `fix: resolve race condition in worker monitor`
-  - `docs: update deployment guide`
-  - `refactor: extract error analysis to utils`
-  - `test: add E2E tests for dashboard filtering`
-  - `chore: update dependencies`
+#### Commit Conventions
+- **Format**: Imperative mood, concise (1-2 sentences)
+- **Focus**: "Why" over "what"
+- **Examples**:
+  - `Add unified work dashboard with drag-and-drop prioritization`
+  - `Fix type error in error-analysis utility`
+  - `Update deployment orchestration to handle permission errors`
+- **Auto-commit Footer**:
+  ```
+  🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
-**OpenSpec Commits:**
-- Include change ID in commits: `feat: implement change 6 - unified dashboard`
-- Reference tasks: `Complete Phase 6.5: Real-time subscriptions`
-- Archive marker: `Archive Change 5: Error automation system`
+  Co-Authored-By: Claude <noreply@anthropic.com>
+  ```
 
-**PR Requirements:**
-- Link to OpenSpec change if applicable
-- Include screenshots for UI changes
-- Pass all CI checks (lint, test, build)
-- Update documentation if needed
+#### Pull Request Workflow
+- **Creation**: Use `gh pr create` via Bash tool
+- **Title**: Descriptive, imperative mood
+- **Body**: Summary bullets, test plan checklist
+- **Footer**: Auto-generated Claude Code attribution
+
+### OpenSpec Workflow
+
+#### Creating Proposals
+1. Use `/openspec:proposal` to scaffold new changes
+2. Required sections: Why, What Changes, Impact
+3. Strict validation via `openspec validate --strict`
+4. Tasks checklist in tasks.md
+
+#### Applying Changes
+1. Approve proposal via dashboard (`http://localhost:3002/dashboard`)
+2. Assign to session or let master agent spawn worker
+3. Worker executes tasks and transitions spec through lifecycle
+4. User validates completed work and marks as applied
+
+#### Lifecycle States
+- **proposing** → **approved** → **assigned** → **in_progress** → **review** → **applied** → **archived**
+
+#### File Structure
+```
+openspec/
+├── project.md (this file)
+├── specs/ (reference documentation)
+└── changes/
+    ├── active/ (current proposals)
+    └── archive/ (completed specs)
+```
 
 ## Domain Context
 
-**OpenSpec Workflow:**
-- **Proposing** → User reviews proposal.md and tasks.md
-- **Approved** → Added to work queue with priority
-- **Assigned** → Linked to session, worker spawned
-- **In Progress** → Worker executing tasks
-- **Review** → Worker completed, awaiting validation
-- **Applied** → User validated, change deployed
-- **Archived** → Rejected or superseded
+### Self-Hosted Infrastructure
+- All services run on local Arch Linux server
+- No cloud dependencies (except GitHub for CI/CD)
+- Dynamic DNS for external access via Traefik
+- Local network access via AdGuard Home DNS
 
-**Work Queue Priority:**
-- 1 (Lowest) - Nice-to-have improvements
-- 2 (Low) - Non-critical bugs
-- 3 (Medium) - Standard features
-- 4 (High) - Important fixes
-- 5 (Highest) - Critical errors
+### CI/CD Automation
+- GitHub Actions runners self-hosted on Arch Linux
+- Deployment triggered by push to main
+- Streamlined script: `homelab/scripts/deploy-ci-streamlined.sh`
+- Permission handling automated in deployment scripts
 
-**Worker Agent Types:**
-- `t3-stack-developer` - Full-stack Better-T-Stack work
-- `nextjs-frontend-specialist` - UI/UX implementation
-- `trpc-backend-engineer` - API and business logic
-- `database-architect` - Schema and query optimization
-- `e2e-test-engineer` - Playwright test creation
-- `ux-design-specialist` - Design system work
-- `docker-network-architect` - Container orchestration
+### Test Report Aggregation
+- Playwright Server collects reports from CI artifacts
+- Failure detection via polling (30-second interval)
+- Auto-generation of OpenSpec proposals from failures
+- Priority escalation based on recurrence
 
-**Error Classification:**
-- `type-error` - TypeScript compilation errors
-- `missing-property` - Undefined property access
-- `assertion-failure` - Test expectation failures
-- `network-error` - API/network timeouts
-- `configuration-error` - Invalid config/env
-
-**Homelab Networks:**
-- `homelab` (172.20.0.0/16) - Core services
-- `media` (172.21.0.0/16) - VPN-protected media stack
-
-**Service Discovery:**
-- Internal: `http://<service-name>:<port>`
-- External: `https://<service>.tail<redacted>.ts.net` (Tailscale)
-- Traefik: `https://<service>.local` (via AdGuard DNS rewrite)
+### Error-to-Spec Pipeline
+1. Test fails in CI
+2. FailureWatcher detects failure
+3. Error classification (type-error, assertion-failure, etc.)
+4. Auto-generate OpenSpec proposal with tasks
+5. Priority assignment (1-5 based on classification)
+6. User approves → enters work queue
+7. Worker agent executes fix
+8. User validates → spec applied
 
 ## Important Constraints
 
-**Technical Constraints:**
-- Homelab runs on single Arch Linux server (resource-limited)
-- Mac setup must work without network access
-- Database is SQLite (no PostgreSQL for simplicity)
-- No public internet exposure (Tailscale VPN only)
-- Self-hosted runners have limited concurrency
+### Technical Constraints
+- **Homelab Hardware**: Single Arch Linux server (limited resources)
+- **Network**: Self-hosted, no external cloud services
+- **Database**: Single PostgreSQL instance shared across apps
+- **Docker Networks**: Fixed IP ranges (172.20.0.0/16, 172.21.0.0/16)
+- **Ports**: 3000 (Playwright Server), 3002 (Claude Agent Web)
 
-**Security Constraints:**
-- All secrets in `.env` files (never commit)
-- Traefik certificates stored in Docker volumes
-- VPN required for all external access
-- AdGuard Home blocks ads and malware domains
-- Vaultwarden for password management
+### Workflow Constraints
+- **OpenSpec Required**: New capabilities/architecture changes must use `/openspec:proposal`
+- **Dashboard Approval**: All specs require user approval before work starts
+- **Wizard State**: Homelab setup wizard must complete before manual commands
+- **Git Hooks**: Respect pre-commit hooks, never use --no-verify
+- **Documentation**: Service changes require corresponding docs updates
 
-**Operational Constraints:**
-- Deployments must be atomic (rollback on failure)
-- Service downtime must be minimal (<30s)
-- Logs must be accessible via `docker compose logs`
-- Configuration must be declarative (GitOps)
-- State must survive container restarts
-
-**Development Constraints:**
-- Use Bun for all package management (no npm/yarn)
-- TypeScript strict mode required
-- All APIs must be type-safe (tRPC)
-- Real-time features require tRPC subscriptions
-- Monaco editor must load dynamically (SSR issue)
+### Development Constraints
+- **Type Safety**: No `any` types, strict TypeScript enabled
+- **Monorepo**: Changes must work across workspace packages
+- **Real-time**: tRPC subscriptions must handle cleanup on unmount
+- **Testing**: Critical paths require E2E coverage
+- **Commit Attribution**: Always include Claude Code footer
 
 ## External Dependencies
 
-**Cloud Services:**
-- **GitHub** - Git hosting and CI/CD (self-hosted runners)
-- **Anthropic Claude API** - AI agent automation (via Claude Code CLI)
-- **Tailscale** - VPN and service mesh
+### GitHub Services
+- **GitHub Actions**: CI/CD pipeline execution
+- **GitHub API**: PR creation, issue tracking via `gh` CLI
+- **GitHub Container Registry**: Not currently used (Docker Hub for images)
 
-**External APIs:**
-- **TheTVDB** - TV show metadata (via Sonarr)
-- **TheMovieDB** - Movie metadata (via Radarr)
-- **MusicBrainz** - Music metadata (via Lidarr)
-- **OpenSubtitles** - Subtitle downloads (via Bazarr)
-- **Usenet Indexers** - Content search (via Prowlarr)
+### Docker Images
+- **Traefik**: traefik:latest
+- **AdGuard Home**: adguard/adguardhome:latest
+- **Home Assistant**: ghcr.io/home-assistant/home-assistant:stable
+- **PostgreSQL**: postgres:16-alpine
+- **Coolify**: coollabsio/coolify:latest
 
-**DNS Dependencies:**
-- **Cloudflare DNS** - Public DNS fallback (1.1.1.1)
-- **AdGuard Home** - Local DNS server and filtering
-- **Tailscale MagicDNS** - VPN DNS resolution
+### Development Tools
+- **Homebrew**: macOS package installation
+- **Bun**: Package management, monorepo workspaces
+- **Playwright**: Browser automation, E2E testing
+- **Drizzle Kit**: Database migrations
 
-**Infrastructure Dependencies:**
-- **Docker Hub** - Container images
-- **GitHub Container Registry** - Custom images (future)
-- **Homebrew** - macOS package manager
-- **AUR** - Arch Linux package repository
+### Monitoring & Observability
+- **AdGuard Home**: DNS query logging
+- **Traefik Dashboard**: Routing and middleware monitoring
+- **Playwright Reports**: Test execution history
+- **Docker Logs**: Service output via `docker compose logs`
 
-**Development Dependencies:**
-- **Context7** - Documentation lookup (MCP server)
-- **Playwright MCP** - Browser automation (MCP server)
-- **Sequential Thinking MCP** - AI reasoning (MCP server)
+## Key Entry Points
+
+### Homelab Management
+- **Setup**: `homelab/homelab.sh` (interactive wizard)
+- **Deployment**: `homelab/scripts/deploy-ci-streamlined.sh` (CI script)
+- **Configuration**: `homelab/docker-compose.yml` (main orchestrator)
+
+### Mac Setup
+- **Installer**: `mac/install.sh` (interactive setup)
+
+### Homelab Services
+- **Claude Agent Web**: `apps/claude-agent-web/src/app/(dashboard)/dashboard/page.tsx`
+- **Playwright Server**: `apps/playwright-server/src/app/api/upload/route.ts`
+- **API Layer**: `packages/api/src/router/` (tRPC routers)
+- **Database**: `packages/db/src/schema/` (Drizzle schemas)
+
+## Documentation References
+
+- **Main Index**: [docs/INDEX.md](../docs/INDEX.md)
+- **OpenSpec Specs**: [openspec/specs/](./specs/)
+- **Monorepo Docs**: [homelab-services/docs/INDEX.md](../homelab-services/docs/INDEX.md)
+- **CLAUDE.md**: [Project instructions](../CLAUDE.md)

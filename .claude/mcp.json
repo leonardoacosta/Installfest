@@ -1,0 +1,9 @@
+{
+  "mcp": {
+    "claude-flow": {
+      "command": "npx",
+      "args": ["-y", "claude-flow@latest", "mcp"],
+      "enabled": true
+    }
+  }
+}
