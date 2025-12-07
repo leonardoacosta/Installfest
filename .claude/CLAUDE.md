@@ -25,10 +25,14 @@ Before any push:
 
 ## AI Workflow
 
-- Use OpenSpec for features requiring specs
-- Organize tasks into parallel groups before applying
-- Store context before clearing: /store-context [name]
-- Archive completed specs with /archive [name]
+The hybrid workflow combines OpenSpec specifications with claude-flow persistent memory:
+
+1. **Create feature**: `/feature [description]` - Creates spec with parallel groups
+2. **Apply changes**: `/apply [name]` - Execute with parallel agents + validation gates
+3. **Store context**: `/store [name]` - Persist to claude-flow memory (survives /clear)
+4. **Resume work**: `/resume [name]` - Load from persistent memory
+5. **Archive spec**: `/archive [name]` - Store learnings, cleanup temp memory
+6. **Recall learnings**: `/recall [name]` - Query past patterns and decisions
 
 ---
 
@@ -138,24 +142,35 @@ Task(subagent_type="e2e-test-engineer", prompt="...")
 - `ui-animation-specialist`: Framer Motion, micro-interactions
 - `redis-cache-architect`: Caching strategies, Upstash
 
+**Hybrid Workflow Agents** (used by `/apply`):
+- `manager`: Orchestrates parallel execution
+- `schema-expert`: Drizzle database schemas
+- `api-builder`: tRPC routers with CRUD
+- `ui-builder`: React forms and lists
+- `test-writer`: Vitest + Playwright tests
+
 ---
 
 ## Command Usage
 
 Slash commands for workflow automation:
 
+**Hybrid Workflow (claude-flow integrated):**
+- `/feature [description]`: Create spec with parallel groups + MULTI_AGENT_PLAN.md
+- `/apply [name]`: Execute with parallel agents + validation gates
+- `/store [name]`: Persist context to claude-flow memory
+- `/resume [name]`: Load from persistent memory and continue
+- `/archive [name]`: Store learnings, cleanup temp memory
+- `/recall [name]`: Query learnings (`--list`, `--search [pattern]`)
+
 **Quality & Development:**
 - `/fix-types`: Find and fix TypeScript errors
 - `/run-quality-gates`: Execute typecheck, build, test, lint
-- `/parallel-apply [spec-id]`: Apply OpenSpec with parallel batching
 
-**Context Management:**
-- `/store-context [name]`: Save context before clearing session
-- `/resume [name]`: Resume work from stored context
-- `/recall [name]`: View learnings from archived specs
-
-**Spec Lifecycle:**
-- `/archive [name]`: Archive completed spec with validation
+**OpenSpec (low-level):**
+- `/openspec:proposal`: Create initial proposal
+- `/openspec:apply`: Apply specification
+- `/openspec:archive`: Archive to openspec/archive/
 
 ---
 
@@ -183,8 +198,29 @@ Automatic validation hooks:
 - **SubagentStop**: Verify task completion before exit
 - **PreCommit**: Run quality gates (typecheck + lint)
 - **PrePush**: Run tests before push
+- **Stop**: Remind to store context before clearing
 
 Override locally in `.claude/settings.local.json` (gitignored).
+
+---
+
+## Claude-Flow Memory
+
+Persistent memory survives `/clear` and session restarts:
+
+```
+# Memory keys used by hybrid workflow:
+$SPEC_NAME-plan       # Execution plan with groups
+$SPEC_NAME-context    # Stored progress (deleted on archive)
+$SPEC_NAME-completion # Completion status (deleted on archive)
+$SPEC_NAME-learnings  # Permanent learnings (kept after archive)
+```
+
+Query memory:
+```
+mcp__claude-flow__memory_list { pattern: "*-learnings" }
+mcp__claude-flow__memory_retrieve { key: "feature-name-learnings" }
+```
 
 ---
 

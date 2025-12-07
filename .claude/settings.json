@@ -99,6 +99,16 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Before stopping, verify no incomplete work: 1) Any in-progress specs? Suggest: /store $SPEC_NAME 2) Any uncommitted changes? Suggest: git status 3) Any failing tests? Suggest: /apply $SPEC_NAME to fix. If work is incomplete, remind user to store context before clearing."
+          }
+        ]
+      }
     ]
   },
   "mcpServers": {

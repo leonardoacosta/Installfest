@@ -1,48 +1,64 @@
-# Resume Specification from Stored Context
+# Resume Specification from Persistent Memory
 
 When the user runs `/resume $SPEC_NAME`:
 
-## Load Current State
+Load stored context from claude-flow memory and continue execution.
 
-```bash
-# Verify spec exists
-ls openspec/changes/$SPEC_NAME/
+## Step 1: Retrieve Stored Context
 
-# Load proposal and tasks
-cat openspec/changes/$SPEC_NAME/proposal.md
-cat openspec/changes/$SPEC_NAME/tasks.md
+First, try to load from persistent memory:
 
-# Check current git state
-git status --short
-git log -1 --oneline
+```
+mcp__claude-flow__memory_retrieve { key: "$SPEC_NAME-context" }
 ```
 
----
+If no stored context found, fall back to file-based recovery.
 
-## Context Restoration
+## Step 2: Display Progress Summary
 
-Analyze the tasks.md to determine current progress:
+If context was retrieved from memory:
 
 ```
 Resuming: $SPEC_NAME
 
-Feature: [summary from proposal.md]
+Feature: [summary from stored context]
 
 Progress:
-[For each phase/group in tasks.md]
-- [status icon] Phase 1: [complete/in_progress/pending]
-- [status icon] Phase 2: [complete/in_progress/pending]
-- [status icon] Phase 3: [complete/in_progress/pending]
-- [status icon] Phase 4: [complete/in_progress/pending]
+✅ Phase 1 (Foundation): [X/Y tasks]
+⏳ Phase 2 (API Layer): [X/Y tasks]
+⬜ Phase 3 (UI Layer): [X/Y tasks]
+⬜ Phase 4 (Quality): [X/Y tasks]
 
-Next Step: [first incomplete task]
+Key Decisions:
+- [decision 1 from stored context]
+- [decision 2 from stored context]
+
+Blockers:
+- [any blockers from stored context]
+
+Last stored: [timestamp]
 ```
 
----
+## Step 3: Load Specification Files
 
-## Determine Resume Point
+Read current file state to validate against stored context:
 
-Based on tasks.md, identify where to continue:
+```bash
+# Verify spec still exists
+ls openspec/changes/$SPEC_NAME/
+
+# Load current files
+cat openspec/changes/$SPEC_NAME/proposal.md
+cat openspec/changes/$SPEC_NAME/tasks.md
+cat openspec/changes/$SPEC_NAME/MULTI_AGENT_PLAN.md 2>/dev/null || echo 'No plan'
+
+# Check git state
+git status --short
+```
+
+## Step 4: Determine Resume Point
+
+Compare stored context with current file state:
 
 ### If Phase 1 (Foundation) incomplete:
 ```
@@ -51,49 +67,49 @@ Resume Point: Phase 1 - Foundation
 Remaining tasks:
 - [incomplete foundation tasks]
 
-Continue with: /parallel-apply $SPEC_NAME
+Continue: /apply $SPEC_NAME
 ```
 
-### If Phase 2 (API) incomplete:
+### If Phase 2 (API Layer) incomplete:
 ```
 Resume Point: Phase 2 - API Layer
 
-Foundation complete
-API Layer in progress
+✅ Foundation complete
+⏳ API Layer in progress
 
 Remaining tasks:
 - [incomplete API tasks]
 
-Continue with: /parallel-apply $SPEC_NAME
+Continue: /apply $SPEC_NAME
 ```
 
-### If Phase 3 (UI) incomplete:
+### If Phase 3 (UI Layer) incomplete:
 ```
-Resume Point: Phase 3 - UI Components
+Resume Point: Phase 3 - UI Layer
 
-Foundation complete
-API Layer complete
-UI Components in progress
+✅ Foundation complete
+✅ API Layer complete
+⏳ UI Layer in progress
 
 Remaining tasks:
 - [incomplete UI tasks]
 
-Continue with: /parallel-apply $SPEC_NAME
+Continue: /apply $SPEC_NAME
 ```
 
-### If Phase 4 (Tests) incomplete:
+### If Phase 4 (Quality) incomplete:
 ```
-Resume Point: Phase 4 - Tests
+Resume Point: Phase 4 - Quality
 
-Foundation complete
-API Layer complete
-UI Components complete
-Tests in progress
+✅ Foundation complete
+✅ API Layer complete
+✅ UI Layer complete
+⏳ Quality in progress
 
 Remaining tasks:
 - [incomplete test tasks]
 
-Continue with: /parallel-apply $SPEC_NAME
+Continue: /apply $SPEC_NAME
 ```
 
 ### If All Phases complete:
@@ -102,37 +118,44 @@ Resume Point: Ready to Archive
 
 All phases complete!
 
-Final validation needed. Run:
-/archive $SPEC_NAME
+Validations needed:
+- pnpm tsc --noEmit
+- pnpm build
+- pnpm test
+
+Archive when ready: /archive $SPEC_NAME
 ```
 
----
+## Step 5: No Context Found
 
-## No Spec Found
-
-If spec doesn't exist:
+If no stored context and no spec files exist:
 
 ```
-No specification found for: $SPEC_NAME
+No context found for: $SPEC_NAME
+
+Checked:
+1. claude-flow memory (key: $SPEC_NAME-context)
+2. openspec/changes/$SPEC_NAME/
 
 Possible reasons:
-1. Spec name is misspelled
-2. Spec was already archived
-3. Spec was never created
+- Spec name is misspelled
+- Spec was already archived
+- Context was never stored
 
 Available options:
 
-1. Check active specs:
+1. List stored contexts:
+   mcp__claude-flow__memory_list { pattern: "*-context" }
+
+2. Check active specs:
    ls openspec/changes/
 
-2. Check archived specs:
+3. Check archived specs:
    ls openspec/archive/
 
-3. Create new spec:
-   /openspec:proposal [description]
+4. Create new spec:
+   /feature [description]
 ```
-
----
 
 ## Auto-Resume Option
 
@@ -141,16 +164,23 @@ For seamless continuation, user can run:
 `/resume $SPEC_NAME --continue`
 
 This will:
-1. Load context
+1. Load context from memory
 2. Display brief summary
-3. Automatically run `/parallel-apply $SPEC_NAME`
+3. Automatically run `/apply $SPEC_NAME`
 
 ```
 Auto-resuming $SPEC_NAME...
 
-Phase [X] of 4
-Continuing with /parallel-apply $SPEC_NAME
+Phase [X] of 4 | [Y] tasks remaining
+Continuing with /apply $SPEC_NAME
 
 ---
-[Proceeds to parallel-apply]
+[Proceeds to apply]
 ```
+
+## Companion Commands
+
+- `/apply $SPEC_NAME` - Execute with parallel agents
+- `/store $SPEC_NAME` - Save current progress
+- `/archive $SPEC_NAME` - Archive completed spec
+- `/recall $SPEC_NAME` - View learnings from archived specs
