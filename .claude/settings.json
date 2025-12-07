@@ -1,22 +1,69 @@
 {
+  "$schema": "https://claude.ai/schemas/claude-code-settings.json",
+  
+  "model": "claude-sonnet-4-20250514",
+  "maxThinkingTokens": 10000,
+  
   "permissions": {
     "deny": [
       "Read(.env)",
       "Read(.env.*)",
       "Write(.env)",
       "Write(.env.*)",
+      "Bash(rm -rf /)",
+      "Bash(rm -rf ~)",
       "Bash(*--no-verify*)"
     ]
   },
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '🚀 Session started at '$(date '+%Y-%m-%d %H:%M:%S') >> \"$CLAUDE_PROJECT_DIR\"/.claude/session.log"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "COMMAND=$(echo $CLAUDE_TOOL_INPUT | jq -r '.command // empty'); if echo \"$COMMAND\" | grep -qE 'git commit.*--no-verify|git push.*--force(?!-with-lease)'; then echo 'BLOCKED: Unsafe git command' >&2; exit 2; fi"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FILE_PATH=$(echo $CLAUDE_TOOL_INPUT | jq -r '.file_path // .path // empty'); if echo \"$FILE_PATH\" | grep -qE '\\.(env|pem|key)$|secrets?/'; then echo 'BLOCKED: Cannot modify sensitive files' >&2; exit 2; fi"
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Write|Edit|MultiEdit",
         "hooks": [
           {
             "type": "command",
-            "command": "FILE=$(echo $CLAUDE_TOOL_INPUT | jq -r '.file_path // .path // empty'); if echo \"$FILE\" | grep -qE '\\.(ts|tsx)$'; then cd \"$CLAUDE_PROJECT_DIR\" && npx tsc --noEmit 2>&1 | head -20 || true; fi",
+            "command": "FILE_PATH=$(echo $CLAUDE_TOOL_INPUT | jq -r '.file_path // .path // empty'); if echo \"$FILE_PATH\" | grep -qE '\\.(ts|tsx)$'; then cd \"$CLAUDE_PROJECT_DIR\" && pnpm tsc --noEmit 2>&1 | head -30 || true; fi",
             "timeout": 60
+          },
+          {
+            "type": "command", 
+            "command": "FILE_PATH=$(echo $CLAUDE_TOOL_INPUT | jq -r '.file_path // .path // empty'); if echo \"$FILE_PATH\" | grep -qE '\\.(ts|tsx|js|jsx)$'; then cd \"$CLAUDE_PROJECT_DIR\" && pnpm eslint --fix \"$FILE_PATH\" 2>&1 | head -20 || true; fi",
+            "timeout": 30
+          },
+          {
+            "type": "command",
+            "command": "FILE_PATH=$(echo $CLAUDE_TOOL_INPUT | jq -r '.file_path // .path // empty'); if echo \"$FILE_PATH\" | grep -qE '\\.(ts|tsx|js|jsx|json|md)$'; then cd \"$CLAUDE_PROJECT_DIR\" && pnpm prettier --write \"$FILE_PATH\" 2>/dev/null || true; fi",
+            "timeout": 15
           }
         ]
       }
@@ -30,6 +77,44 @@
           }
         ]
       }
+    ],
+    "PreCommit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/scripts/quality-gates.sh\" 2>&1 || echo 'Quality gates not configured for this project'",
+            "timeout": 300
+          }
+        ]
+      }
+    ],
+    "PrePush": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && (pnpm test 2>/dev/null || npm test 2>/dev/null || yarn test 2>/dev/null || dotnet test 2>/dev/null || echo 'No test runner found')",
+            "timeout": 600
+          }
+        ]
+      }
     ]
+  },
+  "mcpServers": {
+    "claude-flow": {
+      "command": "npx",
+      "args": ["-y", "claude-flow@latest", "mcp"],
+      "env": {
+        "CLAUDE_FLOW_MEMORY_PATH": ".swarm/memory.db",
+        "CLAUDE_FLOW_MAX_AGENTS": "10",
+        "CLAUDE_FLOW_DEFAULT_TOPOLOGY": "hierarchical"
+      }
+    }
+  },
+
+  "tasks": {
+    "defaultTimeout": 300,
+    "maxConcurrent": 8
   }
 }
