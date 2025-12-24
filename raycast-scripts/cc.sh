@@ -2,15 +2,15 @@
 
 # Required parameters:
 # @raycast.schemaVersion 1
-# @raycast.title tc
+# @raycast.title cc
 # @raycast.mode silent
 
 # Optional parameters:
-# @raycast.icon ⛺
+# @raycast.icon 💻
 
 # Documentation:
-# @raycast.description Tribal Cities
+# @raycast.description Central Claude
 # @raycast.author leonardoacosta
 # @raycast.authorURL https://raycast.com/leonardoacosta
 
-cursor --folder-uri vscode-remote://ssh-remote+nyaptor@homelab.tail296462.ts.net/home/nyaptor/personal/tc
+cursor --folder-uri vscode-remote://ssh-remote+nyaptor@homelab.tail296462.ts.net/home/nyaptor/.claude/

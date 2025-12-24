@@ -5,8 +5,8 @@
 brew "azure-cli"
 # .NET runtime
 brew "dotnet"
-# Fast, highly customisable system info script
-brew "neofetch"
+# Fast, highly customisable system info script, replaces neofetch
+brew "hyfetch"
 # Node.js
 brew "node"
 # nvm
@@ -24,7 +24,7 @@ brew "zsh-syntax-highlighting"
 brew "stripe/stripe-cli/stripe"
 
 # Adobe Creative Cloud
-cask "adobe-creative-cloud"
+# cask "adobe-creative-cloud"
 # Beekeeper Studio
 cask "beekeeper-studio"
 # Bruno
@@ -54,10 +54,10 @@ cask "steam"
 # Superhuman
 cask "superhuman"
 # Telegram
-cask "telegram"
+# cask "telegram"
 # Visual Studio Code
-cask "visual-studio-code"
+# cask "visual-studio-code"
 # WezTerm
-cask "wezterm"
+# cask "wezterm"
 # Windows App
-cask "windows-app"
+# cask "windows-app"

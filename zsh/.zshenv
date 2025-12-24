@@ -35,3 +35,6 @@ export DEFAULT_USER="$(whoami)"
 # uv
 export PATH="/Users/leonardoacosta/.local/bin:$PATH"
 eval "$(/opt/homebrew/bin/brew shellenv)"
+
+# elevenlabs api key
+export ELEVENLABS_API_KEY="sk_4fdc3f7d1b54864b537d64a6c57e8c28f172aa5e38f35769"

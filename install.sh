@@ -28,7 +28,7 @@ info "===================="
 info "Symbolic Links"
 info "===================="
 
-chmod +x ./mac/scripts/symlinks.sh
+chmod +x ./scripts/symlinks.sh
 if [[ "$overwrite_dotfiles" == "y" ]]; then
     warning "Deleting existing dotfiles..."
     ./mac/scripts/symlinks.sh --delete --include-files
@@ -46,36 +46,42 @@ if [[ "$setup_claude" == "y" ]]; then
     CLAUDE_DIR=".claude"
     BACKUP_DIR="$HOME/.claude-backups"
 
+
+
+    info "Script directory: $SCRIPT_DIR"
+    info "Claude directory: $CLAUDE_DIR"
+    info "Backup directory: $BACKUP_DIR"
+
     # Detect existing .claude/ directory
     if [ -d "$CLAUDE_DIR" ]; then
         warning "Existing .claude/ directory detected"
 
-        # Check if already symlinked
-        if [ -L "$CLAUDE_DIR/agents" ]; then
-            info "Already configured with symlinks"
-            info "Run './sync.sh status' to view configuration"
-        else
-            # Backup existing config before symlinking
-            info "Backing up existing configuration..."
-            mkdir -p "$BACKUP_DIR"
-            backup_name="claude-backup-$(date +%Y%m%d-%H%M%S)"
-            cp -r "$CLAUDE_DIR" "$BACKUP_DIR/$backup_name"
-            success "Backed up to $BACKUP_DIR/$backup_name"
+        # # Check if already symlinked
+        # if [ -L "$CLAUDE_DIR/agents" ]; then
+        #     info "Already configured with symlinks"
+        #     info "Run './sync.sh status' to view configuration"
+        # else
+        #     # Backup existing config before symlinking
+        #     info "Backing up existing configuration..."
+        #     mkdir -p "$BACKUP_DIR"
+        #     backup_name="claude-backup-$(date +%Y%m%d-%H%M%S)"
+        #     cp -r "$CLAUDE_DIR" "$BACKUP_DIR/$backup_name"
+        #     success "Backed up to $BACKUP_DIR/$backup_name"
 
-            # Create symlinks
-            info "Creating symlinks to central Claude config..."
-            rm -rf "$CLAUDE_DIR/agents" "$CLAUDE_DIR/commands" "$CLAUDE_DIR/skills"
-            ln -s "$SCRIPT_DIR/$CLAUDE_DIR/agents" "$CLAUDE_DIR/agents"
-            ln -s "$SCRIPT_DIR/$CLAUDE_DIR/commands" "$CLAUDE_DIR/commands"
-            ln -s "$SCRIPT_DIR/$CLAUDE_DIR/skills" "$CLAUDE_DIR/skills"
+        #     # Create symlinks
+        #     info "Creating symlinks to central Claude config..."
+        #     rm -rf "$CLAUDE_DIR/agents" "$CLAUDE_DIR/commands" "$CLAUDE_DIR/skills"
+        #     ln -s "$SCRIPT_DIR/$CLAUDE_DIR/agents" "$CLAUDE_DIR/agents"
+        #     ln -s "$SCRIPT_DIR/$CLAUDE_DIR/commands" "$CLAUDE_DIR/commands"
+        #     ln -s "$SCRIPT_DIR/$CLAUDE_DIR/skills" "$CLAUDE_DIR/skills"
 
-            # Create local settings if missing
-            if [ ! -f "$CLAUDE_DIR/settings.local.json" ]; then
-                echo '{}' > "$CLAUDE_DIR/settings.local.json"
-            fi
+        #     # Create local settings if missing
+        #     if [ ! -f "$CLAUDE_DIR/settings.local.json" ]; then
+        #         echo '{}' > "$CLAUDE_DIR/settings.local.json"
+        #     fi
 
-            success "Claude config symlinks created"
-        fi
+        #     success "Claude config symlinks created"
+        # fi
     else
         info "No .claude/ directory found - use './sync.sh install [template]' in your project"
     fi
