@@ -2,15 +2,15 @@
 
 # Required parameters:
 # @raycast.schemaVersion 1
-# @raycast.title fb
+# @raycast.title co
 # @raycast.mode silent
 
 # Optional parameters:
-# @raycast.icon 🔥
-# @raycast.packageName Fireball
+# @raycast.icon 🌍
+# @raycast.packageName Central Orchestration
 
 # Documentation:
-# @raycast.description Fireball
+# @raycast.description Central Orchestration
 # @raycast.author leonardoacosta
 # @raycast.authorURL https://raycast.com/leonardoacosta
 
@@ -27,4 +27,4 @@ else
   HOST="$TAILSCALE"
 fi
 
-cursor --folder-uri "vscode-remote://ssh-remote+$USER@$HOST/home/$USER/repos/fb/"
+cursor --folder-uri "vscode-remote://ssh-remote+$USER@$HOST/home/$USER/personal/co/"

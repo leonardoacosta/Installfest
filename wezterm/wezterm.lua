@@ -20,6 +20,9 @@ end)
 
 local config = {}
 
+-- Enable OSC 52 clipboard (for tmux over SSH)
+config.enable_csi_u_key_encoding = true
+
 config.native_macos_fullscreen_mode = true
 config.automatically_reload_config = true
 config.enable_tab_bar = false

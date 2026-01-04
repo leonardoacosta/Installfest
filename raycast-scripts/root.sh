@@ -2,7 +2,7 @@
 
 # Required parameters:
 # @raycast.schemaVersion 1
-# @raycast.title root 
+# @raycast.title root
 # @raycast.mode silent
 
 # Optional parameters:
@@ -13,4 +13,17 @@
 # @raycast.author leonardoacosta
 # @raycast.authorURL https://raycast.com/leonardoacosta
 
-code --folder-uri vscode-remote://ssh-remote+nyaptor@homelab.tail296462.ts.net/home/nyaptor/
+LOCAL_IP1="192.168.1.100"
+LOCAL_IP2="192.168.1.2"
+TAILSCALE="homelab.tail296462.ts.net"
+USER="nyaptor"
+
+if timeout 1 bash -c "</dev/tcp/$LOCAL_IP1/22" 2>/dev/null; then
+  HOST="$LOCAL_IP1"
+elif timeout 1 bash -c "</dev/tcp/$LOCAL_IP2/22" 2>/dev/null; then
+  HOST="$LOCAL_IP2"
+else
+  HOST="$TAILSCALE"
+fi
+
+code --folder-uri "vscode-remote://ssh-remote+$USER@$HOST/home/$USER/"

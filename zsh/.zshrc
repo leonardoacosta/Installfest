@@ -7,6 +7,7 @@ eval "$(/opt/homebrew/bin/brew shellenv)"
 export STARSHIP_CONFIG="$HOME/.config/starship/starship.toml"
 eval "$(starship init zsh)"
 
+alias claude="claude --dangerously-skip-permissions"
 
 # Load Git completion
 zstyle ':completion:*:*:git:*' script $HOME/.config/zsh/git-completion.bash
