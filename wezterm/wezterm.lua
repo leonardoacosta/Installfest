@@ -105,6 +105,18 @@ config.keys = {
 
     -- Cmd+Backspace: Delete to beginning of line (sends Ctrl+U)
     { key = "Backspace", mods = "CMD", action = act.SendString("\x15") },
+
+    -- Cmd+Shift+Left: Select to beginning of line (tmux copy mode)
+    { key = "LeftArrow", mods = "CMD|SHIFT", action = act.SendString("\x1b[60;CMS~") },
+
+    -- Cmd+Shift+Right: Select to end of line (tmux copy mode)
+    { key = "RightArrow", mods = "CMD|SHIFT", action = act.SendString("\x1b[62;CMS~") },
+
+    -- Option+Shift+Left: Select word backward (tmux copy mode)
+    { key = "LeftArrow", mods = "OPT|SHIFT", action = act.SendString("\x1b[60;OMS~") },
+
+    -- Option+Shift+Right: Select word forward (tmux copy mode)
+    { key = "RightArrow", mods = "OPT|SHIFT", action = act.SendString("\x1b[62;OMS~") },
 }
 
 -- config.background = {
