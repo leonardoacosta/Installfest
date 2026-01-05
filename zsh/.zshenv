@@ -3,8 +3,8 @@
 # Secrets
 [ -f "$HOME/.env" ] && source "$HOME/.env"
 
-# Themes (onedark or nord)
-export TMUX_THEME="nord"
+# Themes
+export TMUX_THEME="one-hunter-vercel"
 export NVIM_THEME="nord"
 export STARSHIP_THEME="nord"
 export WEZTERM_THEME="nord"
