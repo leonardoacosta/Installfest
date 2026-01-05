@@ -83,6 +83,28 @@ config.keys = {
 
     -- Cmd+Q: Quit WezTerm
     { key = "q", mods = "CMD", action = act.QuitApplication },
+
+    -- =========================================================================
+    -- Text Editing - macOS standard keybindings
+    -- =========================================================================
+
+    -- Option+Left: Move word backward (sends ESC b)
+    { key = "LeftArrow", mods = "OPT", action = act.SendString("\x1bb") },
+
+    -- Option+Right: Move word forward (sends ESC f)
+    { key = "RightArrow", mods = "OPT", action = act.SendString("\x1bf") },
+
+    -- Option+Backspace: Delete word backward (sends ESC + backspace)
+    { key = "Backspace", mods = "OPT", action = act.SendString("\x1b\x7f") },
+
+    -- Cmd+Left: Go to beginning of line (sends Ctrl+A)
+    { key = "LeftArrow", mods = "CMD", action = act.SendString("\x01") },
+
+    -- Cmd+Right: Go to end of line (sends Ctrl+E)
+    { key = "RightArrow", mods = "CMD", action = act.SendString("\x05") },
+
+    -- Cmd+Backspace: Delete to beginning of line (sends Ctrl+U)
+    { key = "Backspace", mods = "CMD", action = act.SendString("\x15") },
 }
 
 -- config.background = {
