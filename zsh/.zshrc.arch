@@ -1,0 +1,57 @@
+# Arch Linux ZSH Configuration
+# Managed via Installfest - symlinked to ~/.zshrc
+
+setopt HIST_IGNORE_ALL_DUPS
+setopt SHARE_HISTORY
+setopt INC_APPEND_HISTORY
+
+# History settings
+HISTSIZE=100000
+SAVEHIST=100000
+HISTFILE=~/.zsh_history
+
+# Starship prompt
+export STARSHIP_CONFIG="$HOME/.config/starship/starship.toml"
+eval "$(starship init zsh)"
+
+# ZSH Plugins (Arch paths)
+# Install: sudo pacman -S zsh-syntax-highlighting zsh-autosuggestions
+[[ -f /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]] && \
+    source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+
+[[ -f /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh ]] && \
+    source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
+
+# Efficiency tools
+# zoxide - smart directory jumping (use: z <partial-path>)
+command -v zoxide &>/dev/null && eval "$(zoxide init zsh)"
+
+# atuin - enhanced shell history (Ctrl+R)
+# Install: sudo pacman -S atuin
+command -v atuin &>/dev/null && eval "$(atuin init zsh)"
+
+# fzf - fuzzy finder (Ctrl+T for files, Ctrl+R for history if atuin not installed)
+command -v fzf &>/dev/null && source <(fzf --zsh)
+
+# Aliases
+alias claude="claude --dangerously-skip-permissions"
+alias ll="ls -la --color=auto"
+alias la="ls -A --color=auto"
+alias l="ls -CF --color=auto"
+alias ls="ls --color=auto"
+alias grep="grep --color=auto"
+
+# Homelab shortcuts
+alias hl="cd ~/homelab && ./homelab.sh"
+alias hls="cd ~/homelab && ./homelab.sh status"
+alias hll="cd ~/homelab && ./homelab.sh logs"
+
+# Docker shortcuts
+alias dps="docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'"
+alias dlog="docker logs -f"
+alias dc="docker compose"
+
+# Git shortcuts
+alias gs="git status"
+alias gd="git diff"
+alias gl="git log --oneline -20"
