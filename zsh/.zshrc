@@ -20,9 +20,17 @@ source $(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zs
 # zsh-autosuggestions
 source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh
 
+# Efficiency tools
+eval "$(zoxide init zsh)"      # Smart cd (use: z <partial-path>)
+eval "$(atuin init zsh)"       # Enhanced history (Ctrl+R)
+source <(fzf --zsh)            # Fuzzy finder (Ctrl+T files)
+
 # pnpm
 export PNPM_HOME="/Users/leonardoacosta/Library/pnpm"
 export PATH="$PNPM_HOME:$PATH"
+
+# .NET tools
+export PATH="$PATH:/Users/leonardoacosta/.dotnet/tools"
 
 # nvm
 export NVM_DIR="$HOME/.nvm"
