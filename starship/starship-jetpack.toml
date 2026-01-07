@@ -2,8 +2,6 @@
 # https://starship.rs/presets/jetpack
 # Geometric, minimalist prompt that adapts to terminal colors
 
-$schema = 'https://starship.rs/config-schema.json'
-
 add_newline = true
 continuation_prompt = "[▸▹ ](dimmed white)"
 
