@@ -1,15 +1,23 @@
 setopt HIST_IGNORE_ALL_DUPS
 
-# Homebrew
+# * =========================================================
+# * Homebrew ================================================
 eval "$(/opt/homebrew/bin/brew shellenv)"
 
-# Starship
+# * =========================================================
+# * Starship ================================================
 export STARSHIP_CONFIG="$HOME/.config/starship/starship.toml"
+setopt PROMPT_SUBST
 eval "$(starship init zsh)"
+# Ensure Starship is properly initialized
+# if command -v starship &> /dev/null; then
+#     eval "$(starship init zsh)"
+# fi
+# Fix prompt substitution
 
-alias claude="claude --dangerously-skip-permissions"
-
-# Load Git completion
+# * =========================================================
+# * Zsh Config ==============================================
+# Git completions
 zstyle ':completion:*:*:git:*' script $HOME/.config/zsh/git-completion.bash
 fpath=($HOME/.config/zsh $fpath)
 autoload -Uz compinit && compinit
@@ -25,14 +33,21 @@ eval "$(zoxide init zsh)"      # Smart cd (use: z <partial-path>)
 eval "$(atuin init zsh)"       # Enhanced history (Ctrl+R)
 source <(fzf --zsh)            # Fuzzy finder (Ctrl+T files)
 
-# pnpm
+# * =========================================================
+# * pnpm ====================================================
 export PNPM_HOME="/Users/leonardoacosta/Library/pnpm"
 export PATH="$PNPM_HOME:$PATH"
 
-# .NET tools
+# * =========================================================
+# * dotnet ==================================================
 export PATH="$PATH:/Users/leonardoacosta/.dotnet/tools"
 
-# nvm
+# * =========================================================
+# * nvm =====================================================
 export NVM_DIR="$HOME/.nvm"
     [ -s "$HOMEBREW_PREFIX/opt/nvm/nvm.sh" ] && \. "$HOMEBREW_PREFIX/opt/nvm/nvm.sh" # This loads nvm
     [ -s "$HOMEBREW_PREFIX/opt/nvm/etc/bash_completion.d/nvm" ] && \. "$HOMEBREW_PREFIX/opt/nvm/etc/bash_completion.d/nvm" # This loads nvm bash_completionexport PATH=$PATH:$HOME/.maestro/bin
+
+# * =========================================================
+# * Aliases =================================================
+alias claude="claude --dangerously-skip-permissions"

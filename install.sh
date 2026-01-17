@@ -31,9 +31,9 @@ info "===================="
 chmod +x ./scripts/symlinks.sh
 if [[ "$overwrite_dotfiles" == "y" ]]; then
     warning "Deleting existing dotfiles..."
-    ./mac/scripts/symlinks.sh --delete --include-files
+    ./scripts/symlinks.sh --delete --include-files
 fi
-./mac/scripts/symlinks.sh --create
+./scripts/symlinks.sh --create
 
 # Claude Code Configuration
 if [[ "$setup_claude" == "y" ]]; then
