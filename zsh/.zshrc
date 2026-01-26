@@ -1,53 +1,25 @@
-setopt HIST_IGNORE_ALL_DUPS
+#!/usr/bin/env zsh
+# .zshrc - Entry point for interactive zsh sessions
+# Symlink: ~/.zshrc -> $DOTFILES/zsh/.zshrc
 
-# * =========================================================
-# * Homebrew ================================================
-eval "$(/opt/homebrew/bin/brew shellenv)"
+# Ensure DOTFILES is set (should be set by .zshenv)
+export DOTFILES="${DOTFILES:-$HOME/personal/if}"
 
-# * =========================================================
-# * Starship ================================================
-export STARSHIP_CONFIG="$HOME/.config/starship/starship.toml"
-setopt PROMPT_SUBST
-eval "$(starship init zsh)"
-# Ensure Starship is properly initialized
-# if command -v starship &> /dev/null; then
-#     eval "$(starship init zsh)"
-# fi
-# Fix prompt substitution
+# Load shared configuration (history opts, aliases, settings)
+source "$DOTFILES/zsh/rc/shared.zsh"
 
-# * =========================================================
-# * Zsh Config ==============================================
-# Git completions
-zstyle ':completion:*:*:git:*' script $HOME/.config/zsh/git-completion.bash
-fpath=($HOME/.config/zsh $fpath)
-autoload -Uz compinit && compinit
+# Load platform-specific configuration
+case "$(uname -s)" in
+  Darwin)
+    source "$DOTFILES/zsh/rc/darwin.zsh"
+    ;;
+  Linux)
+    source "$DOTFILES/zsh/rc/linux.zsh"
+    ;;
+esac
 
-# zsh-syntax-highlighting
-source $(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
-
-# zsh-autosuggestions
-source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh
-
-# Efficiency tools
-eval "$(zoxide init zsh)"      # Smart cd (use: z <partial-path>)
-eval "$(atuin init zsh)"       # Enhanced history (Ctrl+R)
-source <(fzf --zsh)            # Fuzzy finder (Ctrl+T files)
-
-# * =========================================================
-# * pnpm ====================================================
-export PNPM_HOME="/Users/leonardoacosta/Library/pnpm"
-export PATH="$PNPM_HOME:$PATH"
-
-# * =========================================================
-# * dotnet ==================================================
-export PATH="$PATH:/Users/leonardoacosta/.dotnet/tools"
-
-# * =========================================================
-# * nvm =====================================================
-export NVM_DIR="$HOME/.nvm"
-    [ -s "$HOMEBREW_PREFIX/opt/nvm/nvm.sh" ] && \. "$HOMEBREW_PREFIX/opt/nvm/nvm.sh" # This loads nvm
-    [ -s "$HOMEBREW_PREFIX/opt/nvm/etc/bash_completion.d/nvm" ] && \. "$HOMEBREW_PREFIX/opt/nvm/etc/bash_completion.d/nvm" # This loads nvm bash_completionexport PATH=$PATH:$HOME/.maestro/bin
-
-# * =========================================================
-# * Aliases =================================================
-alias claude="claude --dangerously-skip-permissions"
+# Load functions (order matters!)
+source "$DOTFILES/zsh/functions/setup-completions.zsh"  # compinit, fpath
+source "$DOTFILES/zsh/functions/load-plugins.zsh"       # syntax-hl, autosuggestions
+source "$DOTFILES/zsh/functions/load-tools.zsh"         # zoxide, atuin, fzf, etc.
+source "$DOTFILES/zsh/functions/init-starship.zsh"      # prompt (load last)

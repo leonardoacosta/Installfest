@@ -1,90 +1,109 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# install.sh - Unified dotfiles installer
+# Detects OS and runs appropriate setup
 
-. scripts/utils.sh
-. scripts/prerequisites.sh
-. scripts/brew-install.sh
-. scripts/osx-defaults.sh
-. scripts/terminal.sh
-. scripts/symlinks.sh
+set -euo pipefail
 
-info "Dotfiles installation initialized..."
-read -p "Install apps? [y/n] " install_apps
-read -p "Overwrite existing dotfiles? [y/n] " overwrite_dotfiles
-read -p "Set up Claude Code configuration? [y/n] " setup_claude
+# Get the directory where this script lives
+DOTFILES="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export DOTFILES
 
-if [[ "$install_apps" == "y" ]]; then
-    install_xcode
-    install_homebrew
-    run_brew_bundle
-fi
+# Source utilities
+. "$DOTFILES/scripts/utils.sh"
 
-apply_osx_system_defaults
+info "========================================"
+info "  Dotfiles Installer"
+info "  Platform: $(uname -s) ($(uname -m))"
+info "  Dotfiles: $DOTFILES"
+info "========================================"
+echo
 
-terminal
+# Detect OS and run platform-specific setup
+case "$(uname -s)" in
+  Darwin)
+    info "Detected macOS"
 
+    # Source Mac prerequisites
+    . "$DOTFILES/scripts/prerequisites.sh"
+    . "$DOTFILES/scripts/brew-install.sh"
+    . "$DOTFILES/scripts/osx-defaults.sh"
+    . "$DOTFILES/scripts/terminal.sh"
 
-printf "\n"
-info "===================="
-info "Symbolic Links"
-info "===================="
+    read -p "Install Homebrew and packages? [y/n] " -n 1 -r install_apps
+    echo
 
-chmod +x ./scripts/symlinks.sh
-if [[ "$overwrite_dotfiles" == "y" ]]; then
-    warning "Deleting existing dotfiles..."
-    ./scripts/symlinks.sh --delete --include-files
-fi
-./scripts/symlinks.sh --create
+    if [[ $install_apps =~ ^[Yy]$ ]]; then
+        install_xcode
+        install_homebrew
+        run_brew_bundle
+    fi
 
-# Claude Code Configuration
-if [[ "$setup_claude" == "y" ]]; then
-    printf "\n"
-    info "===================="
-    info "Claude Code Configuration"
-    info "===================="
+    # Apply macOS system defaults
+    read -p "Apply macOS system defaults? [y/n] " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        apply_osx_system_defaults
+    fi
 
-    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    CLAUDE_DIR=".claude"
-    BACKUP_DIR="$HOME/.claude-backups"
+    # Terminal setup
+    terminal
+    ;;
 
+  Linux)
+    info "Detected Linux"
 
-
-    info "Script directory: $SCRIPT_DIR"
-    info "Claude directory: $CLAUDE_DIR"
-    info "Backup directory: $BACKUP_DIR"
-
-    # Detect existing .claude/ directory
-    if [ -d "$CLAUDE_DIR" ]; then
-        warning "Existing .claude/ directory detected"
-
-        # # Check if already symlinked
-        # if [ -L "$CLAUDE_DIR/agents" ]; then
-        #     info "Already configured with symlinks"
-        #     info "Run './sync.sh status' to view configuration"
-        # else
-        #     # Backup existing config before symlinking
-        #     info "Backing up existing configuration..."
-        #     mkdir -p "$BACKUP_DIR"
-        #     backup_name="claude-backup-$(date +%Y%m%d-%H%M%S)"
-        #     cp -r "$CLAUDE_DIR" "$BACKUP_DIR/$backup_name"
-        #     success "Backed up to $BACKUP_DIR/$backup_name"
-
-        #     # Create symlinks
-        #     info "Creating symlinks to central Claude config..."
-        #     rm -rf "$CLAUDE_DIR/agents" "$CLAUDE_DIR/commands" "$CLAUDE_DIR/skills"
-        #     ln -s "$SCRIPT_DIR/$CLAUDE_DIR/agents" "$CLAUDE_DIR/agents"
-        #     ln -s "$SCRIPT_DIR/$CLAUDE_DIR/commands" "$CLAUDE_DIR/commands"
-        #     ln -s "$SCRIPT_DIR/$CLAUDE_DIR/skills" "$CLAUDE_DIR/skills"
-
-        #     # Create local settings if missing
-        #     if [ ! -f "$CLAUDE_DIR/settings.local.json" ]; then
-        #         echo '{}' > "$CLAUDE_DIR/settings.local.json"
-        #     fi
-
-        #     success "Claude config symlinks created"
-        # fi
+    # Check if Arch Linux
+    if [[ -f /etc/arch-release ]]; then
+        . "$DOTFILES/scripts/install-arch.sh"
     else
-        info "No .claude/ directory found - use './sync.sh install [template]' in your project"
+        warning "Non-Arch Linux detected. Only symlinks will be created."
+        warning "Install zsh plugins manually for your distribution."
+    fi
+    ;;
+
+  *)
+    error "Unsupported OS: $(uname -s)"
+    exit 1
+    ;;
+esac
+
+# === Symlinks (common to all platforms) ===
+echo
+info "========================================"
+info "  Symbolic Links"
+info "========================================"
+
+read -p "Overwrite existing dotfiles? [y/n] " -n 1 -r overwrite_dotfiles
+echo
+
+chmod +x "$DOTFILES/scripts/symlinks.sh"
+
+if [[ $overwrite_dotfiles =~ ^[Yy]$ ]]; then
+    warning "Deleting existing dotfiles..."
+    "$DOTFILES/scripts/symlinks.sh" --delete --include-files
+fi
+
+"$DOTFILES/scripts/symlinks.sh" --create
+
+# Platform-specific symlinks
+if [[ "$(uname -s)" == "Darwin" ]]; then
+    # WezTerm (Mac only)
+    if [[ -f "$DOTFILES/wezterm/wezterm.lua" ]]; then
+        mkdir -p "$HOME/.config/wezterm"
+        ln -sfn "$DOTFILES/wezterm/wezterm.lua" "$HOME/.config/wezterm/wezterm.lua"
+        success "Created WezTerm symlink"
     fi
 fi
 
-success "Dotfiles set up successfully."
+# === Final messages ===
+echo
+success "========================================"
+success "  Installation Complete!"
+success "========================================"
+echo
+info "Next steps:"
+info "  1. Restart your terminal or run: source ~/.zshrc"
+info "  2. Verify starship prompt is working"
+info "  3. Run 'z --help' to learn zoxide"
+info "  4. Run 'atuin login' to sync history (optional)"
+echo
