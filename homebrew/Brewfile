@@ -5,7 +5,7 @@
 brew "azure-cli"
 # .NET runtime
 brew "dotnet"
-# Fast, highly customisable system info script, replaces neofetch
+# Fast, highly customizable system info script, replaces neofetch
 brew "hyfetch"
 # Node.js
 brew "node"
@@ -24,6 +24,9 @@ brew "zsh-syntax-highlighting"
 
 # stripe
 brew "stripe/stripe-cli/stripe"
+
+# postgresql
+brew "postgresql"
 
 # Adobe Creative Cloud
 # cask "adobe-creative-cloud"

@@ -52,3 +52,6 @@ desktop.ini
 *.bak
 *.backup
 *~
+
+# SSH keys
+ssh-mesh/keys/

@@ -2,15 +2,16 @@
 
 # Required parameters:
 # @raycast.schemaVersion 1
-# @raycast.title ss
+# @raycast.title cw
 # @raycast.mode silent
 
 # Optional parameters:
-# @raycast.icon 💇🏼
+# @raycast.icon 🏢
+# @raycast.packageName Central Wholesale
 
 # Documentation:
-# @raycast.description Styles by Silas
+# @raycast.description Central Wholesale
 # @raycast.author leonardoacosta
 # @raycast.authorURL https://raycast.com/leonardoacosta
 
-cursor --folder-uri "vscode-remote://ssh-remote+homelab/home/nyaptor/personal/ss/"
+cursor --folder-uri "vscode-remote://ssh-remote+homelab/home/nyaptor/personal/cw/"
