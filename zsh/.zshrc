@@ -1,15 +1,14 @@
 #!/usr/bin/env zsh
-# .zshrc - Entry point for interactive shell configuration
-# Sourced for interactive zsh sessions
+# .zshrc - Entry point for interactive zsh sessions
 # Symlink: ~/.zshrc -> $DOTFILES/zsh/.zshrc
 
-# Ensure DOTFILES is set (should be set by .zshenv, but fallback)
-export DOTFILES="${DOTFILES:-$HOME/personal/if}"
+# Ensure DOTFILES is set (should be set by .zshenv)
+export DOTFILES="${DOTFILES:-$HOME/Personal/if}"
 
-# Source shared configuration (options, aliases, completions, tools)
+# Load shared configuration (history opts, aliases, settings)
 source "$DOTFILES/zsh/rc/shared.zsh"
 
-# Source platform-specific configuration
+# Load platform-specific configuration
 case "$(uname -s)" in
   Darwin)
     source "$DOTFILES/zsh/rc/darwin.zsh"
@@ -18,3 +17,9 @@ case "$(uname -s)" in
     source "$DOTFILES/zsh/rc/linux.zsh"
     ;;
 esac
+
+# Load functions (order matters!)
+source "$DOTFILES/zsh/functions/setup-completions.zsh"  # compinit, fpath
+source "$DOTFILES/zsh/functions/load-plugins.zsh"       # syntax-hl, autosuggestions
+source "$DOTFILES/zsh/functions/load-tools.zsh"         # zoxide, atuin, fzf, etc.
+source "$DOTFILES/zsh/functions/init-starship.zsh"      # prompt (load last)

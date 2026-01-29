@@ -2,16 +2,15 @@
 
 # Required parameters:
 # @raycast.schemaVersion 1
-# @raycast.title ws
+# @raycast.title local root
 # @raycast.mode silent
 
 # Optional parameters:
-# @raycast.icon 🏗️
-# @raycast.packageName Wholesale Architecture
+# @raycast.icon 🌍
 
 # Documentation:
-# @raycast.description Wholesale Architecture
+# @raycast.description Local Root
 # @raycast.author leonardoacosta
 # @raycast.authorURL https://raycast.com/leonardoacosta
 
-cursor --folder-uri "vscode-remote://ssh-remote+homelab/home/nyaptor/repos/ws/"
+code --folder-uri "~/home/nyaptor/"

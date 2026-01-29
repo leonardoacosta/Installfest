@@ -4,18 +4,21 @@
 # Symlink: ~/.zshenv -> $DOTFILES/zsh/.zshenv
 
 # Set DOTFILES path (used by all other scripts)
-export DOTFILES="${DOTFILES:-$HOME/personal/if}"
+export DOTFILES="${DOTFILES:-$HOME/Personal/if}"
+
+# PATH additions (user binaries)
+export PATH="$HOME/.claude/bin:$HOME/.local/bin:$PATH"
 
 # Source shared environment (locale, editor, history, XDG)
-source "$DOTFILES/zsh/env/shared.zsh"
+source "$DOTFILES/zsh/rc/shared.zsh"
 
 # Source platform-specific environment
 case "$(uname -s)" in
   Darwin)
-    source "$DOTFILES/zsh/env/darwin.zsh"
+    source "$DOTFILES/zsh/rc/darwin.zsh"
     ;;
   Linux)
-    source "$DOTFILES/zsh/env/linux.zsh"
+    source "$DOTFILES/zsh/rc/linux.zsh"
     ;;
 esac
 
