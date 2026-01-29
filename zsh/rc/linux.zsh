@@ -1,6 +1,25 @@
 # rc/linux.zsh - Linux (Arch) specific shell configuration
 # Sourced by .zshrc on Linux
 
+# ============================================================
+# Runtime Paths
+# ============================================================
+
+# pnpm (Linux path)
+export PNPM_HOME="$HOME/.local/share/pnpm"
+[[ -d "$PNPM_HOME" ]] && export PATH="$PNPM_HOME:$PATH"
+
+# Cargo (Rust)
+[[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
+
+# Go
+[[ -d "/usr/local/go/bin" ]] && export PATH="$PATH:/usr/local/go/bin"
+[[ -d "$HOME/go/bin" ]] && export PATH="$PATH:$HOME/go/bin"
+
+# ============================================================
+# Aliases
+# ============================================================
+
 # GNU coreutils color support
 alias ls="ls --color=auto"
 alias grep="grep --color=auto"

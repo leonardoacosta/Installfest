@@ -1,6 +1,42 @@
 # rc/darwin.zsh - macOS-specific shell configuration
 # Sourced by .zshrc on Darwin
 
+# ============================================================
+# Homebrew
+# ============================================================
+
+if [[ -f "/opt/homebrew/bin/brew" ]]; then
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+elif [[ -f "/usr/local/bin/brew" ]]; then
+  eval "$(/usr/local/bin/brew shellenv)"
+fi
+
+# ============================================================
+# Runtime Paths
+# ============================================================
+
+# pnpm
+export PNPM_HOME="$HOME/Library/pnpm"
+[[ -d "$PNPM_HOME" ]] && export PATH="$PNPM_HOME:$PATH"
+
+# .NET tools
+[[ -d "$HOME/.dotnet/tools" ]] && export PATH="$PATH:$HOME/.dotnet/tools"
+
+# Maestro (mobile testing)
+[[ -d "$HOME/.maestro/bin" ]] && export PATH="$PATH:$HOME/.maestro/bin"
+
+# ============================================================
+# NVM (Node Version Manager)
+# ============================================================
+
+export NVM_DIR="$HOME/.nvm"
+[[ -s "$HOMEBREW_PREFIX/opt/nvm/nvm.sh" ]] && source "$HOMEBREW_PREFIX/opt/nvm/nvm.sh"
+[[ -s "$HOMEBREW_PREFIX/opt/nvm/etc/bash_completion.d/nvm" ]] && source "$HOMEBREW_PREFIX/opt/nvm/etc/bash_completion.d/nvm"
+
+# ============================================================
+# macOS Aliases
+# ============================================================
+
 # macOS uses BSD ls, colors work differently
 alias ls="ls -G"
 
