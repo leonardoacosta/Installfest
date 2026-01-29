@@ -2,16 +2,17 @@
 
 # Required parameters:
 # @raycast.schemaVersion 1
-# @raycast.title ws
+# @raycast.title scl
 # @raycast.mode silent
 
 # Optional parameters:
-# @raycast.icon 🏗️
-# @raycast.packageName Wholesale Architecture
+# @raycast.icon 💰
+# @raycast.packageName Sales CRM
 
 # Documentation:
-# @raycast.description Wholesale Architecture
+# @raycast.description Sales CRM
 # @raycast.author leonardoacosta
 # @raycast.authorURL https://raycast.com/leonardoacosta
 
-cursor --folder-uri "vscode-remote://ssh-remote+homelab/home/nyaptor/repos/ws/"
+
+cursor --folder-uri "~/BNB/se/"
