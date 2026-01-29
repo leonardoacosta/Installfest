@@ -1,4 +1,5 @@
 format = """
+$os\
 $directory\
 $git_branch\
 $git_status\
@@ -21,6 +22,16 @@ $character"""
 
 add_newline = true
 palette = "nord"
+
+[os]
+disabled = false
+style = 'bold white'
+format = '[$symbol ]($style)'
+
+[os.symbols]
+Macos = ''
+Linux = ''
+Arch = ''
 
 [directory]
 style = 'bold fg:dark_blue'
