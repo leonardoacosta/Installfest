@@ -38,6 +38,9 @@ install_arch_packages() {
         pnpm
         go
         rust
+        # Nerd Fonts (required for starship icons)
+        ttf-jetbrains-mono-nerd
+        ttf-cascadia-mono-nerd
     )
 
     # Check which packages need to be installed
