@@ -25,6 +25,19 @@ install_arch_packages() {
         git
         tmux
         neovim
+        # Container tools
+        docker
+        docker-buildx
+        docker-compose
+        # Git tools
+        github-cli
+        lazygit
+        # Languages & runtimes
+        nodejs
+        npm
+        pnpm
+        go
+        rust
     )
 
     # Check which packages need to be installed
@@ -49,6 +62,8 @@ install_aur_packages() {
     # AUR packages (require yay or paru)
     local aur_packages=(
         mise
+        git-credential-manager  # Cross-platform Git credential storage
+        bun-bin                 # Fast JS runtime
         # direnv is in official repos
     )
 

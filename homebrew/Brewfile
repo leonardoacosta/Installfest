@@ -28,6 +28,9 @@ brew "stripe/stripe-cli/stripe"
 # postgresql
 brew "postgresql"
 
+# Git Credential Manager - cross-platform Git credential storage
+cask "git-credential-manager"
+
 # Adobe Creative Cloud
 # cask "adobe-creative-cloud"
 # Beekeeper Studio
