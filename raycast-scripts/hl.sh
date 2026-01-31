@@ -14,4 +14,4 @@
 # @raycast.authorURL https://raycast.com/leonardoacosta
 
 # Use SSH Host alias - lets SSH config handle smart routing (LAN/Tailscale)
-cursor --folder-uri "vscode-remote://ssh-remote+homelab/home/nyaptor/personal/hl"
+cursor --folder-uri "vscode-remote://ssh-remote+homelab/home/nyaptor/dev/hl"

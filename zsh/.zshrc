@@ -3,7 +3,7 @@
 # Symlink: ~/.zshrc -> $DOTFILES/zsh/.zshrc
 
 # Ensure DOTFILES is set (should be set by .zshenv)
-export DOTFILES="${DOTFILES:-$HOME/Personal/if}"
+export DOTFILES="${DOTFILES:-$HOME/dev/if}"
 
 # Load shared configuration (history opts, aliases, settings)
 source "$DOTFILES/zsh/rc/shared.zsh"

@@ -15,4 +15,4 @@
 # @raycast.authorURL https://raycast.com/leonardoacosta
 
 
-cursor --folder-uri "~/BNB/bo/"
+cursor --folder-uri "~/dev/bo/"
