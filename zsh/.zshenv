@@ -1,29 +1,21 @@
 #!/usr/bin/env zsh
-# .zshenv - Entry point for zsh environment
-# Sourced for ALL zsh instances (login, interactive, scripts)
+# .zshenv - Minimal env setup (runs for ALL zsh instances)
 # Symlink: ~/.zshenv -> $DOTFILES/zsh/.zshenv
+# Keep this FAST - no heavy tools here
 
-# Set DOTFILES path (used by all other scripts)
+# Core paths
 export DOTFILES="$HOME/dev/if"
+export PATH="$HOME/.claude/bin:$HOME/.local/bin:/opt/homebrew/bin:$PATH"
 
-# PATH additions (user binaries)
-export PATH="$HOME/.claude/bin:$HOME/.local/bin:$PATH"
+# XDG
+export XDG_CONFIG_HOME="$HOME/.config"
+export XDG_DATA_HOME="$HOME/.local/share"
+export XDG_CACHE_HOME="$HOME/.cache"
 
-# Source shared environment (locale, editor, history, XDG)
-source "$DOTFILES/zsh/rc/shared.zsh"
+# Editor
+export EDITOR="nvim"
+export VISUAL="$EDITOR"
 
-# Source platform-specific environment
-case "$(uname -s)" in
-  Darwin)
-    source "$DOTFILES/zsh/rc/darwin.zsh"
-    ;;
-  Linux)
-    source "$DOTFILES/zsh/rc/linux.zsh"
-    ;;
-esac
-
-# Theme exports (for terminal emulators that read env)
+# Theme exports
+export STARSHIP_CONFIG="$HOME/.config/starship/starship.toml"
 export TMUX_THEME="one-hunter-vercel"
-export NVIM_THEME="nord"
-export STARSHIP_THEME="nord"
-export WEZTERM_THEME="nord"

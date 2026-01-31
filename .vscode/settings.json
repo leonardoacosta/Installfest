@@ -1,4 +1,10 @@
 {
+  "terminal.integrated.fontFamily": "GeistMono Nerd Font",
+  "terminal.integrated.fontSize": 13,
+  "terminal.integrated.defaultProfile.osx": "zsh",
+  "terminal.integrated.env.osx": {
+    "STARSHIP_CONFIG": "${env:HOME}/dev/if/starship/starship.toml"
+  },
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit"
   },
