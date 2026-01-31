@@ -14,4 +14,4 @@
 # @raycast.author leonardoacosta
 # @raycast.authorURL https://raycast.com/leonardoacosta
 
-cursor --folder-uri "~/Personal/co/"
+cursor --folder-uri "~/dev/co/"

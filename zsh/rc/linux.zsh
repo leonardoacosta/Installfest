@@ -29,10 +29,10 @@ alias diff="diff --color=auto"
 alias ip="ip -color=auto"
 
 # Homelab shortcuts
-alias hl="cd ~/personal/hl/homelab"
-alias hls="cd ~/personal/hl/homelab && ./homelab.sh status"
-alias hll="cd ~/personal/hl/homelab && ./homelab.sh logs"
-alias hlr="cd ~/personal/hl/homelab && ./homelab.sh restart"
+alias hl="cd ~/dev/hl/homelab"
+alias hls="cd ~/dev/hl/homelab && ./homelab.sh status"
+alias hll="cd ~/dev/hl/homelab && ./homelab.sh logs"
+alias hlr="cd ~/dev/hl/homelab && ./homelab.sh restart"
 
 # Docker shortcuts
 alias dc="docker compose"
@@ -58,7 +58,7 @@ alias pacqi="pacman -Qi"
 alias yayup="yay -Syu"
 
 # Project switching
-[[ -f "$HOME/personal/ccswitch.sh" ]] && alias cs="$HOME/personal/ccswitch.sh --switch"
+[[ -f "$HOME/dev/ccswitch.sh" ]] && alias cs="$HOME/dev/ccswitch.sh --switch"
 
 # Clipboard (xclip/xsel fallback)
 if command -v xclip &>/dev/null; then

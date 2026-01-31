@@ -4,7 +4,7 @@
 # Symlink: ~/.zshenv -> $DOTFILES/zsh/.zshenv
 
 # Set DOTFILES path (used by all other scripts)
-export DOTFILES="${DOTFILES:-$HOME/Personal/if}"
+export DOTFILES="${DOTFILES:-$HOME/dev/if}"
 
 # PATH additions (user binaries)
 export PATH="$HOME/.claude/bin:$HOME/.local/bin:$PATH"
