@@ -20,6 +20,7 @@ cd mac
 ```
 
 The installer will:
+
 1. Install Xcode Command Line Tools
 2. Install Homebrew package manager
 3. Install packages from Brewfile
@@ -31,21 +32,25 @@ The installer will:
 ### Dotfile Structure
 
 **Zsh Configuration:**
+
 - Location: `zsh/.zshrc`
 - Symlinked to: `~/.zshrc`
 - Includes: aliases, functions, plugins
 
 **WezTerm Terminal:**
+
 - Location: `wezterm/wezterm.lua`
 - Symlinked to: `~/.wezterm.lua`
 - Features: custom key bindings, colors, fonts
 
 **Starship Prompt:**
+
 - Location: `starship/starship.toml`
 - Symlinked to: `~/.config/starship.toml`
 - Features: git status, language versions, command duration
 
 **Raycast Scripts:**
+
 - Location: `raycast-scripts/`
 - Purpose: Automation scripts for Raycast app
 
@@ -54,16 +59,19 @@ The installer will:
 Packages defined in `homebrew/Brewfile`:
 
 **Development Tools:**
+
 - Git, Node.js, Python, Go
 - Docker, Docker Compose
 - VS Code, JetBrains IDEs
 
 **CLI Utilities:**
+
 - tmux, neovim, fzf
 - ripgrep, fd, bat
 - jq, yq, httpie
 
 **Applications:**
+
 - Browsers (Chrome, Firefox)
 - Communication (Slack, Discord)
 - Productivity tools
@@ -76,19 +84,23 @@ Edit `homebrew/Brewfile` and re-run installer.
 Applied by `scripts/osx-defaults.sh`:
 
 **Keyboard:**
+
 - Key repeat rate
 - Delay until repeat
 
 **Trackpad:**
+
 - Tap to click
 - Three finger drag
 
 **Finder:**
+
 - Show hidden files
 - Show path bar
 - Default view settings
 
 **Dock:**
+
 - Icon size
 - Position
 - Auto-hide behavior
@@ -98,18 +110,21 @@ Applied by `scripts/osx-defaults.sh`:
 ### Managing Dotfiles
 
 **Creating Symlinks:**
+
 ```bash
 cd mac
 ./scripts/symlinks.sh --create
 ```
 
 **Removing Symlinks:**
+
 ```bash
 cd mac
 ./scripts/symlinks.sh --delete
 ```
 
 **Updating Dotfiles:**
+
 1. Edit files in repository
 2. Commit changes
 3. Changes immediately active (symlinks)
@@ -117,10 +132,12 @@ cd mac
 ### Installing Packages
 
 **Add new package:**
+
 1. Edit `homebrew/Brewfile`
 2. Run: `brew bundle --file=homebrew/Brewfile`
 
 **Update packages:**
+
 ```bash
 brew update
 brew upgrade
@@ -139,24 +156,31 @@ Changes take effect after restart or logout/login.
 ### Component Scripts
 
 **Install Prerequisites:**
+
 ```bash
 ./scripts/prerequisites.sh
 ```
+
 Installs Xcode CLI tools and Homebrew.
 
 **Install Brew Packages:**
+
 ```bash
 ./scripts/brew-install.sh
 ```
+
 Installs packages from Brewfile.
 
 **Apply macOS Defaults:**
+
 ```bash
 ./scripts/osx-defaults.sh
 ```
+
 Configures system preferences.
 
 **Manage Symlinks:**
+
 ```bash
 ./scripts/symlinks.sh --create  # Create dotfile symlinks
 ./scripts/symlinks.sh --delete  # Remove symlinks
@@ -245,6 +269,7 @@ brew install <package>
 ### Custom Zsh Plugins
 
 Add to `zsh/.zshrc`:
+
 ```bash
 # Load custom plugins
 source ~/.zsh/plugins/my-plugin.zsh
@@ -253,6 +278,7 @@ source ~/.zsh/plugins/my-plugin.zsh
 ### Custom WezTerm Configuration
 
 Edit `wezterm/wezterm.lua`:
+
 ```lua
 -- Add custom key bindings
 config.keys = {
@@ -263,9 +289,9 @@ config.keys = {
 ## References
 
 - **OpenSpec Specification**: [openspec/specs/mac-development-environment/spec.md](../openspec/specs/mac-development-environment/spec.md)
-- **Homebrew Documentation**: https://docs.brew.sh/
-- **WezTerm Documentation**: https://wezfurlong.org/wezterm/
-- **Starship Documentation**: https://starship.rs/
+- **Homebrew Documentation**: <https://docs.brew.sh/>
+- **WezTerm Documentation**: <https://wezfurlong.org/wezterm/>
+- **Starship Documentation**: <https://starship.rs/>
 - **Related Files**:
   - [mac/install.sh](./install.sh) - Main installer
   - [homebrew/Brewfile](./homebrew/Brewfile) - Package list
