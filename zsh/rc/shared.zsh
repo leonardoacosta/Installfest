@@ -1,5 +1,8 @@
 # rc/shared.zsh - Common shell configuration for all platforms
 # Sourced by .zshrc on all platforms
+#
+# NOTE: Tool inits (compinit, starship, zoxide, fzf, plugins) are handled
+# by dedicated files in zsh/functions/ - sourced from .zshrc ONLY.
 
 # ============================================================
 # Shell Options
@@ -30,55 +33,6 @@ setopt NO_CASE_GLOB            # Case insensitive globbing
 
 # Prompt
 setopt PROMPT_SUBST            # Enable prompt substitution
-
-# ============================================================
-# Completions
-# ============================================================
-
-# Git completions (if available)
-[[ -f "$HOME/.config/zsh/git-completion.bash" ]] && \
-  zstyle ':completion:*:*:git:*' script "$HOME/.config/zsh/git-completion.bash"
-
-# Add completion paths
-fpath=($HOME/.config/zsh $fpath)
-
-# Initialize completion system
-autoload -Uz compinit && compinit
-
-# ============================================================
-# Plugins (multi-platform loader)
-# ============================================================
-
-source "$DOTFILES/zsh/functions/load-plugins.zsh"
-
-# ============================================================
-# Tools (cross-platform)
-# ============================================================
-
-# Starship prompt
-export STARSHIP_CONFIG="$HOME/.config/starship/starship.toml"
-command -v starship &>/dev/null && eval "$(starship init zsh)"
-
-# Zoxide (smart cd)
-command -v zoxide &>/dev/null && eval "$(zoxide init zsh)"
-
-# FZF (fuzzy finder)
-if command -v fzf &>/dev/null; then
-  # Try zsh integration, fall back to basic
-  if [[ -f "${HOMEBREW_PREFIX:-/opt/homebrew}/opt/fzf/shell/completion.zsh" ]]; then
-    source "${HOMEBREW_PREFIX:-/opt/homebrew}/opt/fzf/shell/completion.zsh"
-    source "${HOMEBREW_PREFIX:-/opt/homebrew}/opt/fzf/shell/key-bindings.zsh"
-  elif [[ -f "/usr/share/fzf/completion.zsh" ]]; then
-    source "/usr/share/fzf/completion.zsh"
-    source "/usr/share/fzf/key-bindings.zsh"
-  else
-    # Generic init
-    source <(fzf --zsh) 2>/dev/null || true
-  fi
-fi
-
-# Atuin (enhanced history) - uncomment to enable
-# command -v atuin &>/dev/null && eval "$(atuin init zsh)"
 
 # ============================================================
 # Common Aliases

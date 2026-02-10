@@ -21,130 +21,105 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## 📖 Documentation Navigation
-
-**New to the project? Start here:**
-- [Documentation Index](./docs/INDEX.md) - Complete navigation and quick links
-- [Homelab Services Docs](./homelab-services/docs/INDEX.md) - Monorepo documentation
-
-**Key Documentation:**
-- **Architecture**: Service-specific guides in [`docs/`](./docs/) (DNS, Home Assistant, Coolify, etc.)
-- **OpenSpec Specifications**: Formal specs in [`openspec/specs/`](./openspec/specs/)
-- **Homelab Services**: Better-T-Stack monorepo docs in [`homelab-services/docs/`](./homelab-services/docs/)
-
 ## Repository Overview
 
-Personal dotfiles and homelab infrastructure automation for macOS and Arch Linux environments. Two main components:
+Personal dotfiles and development environment configuration for macOS and Arch Linux. Cross-platform shell setup with SSH mesh networking between machines.
 
-1. **Mac Setup** (`/mac`) - macOS dotfiles, Homebrew packages, system configuration
-2. **Homelab Stack** (`/homelab`) - Docker-based self-hosted services for Arch Linux server
+## Directory Structure
 
-## Architecture Summary
+```
+if/
+├── zsh/                    # Zsh configuration (cross-platform)
+│   ├── .zshenv             # Environment variables only (all shells)
+│   ├── .zshrc              # Interactive shell config
+│   ├── rc/
+│   │   ├── shared.zsh      # Options + aliases (cross-platform)
+│   │   ├── darwin.zsh      # macOS-specific (Homebrew, NVM)
+│   │   └── linux.zsh       # Arch-specific (pacman, docker)
+│   ├── functions/
+│   │   ├── setup-completions.zsh
+│   │   ├── load-plugins.zsh
+│   │   ├── load-tools.zsh
+│   │   └── init-starship.zsh
+│   └── completions/        # Custom completion scripts
+├── homebrew/               # Brewfile for macOS packages
+├── starship/               # Starship prompt configuration
+├── wezterm/                # WezTerm terminal config
+├── tmux/                   # Tmux configuration
+├── ssh-mesh/               # Multi-machine SSH setup
+│   ├── configs/            # Per-machine SSH configs
+│   ├── keys/               # SSH keys (gitignored)
+│   └── scripts/            # Setup scripts per platform
+├── raycast-scripts/        # Raycast automation scripts
+├── scripts/                # Installation and setup scripts
+│   ├── prerequisites.sh    # Xcode CLI, Homebrew
+│   ├── brew-install.sh     # Install from Brewfile
+│   ├── symlinks.sh         # Dotfile symlink management
+│   ├── symlinks.conf       # Symlink mappings
+│   ├── osx-defaults.sh     # macOS system preferences
+│   └── install-arch.sh     # Arch Linux package setup
+├── install.sh              # Main interactive installer
+├── sync.sh                 # Sync/backup script
+└── openspec/               # Specification management
+```
 
-### Homelab (Primary Component)
+## Key Concepts
 
-**Deployment**: CI/CD via self-hosted GitHub Actions runners on Arch Linux server
+### Shell Configuration Flow
 
-**Network**: Two isolated Docker networks
-- `homelab` (172.20.0.0/16) - Core infrastructure (Home Assistant, DNS, AI, security)
-- `media` (172.21.0.0/16) - Media services with VPN-protected downloads
+```
+.zshenv (ALL shells)     .zshrc (interactive only)
+        │                         │
+        ├── DOTFILES export       ├── shared.zsh (setopt, aliases)
+        ├── PATH setup            ├── darwin.zsh OR linux.zsh
+        └── Theme exports         ├── setup-completions.zsh
+                                  ├── load-plugins.zsh
+                                  ├── load-tools.zsh
+                                  └── init-starship.zsh
+```
 
-**Management**: `homelab/homelab.sh` - Complete setup wizard and interactive menu
+**Design principle**: `.zshenv` = environment variables ONLY. All tool inits (starship, zoxide, fzf, plugins) happen in `.zshrc` via dedicated function files.
 
-**State**: `.setup_state` file tracks wizard progress for resumable setup
+### Platform Detection
 
-### Mac Setup
+```zsh
+case "$(uname -s)" in
+  Darwin) source darwin.zsh ;;
+  Linux)  source linux.zsh ;;
+esac
+```
 
-**Entry Point**: `mac/install.sh` - Interactive installer for Homebrew, packages, dotfiles, and macOS defaults
+### SSH Mesh
+
+Three-machine setup (Mac, Homelab, Arch) with Tailscale for connectivity. See `ssh-mesh/README.md` for topology and setup.
 
 ## Essential Commands
 
-### Homelab Management
+### Installation
 
 ```bash
-# First-time setup (mandatory wizard)
-cd homelab && ./homelab.sh
-
-# Service management
-./homelab.sh start [service]    # Start all or specific service
-./homelab.sh stop                # Stop all services
-./homelab.sh restart [service]   # Restart services
-./homelab.sh status              # Show container status
-./homelab.sh logs [service]      # View logs
-
-# Maintenance
-./homelab.sh update              # Pull latest Docker images
-./homelab.sh backup              # Create configuration backup
-./homelab.sh deploy              # Trigger GitHub Actions deployment
-
-# Direct deployment (used by CI)
-cd homelab/scripts
-bash deploy-ci-streamlined.sh    # Streamlined deployment
+./install.sh              # Interactive installer (macOS)
+scripts/install-arch.sh   # Arch Linux setup
 ```
 
-### Mac Setup
+### Symlinks
 
 ```bash
-cd mac && ./install.sh           # Run interactive installer
+scripts/symlinks.sh       # Create dotfile symlinks
+# Mappings defined in scripts/symlinks.conf
 ```
 
-## Key Configuration Files
+### Testing Shell Config
 
-### Homelab
-
-- `docker-compose.yml` - Main orchestrator with includes
-- `compose/*.yml` - Service definitions (infrastructure, media, AI, monitoring, etc.)
-- `.env` - Environment variables (auto-generated by wizard)
-- `traefik/traefik.yml` - Static Traefik configuration
-- `traefik/dynamic/*.yml` - Dynamic routes, middlewares, TLS
-
-### Mac
-
-- `homebrew/Brewfile` - Homebrew packages
-- `zsh/.zshrc` - Zsh configuration
-- `wezterm/wezterm.lua` - Terminal config
-- `starship/starship.toml` - Prompt config
-
-## Quick Troubleshooting
-
-### Homelab Issues
-
-**Service won't start:**
 ```bash
-./homelab.sh logs <service>
-docker compose ps <service>
-```
-
-**Permission errors:** Handled automatically by deployment scripts
-
-**GitHub Runner issues:**
-```bash
-cd ~/actions-runner
-sudo ./svc.sh status
-sudo ./svc.sh restart
-```
-
-**DNS not resolving:**
-```bash
-# Check AdGuard status
-docker compose ps adguardhome
-docker compose logs adguardhome
-
-# Test fallback
-dig @1.1.1.1 google.com
-```
-
-### Mac Issues
-
-**Build failures:**
-```bash
-cd mac && ./install.sh  # Re-run installer
+time zsh -i -c exit       # Measure startup time
+zsh -xv                   # Trace shell initialization
+source ~/.zshrc           # Reload config (or: reload)
 ```
 
 ## Notes for Claude Code
 
-- **OpenSpec Changes**: Use `/openspec:proposal` for new capabilities, `/openspec:apply` to implement
-- **Documentation**: Always check service-specific docs in `docs/` before making changes
-- **Testing**: Use `openspec validate --strict` to validate specifications
-- **State Management**: Respect `.setup_state` in homelab wizard for resumable operations
-- **Archived Content**: Original detailed documentation preserved in `openspec/changes/archive/`
+- **Platform-aware**: Check `uname -s` before platform-specific advice
+- **No duplicate inits**: Tool inits happen ONCE in `.zshrc`, never in `.zshenv`
+- **Symlinks**: All dotfiles are symlinked from this repo via `scripts/symlinks.conf`
+- **OpenSpec Changes**: Use `/openspec:proposal` for structural changes
