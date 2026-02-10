@@ -28,13 +28,19 @@ brew "stripe/stripe-cli/stripe"
 # postgresql
 brew "postgresql"
 
+# curl (provides libcurl for building C tools)
+brew "curl"
+
+# SwitchAudioSource - CLI for audio device switching
+brew "switchaudio-osx"
+
 # Git Credential Manager - cross-platform Git credential storage
 cask "git-credential-manager"
 
 # Adobe Creative Cloud
 # cask "adobe-creative-cloud"
-# Beekeeper Studio
-cask "beekeeper-studio"
+# DB Pro - installed via scripts/dbpro.sh (not in Homebrew)
+# https://www.dbpro.app/
 # Bruno
 cask "bruno"
 # Cursor
@@ -63,6 +69,8 @@ cask "spotify"
 cask "steam"
 # Superhuman
 cask "superhuman"
+# Wispr Flow - AI voice dictation
+cask "wispr-flow"
 # Telegram
 # cask "telegram"
 # Visual Studio Code

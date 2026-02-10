@@ -47,6 +47,35 @@ case "$(uname -s)" in
 
     # Terminal setup
     terminal
+
+    # YouTube transcript tool (optional)
+    . "$DOTFILES/scripts/youtube-transcript.sh"
+    read -p "Install youtube_transcript CLI? [y/n] " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        install_youtube_transcript
+    fi
+
+    # DB Pro database client (optional, not in Homebrew)
+    . "$DOTFILES/scripts/dbpro.sh"
+    read -p "Install DB Pro database client? [y/n] " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        install_dbpro
+    fi
+
+    # Cursor CLI (opens files from terminal)
+    if ! command -v cursor &>/dev/null; then
+        read -p "Install Cursor CLI? [y/n] " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            info "Installing Cursor CLI..."
+            curl -fsSL https://cursor.com/install | bash
+            success "Cursor CLI installed"
+        fi
+    else
+        success "Cursor CLI already installed"
+    fi
     ;;
 
   Linux)
@@ -55,6 +84,14 @@ case "$(uname -s)" in
     # Check if Arch Linux
     if [[ -f /etc/arch-release ]]; then
         . "$DOTFILES/scripts/install-arch.sh"
+
+        # YouTube transcript tool (optional)
+        . "$DOTFILES/scripts/youtube-transcript.sh"
+        read -p "Install youtube_transcript CLI? [y/n] " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            install_youtube_transcript
+        fi
     else
         warning "Non-Arch Linux detected. Only symlinks will be created."
         warning "Install zsh plugins manually for your distribution."
@@ -73,10 +110,13 @@ info "========================================"
 info "  Symbolic Links"
 info "========================================"
 
-read -p "Overwrite existing dotfiles? [y/n] " -n 1 -r overwrite_dotfiles
-echo
-
 chmod +x "$DOTFILES/scripts/symlinks.sh"
+
+# Show preview of what will happen
+"$DOTFILES/scripts/symlinks.sh" --preview
+
+read -p "Overwrite existing dotfiles marked above? [y/n] " -n 1 -r overwrite_dotfiles
+echo
 
 if [[ $overwrite_dotfiles =~ ^[Yy]$ ]]; then
     warning "Deleting existing dotfiles..."
@@ -92,6 +132,20 @@ if [[ "$(uname -s)" == "Darwin" ]]; then
         mkdir -p "$HOME/.config/wezterm"
         ln -sfn "$DOTFILES/wezterm/wezterm.lua" "$HOME/.config/wezterm/wezterm.lua"
         success "Created WezTerm symlink"
+    fi
+
+    # Mic priority LaunchAgent (Mac only)
+    if [[ -f "$DOTFILES/launchd/com.leonardoacosta.mic-priority.plist" ]]; then
+        chmod +x "$DOTFILES/scripts/mic-priority.sh"
+        mkdir -p "$HOME/Library/LaunchAgents"
+        ln -sfn "$DOTFILES/launchd/com.leonardoacosta.mic-priority.plist" "$HOME/Library/LaunchAgents/com.leonardoacosta.mic-priority.plist"
+        success "Created mic-priority LaunchAgent symlink"
+
+        # Load the agent if not already loaded
+        if ! launchctl list | grep -q "com.leonardoacosta.mic-priority"; then
+            launchctl load "$HOME/Library/LaunchAgents/com.leonardoacosta.mic-priority.plist" 2>/dev/null || true
+            success "Loaded mic-priority LaunchAgent"
+        fi
     fi
 fi
 

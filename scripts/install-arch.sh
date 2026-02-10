@@ -38,6 +38,9 @@ install_arch_packages() {
         pnpm
         go
         rust
+        # Build tools (for compiling C tools like youtube_transcript)
+        curl
+        base-devel
         # Nerd Fonts (required for starship icons)
         ttf-jetbrains-mono-nerd
         ttf-cascadia-mono-nerd
