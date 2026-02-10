@@ -85,6 +85,7 @@ fi
 # ============================================================
 
 alias claude="claude --dangerously-skip-permissions"
+alias cs="~/dev/ccswitch.sh --switch"
 alias ll="ls -lah"
 alias la="ls -A"
 alias l="ls -CF"
