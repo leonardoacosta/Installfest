@@ -66,8 +66,8 @@ command -v zoxide &>/dev/null && eval "$(zoxide init zsh)"
 if command -v fzf &>/dev/null; then
   # Try zsh integration, fall back to basic
   if [[ -f "${HOMEBREW_PREFIX:-/opt/homebrew}/opt/fzf/shell/completion.zsh" ]]; then
-    source "${HOMEBREW_PREFIX}/opt/fzf/shell/completion.zsh"
-    source "${HOMEBREW_PREFIX}/opt/fzf/shell/key-bindings.zsh"
+    source "${HOMEBREW_PREFIX:-/opt/homebrew}/opt/fzf/shell/completion.zsh"
+    source "${HOMEBREW_PREFIX:-/opt/homebrew}/opt/fzf/shell/key-bindings.zsh"
   elif [[ -f "/usr/share/fzf/completion.zsh" ]]; then
     source "/usr/share/fzf/completion.zsh"
     source "/usr/share/fzf/key-bindings.zsh"
