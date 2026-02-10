@@ -56,6 +56,55 @@ create_symlinks() {
     done <"$CONFIG_FILE"
 }
 
+preview_symlinks() {
+    info "Symlink Preview:"
+    echo
+
+    local conflicts=0
+    local new_links=0
+
+    while IFS=: read -r source target || [ -n "$source" ]; do
+        # Skip empty or invalid lines
+        if [[ -z "$source" || -z "$target" || "$source" == \#* ]]; then
+            continue
+        fi
+
+        # Evaluate variables
+        source=$(eval echo "$source")
+        target=$(eval echo "$target")
+
+        # Check source exists
+        if [ ! -e "$source" ]; then
+            continue
+        fi
+
+        # Determine status
+        if [ -L "$target" ]; then
+            local current_target
+            current_target=$(readlink "$target")
+            if [ "$current_target" == "$source" ]; then
+                echo "  [OK]      $target"
+            else
+                echo "  [RELINK]  $target"
+                echo "            Current → $current_target"
+                echo "            New     → $source"
+                ((conflicts++))
+            fi
+        elif [ -f "$target" ] || [ -d "$target" ]; then
+            echo "  [REPLACE] $target (existing file/dir)"
+            echo "            New     → $source"
+            ((conflicts++))
+        else
+            echo "  [NEW]     $target → $source"
+            ((new_links++))
+        fi
+    done <"$CONFIG_FILE"
+
+    echo
+    info "Summary: $new_links new, $conflicts conflicts"
+    echo
+}
+
 delete_symlinks() {
     info "Deleting symbolic links..."
 
@@ -92,9 +141,12 @@ if [ "$(basename "$0")" = "$(basename "${BASH_SOURCE[0]}")" ]; then
         fi
         delete_symlinks
         ;;
+    "--preview")
+        preview_symlinks
+        ;;
     "--help")
         # Display usage/help message
-        echo "Usage: $0 [--create | --delete [--include-files] | --help]"
+        echo "Usage: $0 [--create | --delete [--include-files] | --preview | --help]"
         ;;
     *)
         # Display an error message for unknown arguments

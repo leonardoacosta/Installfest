@@ -18,8 +18,8 @@ apply_osx_system_defaults() {
     # Enable three finger drag
     defaults write com.apple.AppleMultitouchTrackpad TrackpadThreeFingerDrag -bool false
 
-    # # Disable prompting to use new exteral drives as Time Machine volume
-    defaults write com.apple.TimeMachine DoNotOfferNewDisksForBackup -bool true
+    # # Prompt to use new external drives as Time Machine volume
+    defaults write com.apple.TimeMachine DoNotOfferNewDisksForBackup -bool false
 
     # # Hide external hard drives on desktop
     defaults write com.apple.finder ShowExternalHardDrivesOnDesktop -bool false
