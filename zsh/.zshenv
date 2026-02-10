@@ -3,6 +3,11 @@
 # Sourced for ALL zsh instances (login, interactive, scripts)
 # Symlink: ~/.zshenv -> $DOTFILES/zsh/.zshenv
 
+  # In homelab.sh (or export before running)                                                                                                                                                               
+export USE_DOPPLER=true
+export DOPPLER_PROJECT=homelab
+export DOPPLER_CONFIG=prd
+
 # Set DOTFILES path (used by all other scripts)
 export DOTFILES="${DOTFILES:-$HOME/dev/if}"
 
@@ -21,6 +26,9 @@ case "$(uname -s)" in
     source "$DOTFILES/zsh/rc/linux.zsh"
     ;;
 esac
+
+# Local overrides (secrets, machine-specific tokens)
+[[ -f ~/.zshenv.local ]] && source ~/.zshenv.local
 
 # Theme exports (for terminal emulators that read env)
 export TMUX_THEME="one-hunter-vercel"

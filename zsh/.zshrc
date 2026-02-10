@@ -5,6 +5,13 @@
 # Ensure DOTFILES is set (should be set by .zshenv)
 export DOTFILES="${DOTFILES:-$HOME/dev/if}"
 
+# Load environment variables from ~/.env (export bare KEY=value lines)
+if [[ -f "$HOME/.env" ]]; then
+  set -a
+  source "$HOME/.env"
+  set +a
+fi
+
 # Load shared configuration (history opts, aliases, settings)
 source "$DOTFILES/zsh/rc/shared.zsh"
 
@@ -23,3 +30,4 @@ source "$DOTFILES/zsh/functions/setup-completions.zsh"  # compinit, fpath
 source "$DOTFILES/zsh/functions/load-plugins.zsh"       # syntax-hl, autosuggestions
 source "$DOTFILES/zsh/functions/load-tools.zsh"         # zoxide, atuin, fzf, etc.
 source "$DOTFILES/zsh/functions/init-starship.zsh"      # prompt (load last)
+
