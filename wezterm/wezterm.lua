@@ -21,6 +21,15 @@ end)
 
 local config = {}
 
+-- SSH Domains (multiplexed SSH sessions)
+config.ssh_domains = {
+  {
+    name = "homelab",
+    remote_address = "homelab",
+    username = "nyaptor",
+  },
+}
+
 -- Appearance
 config.native_macos_fullscreen_mode = true
 config.automatically_reload_config = true
