@@ -64,6 +64,14 @@ case "$(uname -s)" in
         install_dbpro
     fi
 
+    # ani-cli (anime streaming from terminal)
+    . "$DOTFILES/scripts/ani-cli.sh"
+    read -p "Install ani-cli? [y/n] " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        install_ani_cli
+    fi
+
     # Cursor CLI (opens files from terminal)
     if ! command -v cursor &>/dev/null; then
         read -p "Install Cursor CLI? [y/n] " -n 1 -r

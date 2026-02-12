@@ -55,6 +55,8 @@ cask "font-jetbrains-mono-nerd-font"
 cask "font-cascadia-mono-nerd-font"
 # Gitkraken
 cask "gitkraken"
+# IINA - modern macOS media player (used by ani-cli)
+cask "iina"
 # Google Chrome
 cask "google-chrome"
 # Notion
