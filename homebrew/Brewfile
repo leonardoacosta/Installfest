@@ -57,6 +57,8 @@ cask "font-cascadia-mono-nerd-font"
 cask "gitkraken"
 # IINA - modern macOS media player (used by ani-cli)
 cask "iina"
+# Karabiner-Elements - keyboard customization
+cask "karabiner-elements"
 # Google Chrome
 cask "google-chrome"
 # Notion
