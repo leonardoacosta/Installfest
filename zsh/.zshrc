@@ -31,3 +31,6 @@ source "$DOTFILES/zsh/functions/load-plugins.zsh"       # syntax-hl, autosuggest
 source "$DOTFILES/zsh/functions/load-tools.zsh"         # zoxide, atuin, fzf, etc.
 source "$DOTFILES/zsh/functions/init-starship.zsh"      # prompt (load last)
 
+
+test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh"
+
