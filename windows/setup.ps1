@@ -1,0 +1,634 @@
+#Requires -RunAsAdministrator
+<#
+.SYNOPSIS
+    Windows dev environment setup - SSH, WSL2 Arch, Mac keyboard (Synergy), dev tools.
+
+.DESCRIPTION
+    Configures a Windows workstation for development with:
+    - OpenSSH Server with Ed25519 key authentication
+    - WSL2 with Arch Linux (mirrors homelab/mac dotfiles)
+    - WezTerm terminal with Mac keyboard bindings
+    - AutoHotKey for Synergy Mac keyboard remapping
+    - Dev tools via winget (Cursor, VS Code, Visual Studio)
+    - Docker Engine inside WSL2 (no Docker Desktop)
+
+.NOTES
+    Run as Administrator: Right-click PowerShell -> Run as Administrator
+    Or: Start-Process powershell -Verb RunAs -ArgumentList "-File $PSCommandPath"
+#>
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = "Stop"
+
+# ============================================================================
+# Configuration
+# ============================================================================
+
+$Config = @{
+    # Dotfiles repo (cloned inside WSL2)
+    DotfilesRepo   = "git@github.com:leonardoacosta/dotfiles.git"
+    DotfilesPath   = "~/dev/if"
+
+    # WSL2 username (should match your other machines)
+    WslUser        = "nyaptor"
+
+    # SSH
+    SshPort        = 22
+
+    # Tailscale interface name (for firewall rules)
+    TailscaleIface = "Tailscale"
+
+    # Windows apps to install via winget
+    WingetApps     = @(
+        # --- Terminal & Shell ---
+        "wez.wezterm"
+        "Microsoft.PowerToys"
+        "gerardog.gsudo"              # sudo for Windows
+
+        # --- Editors & IDEs ---
+        "Anysphere.Cursor"
+        "Microsoft.VisualStudioCode"
+        "Microsoft.VisualStudio.2022.Professional"
+
+        # --- AI ---
+        "Anthropic.Claude"            # Claude Desktop
+        "Anthropic.ClaudeCode"        # Claude Code CLI
+
+        # --- Dev Runtimes & Tools ---
+        "CoreyButler.NVMforWindows"   # nvm (manages Node versions)
+        "pnpm.pnpm"
+        "Microsoft.DotNet.SDK.9"      # .NET SDK
+        "Microsoft.AzureCLI"
+
+        # --- Git ---
+        "Git.Git"
+        "GitHub.cli"
+        "Axosoft.GitKraken"
+
+        # --- API Testing ---
+        "UseBruno.Bruno"
+
+        # --- Networking ---
+        "Tailscale.Tailscale"
+        "Symless.Synergy"
+
+        # --- Input & Productivity ---
+        "AutoHotkey.AutoHotkey"
+        "Raycast.Raycast"
+
+        # --- Knowledge & Notes ---
+        "Notion.Notion"
+        "Obsidian.Obsidian"
+
+        # --- Browser ---
+        "Google.Chrome"
+
+        # --- Fonts ---
+        "JetBrains.Mono"
+    )
+
+    # Microsoft Store apps (no winget ID available)
+    MsStoreApps    = @(
+        "9n1b9jwb3m35"                # Wispr Flow (voice dictation)
+    )
+}
+
+# ============================================================================
+# Helpers
+# ============================================================================
+
+function Write-Step {
+    param([string]$Message)
+    Write-Host "`n==> $Message" -ForegroundColor Cyan
+}
+
+function Write-Ok {
+    param([string]$Message)
+    Write-Host "==> $Message" -ForegroundColor Green
+}
+
+function Write-Warn {
+    param([string]$Message)
+    Write-Host "==> $Message" -ForegroundColor Yellow
+}
+
+function Write-Err {
+    param([string]$Message)
+    Write-Host "==> $Message" -ForegroundColor Red
+}
+
+function Test-CommandExists {
+    param([string]$Command)
+    $null -ne (Get-Command $Command -ErrorAction SilentlyContinue)
+}
+
+function Prompt-YesNo {
+    param([string]$Question)
+    $response = Read-Host "$Question [y/n]"
+    return $response -match '^[Yy]'
+}
+
+# ============================================================================
+# 1. OpenSSH Server
+# ============================================================================
+
+function Install-OpenSSHServer {
+    Write-Step "Configuring OpenSSH Server..."
+
+    # Install OpenSSH Server if not present
+    $sshCapability = Get-WindowsCapability -Online | Where-Object Name -like "OpenSSH.Server*"
+    if ($sshCapability.State -ne "Installed") {
+        Write-Step "Installing OpenSSH Server..."
+        Add-WindowsCapability -Online -Name "OpenSSH.Server~~~~0.0.1.0"
+    } else {
+        Write-Ok "OpenSSH Server already installed"
+    }
+
+    # Configure sshd
+    $sshdConfig = "$env:ProgramData\ssh\sshd_config"
+
+    # Backup original config
+    if (-not (Test-Path "$sshdConfig.bak")) {
+        Copy-Item $sshdConfig "$sshdConfig.bak"
+        Write-Ok "Backed up original sshd_config"
+    }
+
+    # Enable key-based auth, disable password auth
+    $configContent = Get-Content $sshdConfig -Raw
+    $updates = @{
+        '#PubkeyAuthentication yes'          = 'PubkeyAuthentication yes'
+        '#AuthorizedKeysFile'                = 'AuthorizedKeysFile'
+        '#PasswordAuthentication yes'        = 'PasswordAuthentication no'
+        'PasswordAuthentication yes'         = 'PasswordAuthentication no'
+    }
+
+    foreach ($old in $updates.Keys) {
+        if ($configContent -match [regex]::Escape($old)) {
+            $configContent = $configContent -replace [regex]::Escape($old), $updates[$old]
+        }
+    }
+
+    # Disable the admin authorized_keys override (important for non-admin users too)
+    # Comment out the Match Group administrators block at the end
+    $configContent = $configContent -replace '(?m)^(Match Group administrators)', '# $1'
+    $configContent = $configContent -replace '(?m)^(\s+AuthorizedKeysFile __PROGRAMDATA__)', '# $1'
+
+    Set-Content -Path $sshdConfig -Value $configContent
+    Write-Ok "sshd_config updated (pubkey auth enabled, password auth disabled)"
+
+    # Create .ssh directory and authorized_keys for current user
+    $sshDir = "$env:USERPROFILE\.ssh"
+    if (-not (Test-Path $sshDir)) {
+        New-Item -ItemType Directory -Path $sshDir -Force | Out-Null
+    }
+
+    $authKeys = "$sshDir\authorized_keys"
+    if (-not (Test-Path $authKeys)) {
+        New-Item -ItemType File -Path $authKeys -Force | Out-Null
+        Write-Warn "Created empty authorized_keys - add your Ed25519 public key:"
+        Write-Warn "  $authKeys"
+    }
+
+    # Set correct permissions on authorized_keys (Windows ACL)
+    $acl = Get-Acl $authKeys
+    $acl.SetAccessRuleProtection($true, $false) # Disable inheritance
+    $currentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
+    $adminRule = New-Object System.Security.AccessControl.FileSystemAccessRule(
+        "BUILTIN\Administrators", "FullControl", "Allow"
+    )
+    $systemRule = New-Object System.Security.AccessControl.FileSystemAccessRule(
+        "NT AUTHORITY\SYSTEM", "FullControl", "Allow"
+    )
+    $userRule = New-Object System.Security.AccessControl.FileSystemAccessRule(
+        $currentUser, "FullControl", "Allow"
+    )
+    $acl.AddAccessRule($adminRule)
+    $acl.AddAccessRule($systemRule)
+    $acl.AddAccessRule($userRule)
+    Set-Acl $authKeys $acl
+    Write-Ok "authorized_keys permissions set"
+
+    # Set default shell to PowerShell 7 (if installed) or PowerShell 5
+    $pwsh7 = "C:\Program Files\PowerShell\7\pwsh.exe"
+    $defaultShell = if (Test-Path $pwsh7) { $pwsh7 } else { "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" }
+    New-ItemProperty -Path "HKLM:\SOFTWARE\OpenSSH" -Name DefaultShell -Value $defaultShell -PropertyType String -Force | Out-Null
+    Write-Ok "Default SSH shell: $defaultShell"
+
+    # Start and enable sshd service
+    Set-Service -Name sshd -StartupType Automatic
+    Start-Service sshd
+    Write-Ok "sshd service started and enabled"
+
+    # Firewall rule for Tailscale
+    $ruleName = "OpenSSH-Server-Tailscale"
+    $existingRule = Get-NetFirewallRule -Name $ruleName -ErrorAction SilentlyContinue
+    if (-not $existingRule) {
+        New-NetFirewallRule -Name $ruleName `
+            -DisplayName "OpenSSH Server (Tailscale)" `
+            -Direction Inbound `
+            -Protocol TCP `
+            -LocalPort $Config.SshPort `
+            -InterfaceAlias $Config.TailscaleIface `
+            -Action Allow
+        Write-Ok "Firewall rule created for SSH on Tailscale interface"
+    } else {
+        Write-Ok "Firewall rule already exists"
+    }
+}
+
+# ============================================================================
+# 2. WSL2 + Arch Linux
+# ============================================================================
+
+function Install-WSL2Arch {
+    Write-Step "Setting up WSL2 with Arch Linux..."
+
+    # Enable WSL feature
+    $wslFeature = Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux
+    if ($wslFeature.State -ne "Enabled") {
+        Write-Step "Enabling WSL..."
+        Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux -NoRestart
+        Write-Warn "WSL enabled - reboot may be required"
+    }
+
+    # Enable Virtual Machine Platform
+    $vmFeature = Get-WindowsOptionalFeature -Online -FeatureName VirtualMachinePlatform
+    if ($vmFeature.State -ne "Enabled") {
+        Write-Step "Enabling Virtual Machine Platform..."
+        Enable-WindowsOptionalFeature -Online -FeatureName VirtualMachinePlatform -NoRestart
+        Write-Warn "VM Platform enabled - reboot may be required"
+    }
+
+    # Set WSL 2 as default
+    wsl --set-default-version 2 2>$null
+
+    Write-Ok "WSL2 features enabled"
+
+    # Install Arch Linux via scoop (ArchWSL)
+    if (-not (Test-CommandExists "scoop")) {
+        Write-Step "Installing Scoop (needed for ArchWSL)..."
+        # Scoop requires execution policy change
+        Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
+        Invoke-RestMethod get.scoop.sh | Invoke-Expression
+    }
+
+    # Add extras bucket for ArchWSL
+    scoop bucket add extras 2>$null
+
+    if (-not (Test-CommandExists "Arch.exe")) {
+        Write-Step "Installing ArchWSL..."
+        scoop install archwsl
+        Write-Ok "ArchWSL installed"
+    } else {
+        Write-Ok "ArchWSL already installed"
+    }
+
+    Write-Step "Post-install: Arch Linux WSL2 bootstrap"
+    Write-Host @"
+
+  ArchWSL is installed. Run these commands to bootstrap:
+
+  1. Launch Arch:
+     > Arch.exe
+
+  2. Inside Arch, initialize pacman and create your user:
+     # pacman-key --init
+     # pacman-key --populate archlinux
+     # pacman -Syu --noconfirm
+     # pacman -S --noconfirm sudo zsh git base-devel
+     # useradd -m -G wheel -s /bin/zsh $($Config.WslUser)
+     # passwd $($Config.WslUser)
+     # echo '%wheel ALL=(ALL:ALL) ALL' > /etc/sudoers.d/wheel
+     # exit
+
+  3. Set default user (from PowerShell):
+     > Arch.exe config --default-user $($Config.WslUser)
+
+  4. Re-enter as your user and clone dotfiles:
+     > Arch.exe
+     $ mkdir -p ~/dev && cd ~/dev
+     $ git clone $($Config.DotfilesRepo) if
+     $ cd if && ./install.sh
+
+  5. Install yay (AUR helper):
+     $ cd /tmp
+     $ git clone https://aur.archlinux.org/yay.git && cd yay
+     $ makepkg -si --noconfirm
+
+  6. Install Docker Engine (no Docker Desktop):
+     $ sudo pacman -S docker docker-buildx docker-compose
+     $ sudo systemctl enable --now docker  # (or use dockerd manually)
+     $ sudo usermod -aG docker $($Config.WslUser)
+
+"@
+}
+
+# ============================================================================
+# 3. Windows Apps via winget
+# ============================================================================
+
+function Install-WingetApps {
+    Write-Step "Installing Windows apps via winget..."
+
+    foreach ($app in $Config.WingetApps) {
+        $installed = winget list --id $app 2>$null
+        if ($LASTEXITCODE -eq 0 -and $installed -match $app) {
+            Write-Ok "$app already installed"
+        } else {
+            Write-Step "Installing $app..."
+            winget install --id $app --accept-source-agreements --accept-package-agreements --silent
+            if ($LASTEXITCODE -eq 0) {
+                Write-Ok "$app installed"
+            } else {
+                Write-Warn "Failed to install $app (may need manual install)"
+            }
+        }
+    }
+
+    # Microsoft Store apps (installed via winget --source msstore)
+    if ($Config.MsStoreApps) {
+        Write-Step "Installing Microsoft Store apps..."
+        foreach ($storeId in $Config.MsStoreApps) {
+            Write-Step "Installing Store app $storeId..."
+            winget install --id $storeId --source msstore --accept-source-agreements --accept-package-agreements --silent
+            if ($LASTEXITCODE -eq 0) {
+                Write-Ok "Store app $storeId installed"
+            } else {
+                Write-Warn "Failed to install Store app $storeId (open Microsoft Store manually)"
+            }
+        }
+    }
+}
+
+# ============================================================================
+# 4. WezTerm Configuration (Windows-adapted)
+# ============================================================================
+
+function Install-WezTermConfig {
+    Write-Step "Configuring WezTerm for Windows..."
+
+    $weztermDir = "$env:USERPROFILE\.config\wezterm"
+    if (-not (Test-Path $weztermDir)) {
+        New-Item -ItemType Directory -Path $weztermDir -Force | Out-Null
+    }
+
+    # Copy the Windows-adapted WezTerm config
+    $scriptDir = Split-Path -Parent $MyInvocation.ScriptName
+    $sourceConfig = Join-Path $scriptDir "wezterm-windows.lua"
+
+    if (Test-Path $sourceConfig) {
+        Copy-Item $sourceConfig "$weztermDir\wezterm.lua" -Force
+        Write-Ok "WezTerm config installed to $weztermDir\wezterm.lua"
+    } else {
+        Write-Warn "wezterm-windows.lua not found in script directory"
+        Write-Warn "Expected at: $sourceConfig"
+    }
+}
+
+# ============================================================================
+# 5. AutoHotKey Script (Mac Keyboard via Synergy)
+# ============================================================================
+
+function Install-AHKScript {
+    Write-Step "Setting up AutoHotKey Mac keyboard remapping..."
+
+    $ahkDir = "$env:APPDATA\AutoHotKey"
+    if (-not (Test-Path $ahkDir)) {
+        New-Item -ItemType Directory -Path $ahkDir -Force | Out-Null
+    }
+
+    # Copy AHK script
+    $scriptDir = Split-Path -Parent $MyInvocation.ScriptName
+    $sourceAhk = Join-Path $scriptDir "mac-keyboard.ahk"
+
+    if (Test-Path $sourceAhk) {
+        Copy-Item $sourceAhk "$ahkDir\mac-keyboard.ahk" -Force
+        Write-Ok "AHK script installed to $ahkDir\mac-keyboard.ahk"
+    } else {
+        Write-Warn "mac-keyboard.ahk not found in script directory"
+    }
+
+    # Create startup shortcut so AHK runs on login
+    $startupDir = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup"
+    $shortcutPath = "$startupDir\MacKeyboard.lnk"
+
+    if (-not (Test-Path $shortcutPath)) {
+        $shell = New-Object -ComObject WScript.Shell
+        $shortcut = $shell.CreateShortcut($shortcutPath)
+        $shortcut.TargetPath = "$ahkDir\mac-keyboard.ahk"
+        $shortcut.Description = "Mac keyboard remapping for Synergy"
+        $shortcut.Save()
+        Write-Ok "AHK startup shortcut created"
+    } else {
+        Write-Ok "AHK startup shortcut already exists"
+    }
+}
+
+# ============================================================================
+# 6. Git Configuration
+# ============================================================================
+
+function Install-GitConfig {
+    Write-Step "Configuring Git..."
+
+    if (-not (Test-CommandExists "git")) {
+        Write-Warn "Git not installed yet, skipping config"
+        return
+    }
+
+    git config --global user.name "leonardoacosta"
+    git config --global user.email "leo@leonardoacosta.dev"
+    git config --global init.defaultBranch "main"
+    git config --global pull.rebase true
+    git config --global core.autocrlf input
+    git config --global core.eol lf
+
+    # SSH signing (Ed25519)
+    $sshKey = "$env:USERPROFILE\.ssh\id_ed25519.pub"
+    if (Test-Path $sshKey) {
+        git config --global gpg.format ssh
+        git config --global user.signingKey $sshKey
+        git config --global commit.gpgSign true
+        Write-Ok "Git SSH signing configured with Ed25519"
+    } else {
+        Write-Warn "No Ed25519 key found at $sshKey"
+        Write-Warn "Generate one: ssh-keygen -t ed25519"
+    }
+
+    # Git aliases
+    git config --global alias.co "checkout"
+    git config --global alias.br "branch"
+    git config --global alias.ci "commit"
+    git config --global alias.st "status"
+
+    # Credential helper (Git Credential Manager)
+    git config --global credential.helper manager
+
+    Write-Ok "Git configured"
+}
+
+# ============================================================================
+# 7. PowerShell Profile (minimal - WSL2 is primary shell)
+# ============================================================================
+
+function Install-PSProfile {
+    Write-Step "Setting up PowerShell profile..."
+
+    $profileDir = Split-Path $PROFILE
+    if (-not (Test-Path $profileDir)) {
+        New-Item -ItemType Directory -Path $profileDir -Force | Out-Null
+    }
+
+    $profileContent = @'
+# PowerShell profile - minimal (WSL2 Arch is primary dev shell)
+
+# Quick access to WSL
+function wsl-arch { wsl -d Arch }
+Set-Alias -Name arch -Value wsl-arch
+
+# gsudo alias
+if (Get-Command gsudo -ErrorAction SilentlyContinue) {
+    Set-Alias -Name sudo -Value gsudo
+}
+
+# Starship prompt (if installed on Windows side)
+if (Get-Command starship -ErrorAction SilentlyContinue) {
+    Invoke-Expression (&starship init powershell)
+}
+
+# Quick navigation
+function dev { wsl -d Arch --cd "~/dev" }
+Set-Alias -Name ll -Value Get-ChildItem
+
+# SSH into WSL from anywhere
+function ssh-wsl { ssh localhost }
+'@
+
+    Set-Content -Path $PROFILE -Value $profileContent
+    Write-Ok "PowerShell profile created at $PROFILE"
+}
+
+# ============================================================================
+# 8. Nerd Fonts
+# ============================================================================
+
+function Install-NerdFonts {
+    Write-Step "Installing Nerd Fonts..."
+
+    if (-not (Test-CommandExists "scoop")) {
+        Write-Warn "Scoop not installed, skipping nerd fonts"
+        return
+    }
+
+    scoop bucket add nerd-fonts 2>$null
+
+    $fonts = @(
+        "GeistMono-NF"
+        "JetBrainsMono-NF"
+        "CascadiaMono-NF"
+    )
+
+    foreach ($font in $fonts) {
+        $installed = scoop list $font 2>$null
+        if ($LASTEXITCODE -ne 0) {
+            Write-Step "Installing $font..."
+            sudo scoop install -g $font
+        } else {
+            Write-Ok "$font already installed"
+        }
+    }
+}
+
+# ============================================================================
+# 9. WSL2 Configuration
+# ============================================================================
+
+function Install-WSLConfig {
+    Write-Step "Configuring WSL2 settings..."
+
+    $wslConfig = "$env:USERPROFILE\.wslconfig"
+
+    $wslContent = @"
+[wsl2]
+memory=8GB
+processors=4
+swap=4GB
+localhostForwarding=true
+
+[experimental]
+autoMemoryReclaim=gradual
+sparseVhd=true
+"@
+
+    Set-Content -Path $wslConfig -Value $wslContent
+    Write-Ok ".wslconfig created (8GB RAM, 4 cores for WSL2)"
+    Write-Warn "Adjust memory/processors in $wslConfig based on your hardware"
+}
+
+# ============================================================================
+# Main
+# ============================================================================
+
+Write-Host @"
+
+========================================
+  Windows Dev Environment Setup
+  $(Get-Date -Format "yyyy-MM-dd HH:mm")
+========================================
+
+This script will configure:
+  1. OpenSSH Server (Ed25519 auth, Tailscale firewall)
+  2. WSL2 + Arch Linux
+  3. Windows apps (WezTerm, Cursor, VS Code, VS Studio, etc.)
+  4. WezTerm config (Mac keyboard bindings)
+  5. AutoHotKey (Synergy Mac keyboard remapping)
+  6. Git (SSH signing, aliases)
+  7. PowerShell profile
+  8. Nerd Fonts
+  9. WSL2 resource limits
+
+"@
+
+# Run each section with confirmation
+$sections = @(
+    @{ Name = "OpenSSH Server";         Fn = { Install-OpenSSHServer } }
+    @{ Name = "WSL2 + Arch Linux";      Fn = { Install-WSL2Arch } }
+    @{ Name = "Windows apps (winget)";  Fn = { Install-WingetApps } }
+    @{ Name = "WezTerm config";         Fn = { Install-WezTermConfig } }
+    @{ Name = "AutoHotKey (Mac keys)";  Fn = { Install-AHKScript } }
+    @{ Name = "Git configuration";      Fn = { Install-GitConfig } }
+    @{ Name = "PowerShell profile";     Fn = { Install-PSProfile } }
+    @{ Name = "Nerd Fonts";             Fn = { Install-NerdFonts } }
+    @{ Name = "WSL2 resource config";   Fn = { Install-WSLConfig } }
+)
+
+$runAll = Prompt-YesNo "Run all sections automatically?"
+
+foreach ($section in $sections) {
+    if ($runAll -or (Prompt-YesNo "Setup $($section.Name)?")) {
+        try {
+            & $section.Fn
+        } catch {
+            Write-Err "Failed: $($section.Name) - $($_.Exception.Message)"
+            if (-not (Prompt-YesNo "Continue with remaining sections?")) {
+                exit 1
+            }
+        }
+    }
+}
+
+Write-Host @"
+
+========================================
+  Setup Complete!
+========================================
+
+Next steps:
+  1. Reboot (if WSL/VM features were just enabled)
+  2. Run Arch.exe and follow the bootstrap instructions above
+  3. Add your Ed25519 public key to ~\.ssh\authorized_keys
+  4. Start AHK script: $env:APPDATA\AutoHotKey\mac-keyboard.ahk
+  5. Configure Synergy to connect to this PC
+  6. Test SSH from Mac: ssh <tailscale-ip>
+
+"@

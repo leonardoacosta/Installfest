@@ -29,6 +29,23 @@ run_brew_bundle() {
         error "Brewfile not found"
         return 1
     fi
+
+    install_azure_devops_extension
+}
+
+install_azure_devops_extension() {
+    if ! command -v az &>/dev/null; then
+        warning "Azure CLI not found, skipping DevOps extension"
+        return
+    fi
+
+    if az extension show --name azure-devops &>/dev/null; then
+        success "Azure DevOps extension already installed"
+    else
+        info "Adding Azure DevOps extension..."
+        az extension add --name azure-devops
+        success "Azure DevOps extension installed"
+    fi
 }
 
 if [ "$(basename "$0")" = "$(basename "${BASH_SOURCE[0]}")" ]; then

@@ -41,6 +41,9 @@ install_arch_packages() {
         # Build tools (for compiling C tools like youtube_transcript)
         curl
         base-devel
+        # Azure DevOps CLI
+        python-pipx
+        python-packaging
         # Nerd Fonts (required for starship icons)
         ttf-jetbrains-mono-nerd
         ttf-cascadia-mono-nerd
@@ -93,6 +96,29 @@ install_aur_packages() {
     fi
 }
 
+install_azure_cli() {
+    info "Checking Azure CLI..."
+
+    if command -v az &>/dev/null; then
+        success "Azure CLI already installed"
+    else
+        info "Installing Azure CLI via pipx..."
+        pipx install azure-cli
+    fi
+
+    if command -v az &>/dev/null; then
+        if az extension show --name azure-devops &>/dev/null; then
+            success "Azure DevOps extension already installed"
+        else
+            info "Adding Azure DevOps extension..."
+            az extension add --name azure-devops
+            success "Azure DevOps extension installed"
+        fi
+    else
+        warning "Azure CLI not available, skipping DevOps extension"
+    fi
+}
+
 set_default_shell() {
     if [[ "$SHELL" != *"zsh"* ]]; then
         info "Setting zsh as default shell..."
@@ -111,6 +137,7 @@ echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     install_arch_packages
     install_aur_packages
+    install_azure_cli
 fi
 
 read -p "Set zsh as default shell? [y/n] " -n 1 -r
