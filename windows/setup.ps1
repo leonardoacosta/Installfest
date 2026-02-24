@@ -144,8 +144,20 @@ function Install-OpenSSHServer {
         Write-Ok "OpenSSH Server already installed"
     }
 
-    # Configure sshd
+    # Start sshd once to generate default config files if they don't exist
     $sshdConfig = "$env:ProgramData\ssh\sshd_config"
+    if (-not (Test-Path $sshdConfig)) {
+        Write-Step "Starting sshd to generate default config..."
+        Start-Service sshd -ErrorAction SilentlyContinue
+        Stop-Service sshd -ErrorAction SilentlyContinue
+        Start-Sleep -Seconds 2
+
+        if (-not (Test-Path $sshdConfig)) {
+            Write-Err "sshd_config still not found at $sshdConfig after service start"
+            Write-Err "Try running 'Start-Service sshd' manually, then re-run this script"
+            return
+        }
+    }
 
     # Backup original config
     if (-not (Test-Path "$sshdConfig.bak")) {
@@ -267,9 +279,10 @@ function Install-WSL2Arch {
     # Install Arch Linux via scoop (ArchWSL)
     if (-not (Test-CommandExists "scoop")) {
         Write-Step "Installing Scoop (needed for ArchWSL)..."
-        # Scoop requires execution policy change
+        Set-ExecutionPolicy Bypass -Scope Process -Force
         Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
-        Invoke-RestMethod get.scoop.sh | Invoke-Expression
+        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
+        Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
     }
 
     # Add extras bucket for ArchWSL
