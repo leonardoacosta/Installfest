@@ -1,0 +1,58 @@
+# Ghostty Configuration
+# Source of truth: ~/dev/if/ghostty/config
+
+# === Font ===
+font-family = GeistMono Nerd Font Mono
+font-style = DemiBold
+font-size = 13
+font-thicken = true
+
+# === Theme / Appearance ===
+theme = Vercel
+background-opacity = 0.80
+background-blur-radius = 20
+window-decoration = true
+macos-titlebar-style = tabs
+window-padding-x = 10
+window-padding-y = 10
+window-padding-balance = true
+window-colorspace = display-p3
+
+# === Behavior ===
+confirm-close-surface = false
+auto-update = check
+copy-on-select = clipboard
+mouse-hide-while-typing = true
+scrollback-limit = 10000
+
+# === macOS Specific ===
+macos-option-as-alt = true
+window-save-state = always
+
+# === Shell Integration ===
+shell-integration = zsh
+shell-integration-features = cursor,sudo,title,ssh-env,no-ssh-terminfo
+
+# === Text Editing: macOS standard keybindings ===
+
+# Option+Left/Right: Move word backward/forward
+keybind = alt+left=text:\x1bb
+keybind = alt+right=text:\x1bf
+
+# Option+Backspace: Delete word backward
+keybind = alt+backspace=text:\x1b\x7f
+
+# Cmd+Left/Right: Beginning/End of line
+keybind = super+left=text:\x01
+keybind = super+right=text:\x05
+
+# Cmd+Backspace: Delete to beginning of line
+keybind = super+backspace=text:\x15
+
+# Cmd+Shift+Left/Right: Select to beginning/end of line (tmux copy mode)
+keybind = super+shift+left=text:\x1b[60;CMS~
+keybind = super+shift+right=text:\x1b[62;CMS~
+
+# Option+Shift+Left/Right: Select word backward/forward (tmux copy mode)
+keybind = alt+shift+left=text:\x1b[60;OMS~
+keybind = alt+shift+right=text:\x1b[62;OMS~

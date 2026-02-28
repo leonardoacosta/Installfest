@@ -62,6 +62,9 @@ alias rm="rm -i"
 alias cp="cp -i"
 alias mv="mv -i"
 
+# cmux workspaces
+alias mux="~/dev/if/ghostty/cmux-workspaces.sh"
+
 # Misc aliases
 alias path='echo $PATH | tr ":" "\n"'
 alias reload="source ~/.zshrc"
