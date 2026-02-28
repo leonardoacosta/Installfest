@@ -50,6 +50,18 @@ declare -A CATEGORIES=(
   [cl]="Personal"  [cc]="Personal"  [co]="Personal"  [cw]="Personal"  [hl]="Personal"  [if]="Personal"
 )
 
+declare -A FULL_NAMES=(
+  # B&B
+  [fb]="Fireball"  [ws]="Wholesale"  [sc]="Sales CRM"  [ew]="Enterprise Wiki"
+  [ic]="Infrastructure as Code"  [se]="Submission Engine"  [dc]="DOC"
+  # Clients
+  [oo]="Otaku Odyssey"  [mv]="Modern Visa"  [ct]="Civalent"
+  [tl]="Tavern Ledger"  [tc]="Tribal Cities"  [ss]="Styles by Silas"
+  # Personal
+  [cw]="Central Wholesale"  [co]="Central Orchestrator"  [cl]="Central Leo"
+  [hl]="Home Lab"  [if]="Installfest"  [cc]="Central Claude"
+)
+
 get_color() {
   case "${CATEGORIES[$1]:-Personal}" in
     "B&B")      echo "$COLOR_BB" ;;
@@ -96,12 +108,17 @@ find_workspace_uuid() {
     }'
 }
 
-build_cmd() {
-  local cmd="$1"
+# Connect pane to remote/local and run command
+# SSH mode: opens interactive login shell (loads .zshrc naturally), then cd + run
+# Local mode: cd directly, then run
+pane_exec() {
+  local ws="$1" surface="$2" full_path="$3" cmd="$4"
   if [[ "$MODE" == "ssh" ]]; then
-    echo "ssh -t $SSH_HOST '$cmd'"
+    send_to "$ws" "$surface" "ssh $SSH_HOST"
+    sleep 0.8
+    send_to "$ws" "$surface" "cd $full_path && $cmd"
   else
-    echo "$cmd"
+    send_to "$ws" "$surface" "cd $full_path && $cmd"
   fi
 }
 
@@ -159,10 +176,28 @@ create_workspace() {
   sleep 0.2
 
   $CMUX rename-workspace --workspace "$ws_uuid" "$code" >/dev/null 2>&1
-  $CMUX set-status --workspace "$ws_uuid" category "$category" --color "$color" >/dev/null 2>&1
+  local full_name="${FULL_NAMES[$code]:-$code}"
+  $CMUX set-status --workspace "$ws_uuid" category "$full_name" --color "$color" >/dev/null 2>&1
 
   echo "  ▸ $code created"
   WS_UUIDS[$code]="$ws_uuid"
+}
+
+# Wait for a surface to become available (retries)
+wait_for_surface() {
+  local ws_uuid="$1" retries=5
+  local surface=""
+  while [[ $retries -gt 0 ]]; do
+    surface=$($CMUX list-pane-surfaces --workspace "$ws_uuid" 2>&1 \
+      | awk '{for(i=1;i<=NF;i++) if($i ~ /^surface:/) {print $i; exit}}')
+    if [[ -n "$surface" ]]; then
+      echo "$surface"
+      return 0
+    fi
+    retries=$((retries - 1))
+    sleep 0.5
+  done
+  return 1
 }
 
 # Phase 2: Populate panes (parallel — the slow part)
@@ -174,12 +209,14 @@ populate_workspace() {
   full_path=$(resolve_path "$project")
 
   local editor_surface
-  editor_surface=$($CMUX list-pane-surfaces --workspace "$ws_uuid" 2>&1 \
-    | awk '{for(i=1;i<=NF;i++) if($i ~ /^surface:/) {print $i; exit}}')
+  editor_surface=$(wait_for_surface "$ws_uuid") || {
+    echo "  ✗ $code — no surface found, skipping populate" >&2
+    return 1
+  }
   sleep 0.2
 
   # Left pane: nvim
-  send_to "$ws_uuid" "$editor_surface" "$(build_cmd "cd $full_path && nvim .")"
+  pane_exec "$ws_uuid" "$editor_surface" "$full_path" "nvim ."
   sleep 0.3
 
   # Split right: Claude Code
@@ -189,7 +226,7 @@ populate_workspace() {
   claude_surface=$(parse_surface "$split_out")
   sleep 0.3
 
-  send_to "$ws_uuid" "$claude_surface" "$(build_cmd "cd $full_path && claude")"
+  pane_exec "$ws_uuid" "$claude_surface" "$full_path" "claude"
   sleep 0.3
 
   # Split down from Claude pane: lazygit
@@ -199,7 +236,7 @@ populate_workspace() {
   git_surface=$(parse_surface "$split_out2")
   sleep 0.3
 
-  send_to "$ws_uuid" "$git_surface" "$(build_cmd "cd $full_path && lazygit")"
+  pane_exec "$ws_uuid" "$git_surface" "$full_path" "lazygit"
 
   echo "  ✓ $code ready"
 }
@@ -312,24 +349,30 @@ done
 
 echo ""
 
-# --- Phase 2: Populate panes (parallel, slow part) ---
+# --- Phase 2: Populate panes (staggered parallel) ---
 if [[ ${#created[@]} -gt 0 ]]; then
   echo "Populating ${#created[@]} workspace(s)..."
   pids=()
   for code in "${created[@]}"; do
     populate_workspace "$code" "${WS_UUIDS[$code]}" &
     pids+=($!)
+    sleep 0.3  # stagger to avoid overwhelming cmux socket
   done
   wait "${pids[@]}"
 fi
 
-# --- Phase 3: Reorder ALL workspaces per canonical order ---
+# --- Phase 3: Reorder + refresh labels on ALL workspaces ---
 echo "Reordering workspaces..."
 ws_list=$($CMUX list-workspaces 2>&1)
 prev_uuid=""
 for code in "${CANONICAL_ORDER[@]}"; do
   local_uuid=$(find_workspace_uuid "$code" "$ws_list")
   if [[ -n "$local_uuid" ]]; then
+    # Refresh label and color on every run
+    local_name="${FULL_NAMES[$code]:-$code}"
+    local_color=$(get_color "$code")
+    $CMUX set-status --workspace "$local_uuid" category "$local_name" --color "$local_color" >/dev/null 2>&1
+    # Reorder
     if [[ -n "$prev_uuid" ]]; then
       $CMUX reorder-workspace --workspace "$local_uuid" --after "$prev_uuid" >/dev/null 2>&1
     fi
