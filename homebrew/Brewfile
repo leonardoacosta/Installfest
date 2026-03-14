@@ -34,6 +34,9 @@ brew "curl"
 # SwitchAudioSource - CLI for audio device switching
 brew "switchaudio-osx"
 
+# Ghostty - GPU-accelerated terminal emulator
+cask "ghostty"
+
 # Git Credential Manager - cross-platform Git credential storage
 cask "git-credential-manager"
 

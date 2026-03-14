@@ -19,16 +19,35 @@
   "tailwindCSS.experimental.configFile": "./tooling/tailwind/web.ts",
   "typescript.enablePromptUseWorkspaceTsdk": true,
   "typescript.preferences.autoImportFileExcludePatterns": [
-    "zod/dist/types/index.d.ts", // Force auto-imports to v4
+    "zod/dist/types/index.d.ts",
     "next/router.d.ts",
     "next/dist/client/router.d.ts"
   ],
   "typescript.tsdk": "node_modules/typescript/lib",
   "cSpell.words": [
-    "HMAC", 
-    "POSTHOG", 
-    "Vercel", 
-    "homelab", 
+    "HMAC",
+    "POSTHOG",
+    "Vercel",
+    "homelab",
     "Installfest"
-  ]
+  ],
+
+  // Performance: prevent CPU spike when opened as workspace
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/.git/**": true,
+    "**/dist/**": true,
+    "**/.next/**": true,
+    "**/.turbo/**": true,
+    "**/.Trash/**": true,
+    "**/.npm/**": true,
+    "**/.pnpm-store/**": true
+  },
+  "search.exclude": {
+    "**/node_modules/**": true,
+    "**/.git/**": true
+  },
+  "typescript.disableAutomaticTypeAcquisition": true,
+  "git.enabled": false,
+  "git.autoRepositoryDetection": false
 }

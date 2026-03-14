@@ -31,7 +31,7 @@ window-save-state = always
 
 # === Shell Integration ===
 shell-integration = zsh
-shell-integration-features = cursor,sudo,title,ssh-env,no-ssh-terminfo
+shell-integration-features = cursor,sudo,title,ssh-env,ssh-terminfo
 
 # === Text Editing: macOS standard keybindings ===
 

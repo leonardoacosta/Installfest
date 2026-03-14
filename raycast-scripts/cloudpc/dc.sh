@@ -2,17 +2,15 @@
 
 # Required parameters:
 # @raycast.schemaVersion 1
-# @raycast.title fp
+# @raycast.title dcc
 # @raycast.mode silent
 
 # Optional parameters:
-# @raycast.icon 🔥
-# @raycast.packageName FP
+# @raycast.icon 🏥
 
 # Documentation:
-# @raycast.description FP
+# @raycast.description Dental CRM (CloudPC)
 # @raycast.author leonardoacosta
 # @raycast.authorURL https://raycast.com/leonardoacosta
 
-
-cursor --folder-uri "vscode-remote://ssh-remote+homelab/home/nyaptor/dev/fp/"
+cursor --folder-uri "vscode-remote://ssh-remote+cloudpc/C:/Users/LeonardoAcosta/source/repos/dc/"

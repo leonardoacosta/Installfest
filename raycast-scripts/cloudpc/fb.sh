@@ -2,17 +2,15 @@
 
 # Required parameters:
 # @raycast.schemaVersion 1
-# @raycast.title fpl
+# @raycast.title fbc
 # @raycast.mode silent
 
 # Optional parameters:
 # @raycast.icon 🔥
-# @raycast.packageName FP
 
 # Documentation:
-# @raycast.description FP
+# @raycast.description Fireball (CloudPC)
 # @raycast.author leonardoacosta
 # @raycast.authorURL https://raycast.com/leonardoacosta
 
-
-cursor --folder-uri "~/dev/fp/"
+cursor --folder-uri "vscode-remote://ssh-remote+cloudpc/C:/Users/LeonardoAcosta/source/repos/fb/"

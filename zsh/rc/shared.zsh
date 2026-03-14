@@ -8,6 +8,11 @@
 # Shell Options
 # ============================================================
 
+# History configuration
+HISTFILE="${HOME}/.zsh_history"
+HISTSIZE=50000
+SAVEHIST=50000
+
 # History options
 setopt HIST_IGNORE_ALL_DUPS    # Remove older duplicate entries
 setopt SHARE_HISTORY           # Share history between sessions

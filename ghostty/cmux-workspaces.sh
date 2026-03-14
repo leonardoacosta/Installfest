@@ -17,6 +17,8 @@ SSH_HOST="homelab"
 REMOTE_DEV="~/dev"
 LOCAL_DEV="$HOME/dev"
 MODE="ssh"
+# Mac's Tailscale IP — injected into remote sessions for cmux-bridge callback
+MAC_TAILSCALE_IP="${CMUX_BRIDGE_HOST:-$(tailscale ip -4 2>/dev/null || echo "")}"
 
 # Project registry
 declare -A PROJECTS=(
@@ -109,14 +111,20 @@ find_workspace_uuid() {
 }
 
 # Connect pane to remote/local and run command
-# SSH mode: opens interactive login shell (loads .zshrc naturally), then cd + run
-# Local mode: cd directly, then run
+# SSH mode: atomic ssh + command (no sleep race condition)
+#   -t  = force TTY for interactive programs (nvim, claude, lazygit)
+#   zsh -lc = login shell so PATH/.zshenv is loaded
+#   Injects CMUX_WORKSPACE_ID, CMUX_SURFACE_ID, CMUX_BRIDGE_HOST so remote
+#   CC hooks can call back to cmux-bridge on the Mac over Tailscale.
+# Local mode: cd directly, then run (Ghostty auto-sets CMUX_* env vars)
 pane_exec() {
   local ws="$1" surface="$2" full_path="$3" cmd="$4"
   if [[ "$MODE" == "ssh" ]]; then
-    send_to "$ws" "$surface" "ssh $SSH_HOST"
-    sleep 0.8
-    send_to "$ws" "$surface" "cd $full_path && $cmd"
+    local env_exports="export CMUX_WORKSPACE_ID=$ws CMUX_SURFACE_ID=$surface"
+    if [[ -n "$MAC_TAILSCALE_IP" ]]; then
+      env_exports+=" CMUX_BRIDGE_HOST=$MAC_TAILSCALE_IP"
+    fi
+    send_to "$ws" "$surface" "ssh -t $SSH_HOST -- zsh -lc '$env_exports && cd $full_path && $cmd'"
   else
     send_to "$ws" "$surface" "cd $full_path && $cmd"
   fi
