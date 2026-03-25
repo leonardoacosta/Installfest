@@ -32,10 +32,7 @@ install_arch_packages() {
         # Git tools
         github-cli
         lazygit
-        # Languages & runtimes
-        nodejs
-        npm
-        pnpm
+        # Languages & runtimes (node/pnpm managed by mise)
         go
         rust
         # Build tools (for compiling C tools like youtube_transcript)

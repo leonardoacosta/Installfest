@@ -5,8 +5,10 @@
 # Ensure DOTFILES is set (should be set by .zshenv)
 export DOTFILES="${DOTFILES:-$HOME/dev/if}"
 
-# Load environment variables from ~/.env (export bare KEY=value lines)
-if [[ -f "$HOME/.env" ]]; then
+# Load secrets via Doppler (falls back to ~/.env if Doppler unavailable)
+if command -v doppler &>/dev/null; then
+  eval "$(doppler secrets download --no-file --format env 2>/dev/null)"
+elif [[ -f "$HOME/.env" ]]; then
   set -a
   source "$HOME/.env"
   set +a

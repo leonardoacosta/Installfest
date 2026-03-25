@@ -26,14 +26,6 @@ export PNPM_HOME="$HOME/Library/pnpm"
 [[ -d "$HOME/.maestro/bin" ]] && export PATH="$PATH:$HOME/.maestro/bin"
 
 # ============================================================
-# NVM (Node Version Manager)
-# ============================================================
-
-export NVM_DIR="$HOME/.nvm"
-[[ -s "$HOMEBREW_PREFIX/opt/nvm/nvm.sh" ]] && source "$HOMEBREW_PREFIX/opt/nvm/nvm.sh"
-[[ -s "$HOMEBREW_PREFIX/opt/nvm/etc/bash_completion.d/nvm" ]] && source "$HOMEBREW_PREFIX/opt/nvm/etc/bash_completion.d/nvm"
-
-# ============================================================
 # macOS Aliases
 # ============================================================
 

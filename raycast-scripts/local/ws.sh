@@ -7,11 +7,10 @@
 
 # Optional parameters:
 # @raycast.icon 🏗️
-# @raycast.packageName Wholesale Architecture
 
 # Documentation:
 # @raycast.description Wholesale Architecture
 # @raycast.author leonardoacosta
 # @raycast.authorURL https://raycast.com/leonardoacosta
 
-cursor --folder-uri "~/dev/ws/"
+cursor ~/dev/ws/

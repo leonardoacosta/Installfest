@@ -7,12 +7,10 @@
 
 # Optional parameters:
 # @raycast.icon 🏢
-# @raycast.packageName B3 OWA
 
 # Documentation:
 # @raycast.description B3 OWA
 # @raycast.author leonardoacosta
 # @raycast.authorURL https://raycast.com/leonardoacosta
-
 
 cursor --folder-uri "vscode-remote://ssh-remote+homelab/home/nyaptor/dev/bo/"

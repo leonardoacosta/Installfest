@@ -250,6 +250,95 @@ Subsystem sftp sftp-server.exe
     Start-Service sshd
     Write-Ok "sshd service started and enabled"
 
+    # ── SSH Mesh: Deploy keys and configs for all users ──
+
+    # SSH key must be transferred securely - do not embed in scripts
+    # The public key can be deployed here (it's public)
+    $publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFqT0bMXcrQGgWvYoLg66dCCvhgAPx1rmrJmzGpMeFVR"
+
+    # SSH Config for outbound connections to other machines
+    $sshMeshConfig = @"
+# SSH Mesh Config (managed by setup.ps1)
+Host homelab
+    HostName 100.94.11.104
+    User nyaptor
+    IdentityFile ~/.ssh/id_ed25519
+    ServerAliveInterval 60
+    ServerAliveCountMax 3
+    ConnectTimeout 10
+
+Host mac
+    HostName 100.91.88.16
+    User leonardoacosta
+    IdentityFile ~/.ssh/id_ed25519
+    ServerAliveInterval 60
+    ServerAliveCountMax 3
+    ConnectTimeout 10
+"@
+
+    # Paths - Windows has two potential users
+    $sshUsers = @(
+        @{
+            Name      = "leo (SSH login user)"
+            SshDir    = "C:\Users\leo\.ssh"
+            AuthKeys  = "C:\Users\leo\.ssh\authorized_keys"
+        },
+        @{
+            Name       = "LeonardoAcosta (AzureAD user)"
+            SshDir     = "C:\Users\LeonardoAcosta\.ssh"
+            AuthKeys   = "C:\Users\LeonardoAcosta\.ssh\authorized_keys"
+            Config     = "C:\Users\LeonardoAcosta\.ssh\config"
+            PublicKey  = "C:\Users\LeonardoAcosta\.ssh\id_ed25519.pub"
+        }
+    )
+
+    foreach ($sshUser in $sshUsers) {
+        Write-Step "SSH Mesh: Processing $($sshUser.Name)..."
+
+        # Create .ssh directory
+        if (-not (Test-Path $sshUser.SshDir)) {
+            New-Item -ItemType Directory -Force -Path $sshUser.SshDir | Out-Null
+            Write-Ok "Created: $($sshUser.SshDir)"
+        }
+
+        # Handle existing authorized_keys
+        if (Test-Path $sshUser.AuthKeys) {
+            takeown /f $sshUser.AuthKeys 2>$null | Out-Null
+            Remove-Item $sshUser.AuthKeys -Force -ErrorAction SilentlyContinue
+        }
+
+        # Write authorized_keys with the mesh public key
+        Set-Content -Path $sshUser.AuthKeys -Value $publicKey -Force
+        Write-Ok "authorized_keys deployed: $($sshUser.AuthKeys)"
+
+        # For AzureAD user, also set up outbound SSH config and public key
+        if ($sshUser.Config) {
+            Set-Content -Path $sshUser.Config -Value $sshMeshConfig -Force
+            Write-Ok "SSH config deployed: $($sshUser.Config)"
+        }
+        if ($sshUser.PublicKey) {
+            Set-Content -Path $sshUser.PublicKey -Value $publicKey -Force
+            Write-Ok "Public key deployed: $($sshUser.PublicKey)"
+        }
+    }
+
+    # Admin authorized_keys (required for admin users on Windows OpenSSH)
+    Write-Step "Setting up administrator authorized_keys..."
+    $sshProgramData = "C:\ProgramData\ssh"
+    if (-not (Test-Path $sshProgramData)) {
+        New-Item -ItemType Directory -Force -Path $sshProgramData | Out-Null
+    }
+    $adminAuthKeys = "$sshProgramData\administrators_authorized_keys"
+    if (Test-Path $adminAuthKeys) {
+        takeown /f $adminAuthKeys 2>$null | Out-Null
+        Remove-Item $adminAuthKeys -Force -ErrorAction SilentlyContinue
+    }
+    Set-Content -Path $adminAuthKeys -Value $publicKey -Force
+    icacls $adminAuthKeys /inheritance:r /grant "SYSTEM:F" /grant "Administrators:F" | Out-Null
+    Write-Ok "Admin authorized_keys deployed with correct permissions"
+
+    # ── End SSH Mesh ──
+
     # Firewall rule for Tailscale
     $ruleName = "OpenSSH-Server-Tailscale"
     $existingRule = Get-NetFirewallRule -Name $ruleName -ErrorAction SilentlyContinue

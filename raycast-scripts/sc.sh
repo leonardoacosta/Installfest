@@ -7,12 +7,10 @@
 
 # Optional parameters:
 # @raycast.icon 💰
-# @raycast.packageName Sales CRM
 
 # Documentation:
 # @raycast.description Sales CRM
 # @raycast.author leonardoacosta
 # @raycast.authorURL https://raycast.com/leonardoacosta
 
-
-cursor --folder-uri "vscode-remote://ssh-remote+homelab/home/nyaptor/dev/se/"
+cursor --folder-uri "vscode-remote://ssh-remote+homelab/home/nyaptor/dev/sc/"

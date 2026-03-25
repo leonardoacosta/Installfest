@@ -7,7 +7,6 @@
 
 # Optional parameters:
 # @raycast.icon 🏢
-# @raycast.packageName Central Wholesale
 
 # Documentation:
 # @raycast.description Central Wholesale

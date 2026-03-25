@@ -7,7 +7,6 @@
 
 # Optional parameters:
 # @raycast.icon 🏗️
-# @raycast.packageName Wholesale Architecture
 
 # Documentation:
 # @raycast.description Wholesale Architecture

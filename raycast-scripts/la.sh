@@ -7,7 +7,6 @@
 
 # Optional parameters:
 # @raycast.icon 🏗️
-# @raycast.packageName Leonardo Acosta
 
 # Documentation:
 # @raycast.description Leonardo Acosta

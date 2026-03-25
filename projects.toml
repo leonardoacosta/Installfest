@@ -1,0 +1,248 @@
+# Projects Registry -- single source of truth
+# Consumed by: generate-raycast.sh, cmux-workspaces.sh (planned), mux-remote.sh (planned)
+#
+# Fields:
+#   code      Short code used for script names and cmux workspaces
+#   name      Human-readable project name
+#   category  One of: "b-and-b", "client", "personal"
+#   icon      Emoji icon for Raycast metadata
+#   path      Relative path from home dir (e.g. "dev/oo" or ".claude")
+#   tiers     Deployment tiers: "remote" (SSH homelab), "local" (Mac), "cloudpc" (SSH cloudpc)
+
+[defaults]
+ssh_host = "homelab"
+ssh_user = "nyaptor"
+ssh_base = "/home/nyaptor"
+local_base_mac = "$HOME"
+local_base_linux = "$HOME"
+cloudpc_host = "cloudpc"
+cloudpc_base = "C:/Users/LeonardoAcosta"
+cloudpc_dev = "C:/Users/LeonardoAcosta/source/repos"
+
+# =============================================================================
+# B&B Projects
+# =============================================================================
+
+[[projects]]
+code = "fb"
+name = "Fireball"
+category = "b-and-b"
+icon = "🔥"
+path = "dev/fb"
+tiers = ["remote", "local", "cloudpc"]
+
+[[projects]]
+code = "ws"
+name = "Wholesale Architecture"
+category = "b-and-b"
+icon = "🏗️"
+path = "dev/ws"
+tiers = ["remote", "local", "cloudpc"]
+
+[[projects]]
+code = "sc"
+name = "Sales CRM"
+category = "b-and-b"
+icon = "💰"
+path = "dev/sc"
+tiers = ["remote", "local", "cloudpc"]
+
+[[projects]]
+code = "se"
+name = "Submission Engine"
+category = "b-and-b"
+icon = "📥"
+path = "dev/se"
+tiers = ["remote", "local", "cloudpc"]
+
+[[projects]]
+code = "ba"
+name = "B3 Admin"
+category = "b-and-b"
+icon = "💻"
+path = "dev/ba"
+tiers = ["remote", "local", "cloudpc"]
+
+[[projects]]
+code = "bo"
+name = "B3 OWA"
+category = "b-and-b"
+icon = "🏢"
+path = "dev/bo"
+tiers = ["remote", "local", "cloudpc"]
+
+[[projects]]
+code = "dc"
+name = "DOC"
+category = "b-and-b"
+icon = "📂"
+path = "dev/dc"
+tiers = ["remote", "cloudpc"]
+
+[[projects]]
+code = "ew"
+name = "Enterprise Wiki"
+category = "b-and-b"
+icon = "📚"
+path = "dev/ew"
+tiers = ["remote"]
+
+[[projects]]
+code = "ic"
+name = "Infrastructure as Code"
+category = "b-and-b"
+icon = "⚙️"
+path = "dev/ic"
+tiers = ["remote"]
+
+# =============================================================================
+# Client Projects
+# =============================================================================
+
+[[projects]]
+code = "oo"
+name = "Otaku Odyssey"
+category = "client"
+icon = "👘"
+path = "dev/oo"
+tiers = ["remote", "local"]
+
+[[projects]]
+code = "mv"
+name = "Modern Visa"
+category = "client"
+icon = "🌐"
+path = "dev/mv"
+tiers = ["remote", "local"]
+
+[[projects]]
+code = "ct"
+name = "Civalent"
+category = "client"
+icon = "🔥"
+path = "dev/ct"
+tiers = ["remote", "local"]
+
+[[projects]]
+code = "tl"
+name = "Tavern Ledger"
+category = "client"
+icon = "🍺"
+path = "dev/tl"
+tiers = ["remote", "local"]
+
+[[projects]]
+code = "tc"
+name = "Tribal Cities"
+category = "client"
+icon = "⛺"
+path = "dev/tc"
+tiers = ["remote", "local"]
+
+[[projects]]
+code = "ss"
+name = "Styles by Silas"
+category = "client"
+icon = "💇🏼"
+path = "dev/ss"
+tiers = ["remote", "local"]
+
+# =============================================================================
+# Personal Projects
+# =============================================================================
+
+[[projects]]
+code = "cl"
+name = "Central Leo"
+category = "personal"
+icon = "💻"
+path = "dev/cl"
+tiers = ["remote", "local"]
+
+[[projects]]
+code = "co"
+name = "Central Orchestrator"
+category = "personal"
+icon = "🌍"
+path = "dev/co"
+tiers = ["remote", "local"]
+
+[[projects]]
+code = "cw"
+name = "Central Wholesale"
+category = "personal"
+icon = "🏢"
+path = "dev/cw"
+tiers = ["remote", "local", "cloudpc"]
+
+[[projects]]
+code = "cx"
+name = "Cortex"
+category = "personal"
+icon = "◎"
+path = "dev/cx"
+tiers = ["remote", "local"]
+
+[[projects]]
+code = "hl"
+name = "Home Lab"
+category = "personal"
+icon = "💻"
+path = "dev/hl"
+tiers = ["remote", "local"]
+
+[[projects]]
+code = "if"
+name = "Installfest"
+category = "personal"
+icon = "📦"
+path = "dev/if"
+tiers = ["remote", "local"]
+
+[[projects]]
+code = "cc"
+name = "Central Claude"
+category = "personal"
+icon = "💻"
+path = ".claude"
+tiers = ["remote", "local", "cloudpc"]
+
+[[projects]]
+code = "la"
+name = "Leonardo Acosta"
+category = "personal"
+icon = "🏗️"
+path = "dev/la"
+tiers = ["remote", "local"]
+
+[[projects]]
+code = "lu"
+name = "Look Up"
+category = "personal"
+icon = "🏗️"
+path = "dev/lu"
+tiers = ["remote"]
+
+[[projects]]
+code = "lv"
+name = "Las Vegas"
+category = "personal"
+icon = "♣️"
+path = "dev/lv"
+tiers = ["remote", "local"]
+
+[[projects]]
+code = "nv"
+name = "Nova"
+category = "personal"
+icon = "✨"
+path = "dev/nv"
+tiers = ["remote", "local"]
+
+[[projects]]
+code = "nx"
+name = "Nexus"
+category = "personal"
+icon = "🌐"
+path = "dev/nx"
+tiers = ["remote", "local"]

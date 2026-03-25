@@ -7,7 +7,6 @@
 
 # Optional parameters:
 # @raycast.icon 🏗️
-# @raycast.packageName Look Up
 
 # Documentation:
 # @raycast.description Look Up

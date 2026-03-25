@@ -7,11 +7,10 @@
 
 # Optional parameters:
 # @raycast.icon 🌍
-# @raycast.packageName Central Orchestration
 
 # Documentation:
-# @raycast.description Central Orchestration
+# @raycast.description Central Orchestrator
 # @raycast.author leonardoacosta
 # @raycast.authorURL https://raycast.com/leonardoacosta
 
-cursor --folder-uri "~/dev/co/"
+cursor ~/dev/co/

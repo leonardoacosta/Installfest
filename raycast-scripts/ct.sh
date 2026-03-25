@@ -7,12 +7,10 @@
 
 # Optional parameters:
 # @raycast.icon 🔥
-# @raycast.packageName CT
 
 # Documentation:
-# @raycast.description CT
+# @raycast.description Civalent
 # @raycast.author leonardoacosta
 # @raycast.authorURL https://raycast.com/leonardoacosta
-
 
 cursor --folder-uri "vscode-remote://ssh-remote+homelab/home/nyaptor/dev/ct/"

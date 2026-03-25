@@ -32,26 +32,26 @@
 
 ## Phase 2: Security + SSH
 
-- [ ] [2.1] [P-1] Run ssh-mesh/scripts/rotate-keys.sh (generates new keys, deploys, scrubs history)
-- [ ] [2.2] [P-1] Merge ssh-mesh/scripts/setup-cloudpc.ps1 into windows/setup.ps1
-- [ ] [2.3] [P-1] Delete ssh-mesh/scripts/setup-cloudpc.ps1 after merge
-- [ ] [2.4] [P-1] chmod 600 ~/.env (interim until Doppler migration)
-- [ ] [2.5] [P-2] Add pre-commit hook for secret scanning (gitleaks or similar)
-- [ ] [2.6] [P-2] Add keepalive/timeout settings to homelab and cloudpc SSH configs
+- [ ] [2.1] [P-1] [user] Run ssh-mesh/scripts/rotate-keys.sh (generates new keys, deploys, scrubs history)
+- [x] [2.2] [P-1] Merge ssh-mesh/scripts/setup-cloudpc.ps1 into windows/setup.ps1
+- [x] [2.3] [P-1] Delete ssh-mesh/scripts/setup-cloudpc.ps1 after merge
+- [x] [2.4] [P-1] chmod 600 ~/.env (interim until Doppler migration)
+- [x] [2.5] [P-2] Add pre-commit hook for secret scanning (gitleaks or similar)
+- [x] [2.6] [P-2] Add keepalive/timeout settings to homelab and cloudpc SSH configs
 
 ## Phase 3: Doppler + mise Adoption
 
-- [ ] [3.1] [P-1] brew install dopplerhq/cli/doppler && add to Brewfile
-- [ ] [3.2] [P-1] Migrate ~/.env secrets into Doppler homelab/prd config
-- [ ] [3.3] [P-1] Replace `source ~/.env` block in .zshrc with doppler-based loading
-- [ ] [3.4] [P-1] Delete USE_DOPPLER, DOPPLER_PROJECT, DOPPLER_CONFIG from .zshenv (Doppler CLI handles this)
-- [ ] [3.5] [P-1] brew install mise && add to Brewfile
-- [ ] [3.6] [P-1] Create .mise.toml with node, pnpm versions
-- [ ] [3.7] [P-1] Remove NVM sourcing from zsh/rc/darwin.zsh
-- [ ] [3.8] [P-1] Remove brew "node" and brew "nvm" from Brewfile
-- [ ] [3.9] [P-1] Update zsh/functions/load-tools.zsh: replace NVM init with mise activate
-- [ ] [3.10] [P-2] Regenerate Brewfile: brew bundle dump --describe, curate, add missing CLI tools
-- [ ] [3.11] [P-2] Add mise to scripts/install-arch.sh for Arch parity
+- [x] [3.1] [P-1] brew install dopplerhq/cli/doppler && add to Brewfile
+- [ ] [3.2] [P-1] [user] Migrate ~/.env secrets into Doppler homelab/prd config
+- [x] [3.3] [P-1] Replace `source ~/.env` block in .zshrc with doppler-based loading
+- [x] [3.4] [P-1] Delete USE_DOPPLER, DOPPLER_PROJECT, DOPPLER_CONFIG from .zshenv (Doppler CLI handles this)
+- [x] [3.5] [P-1] brew install mise && add to Brewfile
+- [x] [3.6] [P-1] Create .mise.toml with node, pnpm versions
+- [x] [3.7] [P-1] Remove NVM sourcing from zsh/rc/darwin.zsh
+- [x] [3.8] [P-1] Remove brew "node" and brew "nvm" from Brewfile
+- [x] [3.9] [P-1] Update zsh/functions/load-tools.zsh: replace NVM init with mise activate
+- [x] [3.10] [P-2] Regenerate Brewfile: brew bundle dump --describe, curate, add missing CLI tools
+- [x] [3.11] [P-2] Add mise to scripts/install-arch.sh for Arch parity
 
 ## Phase 4: chezmoi Migration
 
@@ -88,13 +88,13 @@
 
 ## Phase 6: Project Registry Consolidation
 
-- [ ] [6.1] [P-1] Create projects.toml at repo root with all project codes, names, categories, icons, paths, tiers
-- [ ] [6.2] [P-1] Write scripts/generate-raycast.sh (~50 lines) that reads projects.toml and emits per-project scripts
-- [ ] [6.3] [P-1] Generate Raycast scripts from projects.toml
-- [ ] [6.4] [P-1] Delete 60 hand-written Raycast scripts
-- [ ] [6.5] [P-2] Update ghostty/cmux-workspaces.sh (now scripts/cmux-workspaces.sh) to read project registry from projects.toml
-- [ ] [6.6] [P-2] Update scripts/mux-remote.sh to read from projects.toml
-- [ ] [6.7] [P-2] Create chezmoi run_onchange for Raycast regeneration when projects.toml changes
+- [x] [6.1] [P-1] Create projects.toml at repo root with all project codes, names, categories, icons, paths, tiers
+- [x] [6.2] [P-1] Write scripts/generate-raycast.sh (~50 lines) that reads projects.toml and emits per-project scripts
+- [x] [6.3] [P-1] Generate Raycast scripts from projects.toml
+- [x] [6.4] [P-1] Delete 60 hand-written Raycast scripts
+- [ ] [6.5] [P-2] [deferred] Update scripts/cmux-workspaces.sh to read project registry from projects.toml
+- [ ] [6.6] [P-2] [deferred] Update scripts/mux-remote.sh to read from projects.toml
+- [ ] [6.7] [P-2] [deferred] Create chezmoi run_onchange for Raycast regeneration when projects.toml changes
 
 ## Phase 7: Documentation
 

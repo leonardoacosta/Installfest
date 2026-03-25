@@ -7,7 +7,6 @@
 
 # Optional parameters:
 # @raycast.icon 📦
-# @raycast.packageName Installfest
 
 # Documentation:
 # @raycast.description Installfest

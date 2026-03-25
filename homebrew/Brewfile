@@ -1,88 +1,273 @@
-# tap "homebrew/bundle"
-# tap "homebrew/cask"
-# tap "homebrew/core"
-# Microsoft Azure CLI
-brew "azure-cli"
-# .NET runtime
-brew "dotnet"
-# Fast, highly customizable system info script, replaces neofetch
-brew "hyfetch"
-# Node.js
-brew "node"
-# nvm
-brew "nvm"
-# pnpm
-brew "pnpm"
-# starship
+# ============================================================
+# Taps
+# ============================================================
+tap "azure/functions"
+tap "dopplerhq/cli"
+tap "dotenvx/brew"
+tap "manaflow-ai/cmux"
+tap "oven-sh/bun"
+tap "productdevbook/tap"
+tap "steipete/tap"
+tap "stripe/stripe-cli"
+tap "ungive/media-control"
+tap "yakitrak/yakitrak"
+
+# ============================================================
+# CLI Tools
+# ============================================================
+# Download with resuming and segmented downloading
+brew "aria2"
+# Improved shell history for zsh, bash, fish and nushell
+brew "atuin"
+# Bourne-Again SHell, a UNIX command interpreter
+brew "bash"
+# Remove large files or passwords from Git history like git-filter-branch
+brew "bfg"
+# Resource monitor. C++ version and continuation of bashtop and bpytop
+brew "btop"
+# Get a file from an HTTP, HTTPS or FTP server
+brew "curl"
+# Command-line fuzzy finder written in Go
+brew "fzf"
+# GitHub command-line tool
+brew "gh"
+# Distributed revision control system
+brew "git"
+# GNU grep, egrep and fgrep
+brew "grep"
+# Lightweight and flexible command-line JSON processor
+brew "jq"
+# Apple Silicon Monitor Top written in Go Lang
+brew "mactop"
+# Control and observe media playback from the command-line
+brew "media-control"
+# Fast, highly customisable system info script
+brew "neofetch"
+# Port scanning utility for large networks
+brew "nmap"
+# Retrieves currently playing media, and simulates media actions
+brew "nowplaying-cli"
+# Paste PNG into files
+brew "pngpaste"
+# Search tool like grep and The Silver Searcher
+brew "ripgrep"
+# CLI proxy to minimize LLM token consumption
+brew "rtk"
+# Command-line utility to interact with Sentry
+brew "sentry-cli"
+# Cross-shell prompt for astronauts
 brew "starship"
-# tmux - terminal multiplexer
+# Change macOS audio source from the command-line
+brew "switchaudio-osx"
+# Send macOS User Notifications from the command-line
+brew "terminal-notifier"
+# High-performance, platform-neutral implementation of VNC
+brew "tiger-vnc"
+# Terminal multiplexer
 brew "tmux"
-# zsh-autosuggestions
+# Watch files and take action when they change
+brew "watchman"
+# Shell extension to navigate your filesystem faster
+brew "zoxide"
+# Fish-like fast/unobtrusive autosuggestions for zsh
 brew "zsh-autosuggestions"
-# zsh-syntax-highlighting
+# Fish shell like syntax highlighting for zsh
 brew "zsh-syntax-highlighting"
 
-# stripe
+# ============================================================
+# Secrets & Environment
+# ============================================================
+# The official Doppler CLI for managing your secrets
+brew "dopplerhq/cli/doppler"
+# Secure dotenv - from the creator of `dotenv`
+brew "dotenvx/brew/dotenvx"
+
+# ============================================================
+# Runtime Managers & Languages
+# ============================================================
+# Polyglot runtime manager (asdf rust clone) - replaces nvm, manages node/pnpm
+brew "mise"
+# Fast, disk space efficient package manager
+brew "pnpm"
+# .NET Core
+brew "dotnet"
+# Interpreted, interactive, object-oriented programming language
+brew "python@3.13"
+# Extremely fast Python package installer and resolver, written in Rust
+brew "uv"
+# Safe, concurrent, practical language
+brew "rust"
+# Incredibly fast JavaScript runtime, bundler, transpiler and package manager - all in one
+brew "oven-sh/bun/bun"
+
+# ============================================================
+# Cloud & DevOps
+# ============================================================
+# Microsoft Azure CLI 2.0
+brew "azure-cli"
+# Azure Functions Core Tools 4.0
+brew "azure/functions/azure-functions-core-tools@4"
+# Pack, ship and run any application as a lightweight container
+brew "docker"
+# Command-line tools for fly.io services
+brew "flyctl"
+# Stripe CLI
 brew "stripe/stripe-cli/stripe"
+# Object-relational database system
+brew "postgresql@17"
+# Protocol buffers (Google's data interchange format)
+brew "protobuf"
 
-# postgresql
-brew "postgresql"
+# ============================================================
+# AI & Media
+# ============================================================
+# Interact with Google Gemini AI models from the command-line
+brew "gemini-cli"
+# General-purpose speech recognition model
+brew "openai-whisper"
+# Play, record, convert, and stream select audio and video codecs
+brew "ffmpeg"
+# Feature-rich command-line audio/video downloader
+brew "yt-dlp"
+# Media player based on MPlayer and mplayer2
+brew "mpv"
+# Sound system for POSIX OSes
+brew "pulseaudio", restart_service: :changed
+# Dependency manager for Cocoa projects
+brew "cocoapods"
 
-# curl (provides libcurl for building C tools)
-brew "curl"
+# ============================================================
+# Third-Party Tap Tools
+# ============================================================
+# Send and read iMessage / SMS from the terminal
+brew "steipete/tap/imsg"
+# Fast CLI for Apple Reminders
+brew "steipete/tap/remindctl"
+brew "yakitrak/yakitrak/obsidian-cli"
 
-# SwitchAudioSource - CLI for audio device switching
-brew "switchaudio-osx"
-
+# ============================================================
+# Casks - Terminals & Dev Tools
+# ============================================================
 # Ghostty - GPU-accelerated terminal emulator
 cask "ghostty"
-
-# Git Credential Manager - cross-platform Git credential storage
-cask "git-credential-manager"
-
-# Adobe Creative Cloud
-# cask "adobe-creative-cloud"
-# DB Pro - installed via scripts/dbpro.sh (not in Homebrew)
-# https://www.dbpro.app/
-# Bruno
-cask "bruno"
-# Cursor
+# Ghostty-based terminal with vertical tabs and notifications for AI coding agents
+cask "cmux"
+# Terminal emulator as alternative to Apple's Terminal app
+cask "iterm2"
+# GPU-accelerated cross-platform terminal emulator and multiplexer
+cask "wezterm@nightly"
+# Terminal emulator, SSH and serial client
+cask "tabby"
+# Write, edit, and chat about your code with AI
 cask "cursor"
-# Discord
-cask "discord"
-# Fantastical
+# Open-source code editor
+cask "visual-studio-code"
+# Git client focusing on productivity
+cask "gitkraken"
+# CLI for GitKraken
+cask "gitkraken-cli"
+# Git Credential Manager - cross-platform Git credential storage
+# cask "git-credential-manager"
+# Open source IDE for exploring and testing APIs
+cask "bruno"
+# Cross platform SQL editor and database management app
+cask "beekeeper-studio"
+# Universal database tool and SQL client
+cask "dbeaver-community"
+# Server and cloud storage browser
+cask "cyberduck"
+# Desktop automation application
+cask "hammerspoon"
+# Keyboard customiser
+cask "karabiner-elements"
+# Menu bar usage monitor for Codex and Claude
+cask "steipete/tap/codexbar"
+# Menu bar dashboard for GitHub repository health
+cask "steipete/tap/repobar"
+
+# ============================================================
+# Casks - Browsers
+# ============================================================
+# Web browser
+cask "google-chrome"
+# WebKit based web browser
+cask "orion"
+
+# ============================================================
+# Casks - Productivity & Communication
+# ============================================================
+# Collection of apps and services for photography, design, video, web, and UX
+cask "adobe-creative-cloud"
+# Calendar software
 cask "fantastical"
-# Nerd Fonts (required for starship icons)
+# App to write, plan, collaborate, and get organised
+cask "notion"
+# Knowledge base that works on top of a local folder of plain text Markdown files
+cask "obsidian"
+# Control your tools with a few keystrokes
+cask "raycast"
+# Email client
+cask "superhuman"
+# Voice and text chat software
+cask "discord"
+# Messaging app with a focus on speed and security
+cask "telegram"
+# Connect to Windows
+cask "windows-app"
+
+# ============================================================
+# Casks - Media & Entertainment
+# ============================================================
+# Free and open-source media player
+cask "iina"
+# Music streaming service
+cask "spotify"
+# Video game digital distribution service
+cask "steam"
+
+# ============================================================
+# Fonts
+# ============================================================
 cask "font-geist-mono-nerd-font"
 cask "font-jetbrains-mono-nerd-font"
-cask "font-cascadia-mono-nerd-font"
-# Gitkraken
-cask "gitkraken"
-# IINA - modern macOS media player (used by ani-cli)
-cask "iina"
-# Karabiner-Elements - keyboard customization
-cask "karabiner-elements"
-# Google Chrome
-cask "google-chrome"
-# Notion
-cask "notion"
-# Obsidian
-cask "obsidian"
-# Raycast
-cask "raycast"
-# Spotify
-cask "spotify"
-# Steam
-cask "steam"
-# Superhuman
-cask "superhuman"
-# Wispr Flow - AI voice dictation
-cask "wispr-flow"
-# Telegram
-# cask "telegram"
-# Visual Studio Code
-# cask "visual-studio-code"
-# WezTerm
-# cask "wezterm"
-# Windows App
-# cask "windows-app"
+
+# ============================================================
+# VS Code Extensions
+# ============================================================
+vscode "aaron-bond.better-comments"
+vscode "anthropic.claude-code"
+vscode "azurite.azurite"
+vscode "bradlc.vscode-tailwindcss"
+vscode "catppuccin.catppuccin-vsc-icons"
+vscode "christian-kohler.npm-intellisense"
+vscode "cyberbiont.vscode-open-in-typora"
+vscode "dbaeumer.vscode-eslint"
+vscode "eamodio.gitlens"
+vscode "esbenp.prettier-vscode"
+vscode "expo.vscode-expo-tools"
+vscode "github.copilot-chat"
+vscode "mechatroner.rainbow-csv"
+vscode "ms-azuretools.vscode-azurefunctions"
+vscode "ms-azuretools.vscode-azureresourcegroups"
+vscode "ms-azuretools.vscode-bicep"
+vscode "ms-azuretools.vscode-containers"
+vscode "ms-dotnettools.csdevkit"
+vscode "ms-dotnettools.csharp"
+vscode "ms-dotnettools.vscode-dotnet-runtime"
+vscode "ms-vscode-remote.remote-containers"
+vscode "ms-vscode-remote.remote-ssh"
+vscode "ms-vscode-remote.remote-ssh-edit"
+vscode "ms-vscode.remote-explorer"
+vscode "raillyhugo.one-hunter"
+vscode "redhat.vscode-yaml"
+vscode "streetsidesoftware.code-spell-checker"
+vscode "tal7aouy.icons"
+vscode "vira.vsc-vira-theme"
+vscode "vscode-icons-team.vscode-icons"
+vscode "yandeu.five-server"
+vscode "yoavbls.pretty-ts-errors"
+
+# ============================================================
+# UV Packages
+# ============================================================
+uv "claude-monitor"

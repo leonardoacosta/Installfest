@@ -6,11 +6,6 @@
 # IMPORTANT: This file should ONLY set environment variables.
 # Tool inits (starship, zoxide, fzf) belong in .zshrc for interactive shells.
 
-# Doppler configuration
-export USE_DOPPLER=true
-export DOPPLER_PROJECT=homelab
-export DOPPLER_CONFIG=prd
-
 # Set DOTFILES path (used by all other scripts)
 export DOTFILES="${DOTFILES:-$HOME/dev/if}"
 

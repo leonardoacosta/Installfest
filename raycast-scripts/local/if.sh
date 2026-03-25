@@ -7,11 +7,10 @@
 
 # Optional parameters:
 # @raycast.icon 📦
-# @raycast.packageName Installfest
 
 # Documentation:
 # @raycast.description Installfest
 # @raycast.author leonardoacosta
 # @raycast.authorURL https://raycast.com/leonardoacosta
 
-cursor --folder-uri "~/dev/if/"
+cursor ~/dev/if/
