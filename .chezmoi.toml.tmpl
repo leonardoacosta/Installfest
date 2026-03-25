@@ -1,0 +1,19 @@
+{{- $hostname := .chezmoi.hostname -}}
+{{- $theme := "nord" -}}
+{{- $machine := "unknown" -}}
+{{- $sshUser := .chezmoi.username -}}
+
+{{- if eq $hostname "leonardoacostas-MacBook-Pro" -}}
+{{-   $machine = "mac" -}}
+{{-   $sshUser = "leonardoacosta" -}}
+{{- else if eq $hostname "omarchy" -}}
+{{-   $machine = "homelab" -}}
+{{-   $sshUser = "nyaptor" -}}
+{{- end -}}
+
+sourceDir = "{{ .chezmoi.homeDir }}/dev/if"
+
+[data]
+  theme = "{{ $theme }}"
+  machine = "{{ $machine }}"
+  ssh_user = "{{ $sshUser }}"

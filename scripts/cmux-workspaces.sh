@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # cmux-workspaces.sh — Launch dev workspaces in cmux over SSH
 # Source of truth: ~/dev/if/scripts/cmux-workspaces.sh
+# Project data: ~/dev/if/projects.toml
 #
 # Usage:
 #   mux oo tc           # Launch specific projects
@@ -20,49 +21,72 @@ MODE="ssh"
 # Mac's Tailscale IP — injected into remote sessions for cmux-bridge callback
 MAC_TAILSCALE_IP="${CMUX_BRIDGE_HOST:-$(tailscale ip -4 2>/dev/null || echo "")}"
 
-# Project registry
-declare -A PROJECTS=(
-  # B&B (C# projects)
-  [fb]="fb"  [sc]="sc"  [ew]="ew"  [ic]="ic"  [ws]="ws"  [se]="se"  [dc]="dc"
-  # Clients
-  [oo]="oo"  [mv]="mv"  [ct]="ct"  [tl]="tl"  [tc]="tc"  [ss]="ss"
-  # Personal
-  [cl]="cl"  [cc]=".claude"  [co]="co"  [cw]="cw"  [hl]="hl"  [if]="if"
-)
+# --- Load project registry from projects.toml ---
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TOML_FILE="$SCRIPT_DIR/../projects.toml"
 
-# Category groups (order defines workspace tab order)
-GROUP_BB=(fb ws sc ew ic se dc)
-GROUP_CLIENT=(oo mv ct tl tc ss)
-GROUP_PERSONAL=(cw co cl hl if cc)
-
-# Canonical order (B&B → Clients → Personal, cc always last)
-CANONICAL_ORDER=("${GROUP_BB[@]}" "${GROUP_CLIENT[@]}" "${GROUP_PERSONAL[@]}")
+if [[ ! -f "$TOML_FILE" ]]; then
+  echo "Error: $TOML_FILE not found" >&2
+  exit 1
+fi
 
 # Category colors
 COLOR_BB="#F59E0B"       # amber
 COLOR_CLIENT="#10B981"   # green
 COLOR_PERSONAL="#3B82F6" # blue
 
-declare -A CATEGORIES=(
-  # B&B
-  [fb]="B&B"  [sc]="B&B"  [ew]="B&B"  [ic]="B&B"  [ws]="B&B"  [se]="B&B"  [dc]="B&B"
-  # Clients
-  [oo]="Client"  [mv]="Client"  [ct]="Client"  [tl]="Client"  [tc]="Client"  [ss]="Client"
-  # Personal
-  [cl]="Personal"  [cc]="Personal"  [co]="Personal"  [cw]="Personal"  [hl]="Personal"  [if]="Personal"
-)
+# Parse projects.toml with Python and emit shell variable assignments
+load_projects() {
+  python3 << 'PYEOF'
+import tomllib, os
 
-declare -A FULL_NAMES=(
-  # B&B
-  [fb]="Fireball"  [ws]="Wholesale"  [sc]="Sales CRM"  [ew]="Enterprise Wiki"
-  [ic]="Infrastructure as Code"  [se]="Submission Engine"  [dc]="DOC"
-  # Clients
-  [oo]="Otaku Odyssey"  [mv]="Modern Visa"  [ct]="Civalent"
-  [tl]="Tavern Ledger"  [tc]="Tribal Cities"  [ss]="Styles by Silas"
-  # Personal
-  [cw]="Central Wholesale"  [co]="Central Orchestrator"  [cl]="Central Leo"
-  [hl]="Home Lab"  [if]="Installfest"  [cc]="Central Claude"
-)
+toml_file = os.environ["TOML_FILE"]
+with open(toml_file, "rb") as f:
+    data = tomllib.load(f)
+
+projects = data["projects"]
+
+# Category label mapping
+cat_labels = {"b-and-b": "B&B", "client": "Client", "personal": "Personal"}
+
+# Build parallel arrays by category
+groups = {"b-and-b": [], "client": [], "personal": []}
+for p in projects:
+    cat = p["category"]
+    if cat in groups:
+        groups[cat].append(p["code"])
+
+# Emit group arrays
+print("GROUP_BB=(" + " ".join(groups["b-and-b"]) + ")")
+print("GROUP_CLIENT=(" + " ".join(groups["client"]) + ")")
+print("GROUP_PERSONAL=(" + " ".join(groups["personal"]) + ")")
+
+# Emit associative arrays
+projects_entries = []
+categories_entries = []
+full_names_entries = []
+for p in projects:
+    code = p["code"]
+    path = p["path"]
+    # PROJECTS maps code -> path fragment (last component, or dotfile path)
+    if path.startswith("."):
+        projects_entries.append(f'[{code}]="{path}"')
+    else:
+        # path is like "dev/oo" — extract just the dir name
+        projects_entries.append(f'[{code}]="{path.split("/")[-1]}"')
+    categories_entries.append(f'[{code}]="{cat_labels.get(p["category"], "Personal")}"')
+    full_names_entries.append(f'[{code}]="{p["name"]}"')
+
+print("declare -A PROJECTS=(" + " ".join(projects_entries) + ")")
+print("declare -A CATEGORIES=(" + " ".join(categories_entries) + ")")
+print("declare -A FULL_NAMES=(" + " ".join(full_names_entries) + ")")
+PYEOF
+}
+
+eval "$(TOML_FILE="$TOML_FILE" load_projects)"
+
+# Canonical order (B&B → Clients → Personal)
+CANONICAL_ORDER=("${GROUP_BB[@]}" "${GROUP_CLIENT[@]}" "${GROUP_PERSONAL[@]}")
 
 get_color() {
   case "${CATEGORIES[$1]:-Personal}" in
@@ -266,30 +290,33 @@ while [[ $# -gt 0 ]]; do
       echo ""
       echo "  B&B [b] (amber):"
       for code in "${GROUP_BB[@]}"; do
-        echo "    $code  →  dev/$code"
+        printf "    %-4s %-25s %s\n" "$code" "${FULL_NAMES[$code]:-$code}" "${PROJECTS[$code]}"
       done
       echo ""
       echo "  Clients [c] (green):"
       for code in "${GROUP_CLIENT[@]}"; do
-        echo "    $code  →  dev/$code"
+        printf "    %-4s %-25s %s\n" "$code" "${FULL_NAMES[$code]:-$code}" "${PROJECTS[$code]}"
       done
       echo ""
       echo "  Personal [p] (blue):"
       for code in "${GROUP_PERSONAL[@]}"; do
-        echo "    $code  →  dev/$code"
+        printf "    %-4s %-25s %s\n" "$code" "${FULL_NAMES[$code]:-$code}" "${PROJECTS[$code]}"
       done
       echo ""
       echo "Modes: --ssh (default → $SSH_HOST) | --local"
       exit 0
       ;;
     --help|-h)
-      cat <<'HELP'
+      bb_list=$(IFS=", "; echo "${GROUP_BB[*]}")
+      client_list=$(IFS=", "; echo "${GROUP_CLIENT[*]}")
+      personal_list=$(IFS=", "; echo "${GROUP_PERSONAL[*]}")
+      cat <<HELP
 Usage: mux [OPTIONS] [b|c|p|PROJECT...]
 
 Groups:
-  b    B&B (amber)       — fb, sc, ew, ic, ws, se, dc
-  c    Clients (green)    — oo, mv, ct, tl, tc, ss
-  p    Personal (blue)    — cl, cc, co, cw, hl, if
+  b    B&B (amber)       — $bb_list
+  c    Clients (green)   — $client_list
+  p    Personal (blue)   — $personal_list
 
 Options:
   --local        Run locally instead of SSH

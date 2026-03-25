@@ -1,0 +1,29 @@
+# Files in repo root that should NOT be deployed to ~
+README.md
+CLAUDE.md
+LICENSE
+projects.toml
+.gitignore
+.githooks
+.mise.toml
+.cursorignore
+.DS_Store
+.claude
+.vscode
+
+# Directories that are repo-only (not deployed)
+docs
+scripts
+ssh-mesh
+windows
+homebrew
+openspec
+raycast-scripts
+
+# Platform-specific ignores
+{{ if ne .chezmoi.os "darwin" }}
+# Skip macOS-only files on Linux
+dot_config/ghostty
+dot_config/karabiner
+Library
+{{ end }}

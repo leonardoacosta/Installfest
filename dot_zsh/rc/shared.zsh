@@ -2,7 +2,7 @@
 # Sourced by .zshrc on all platforms
 #
 # NOTE: Tool inits (compinit, starship, zoxide, fzf, plugins) are handled
-# by dedicated files in zsh/functions/ - sourced from .zshrc ONLY.
+# by dedicated files in ~/.zsh/functions/ - sourced from .zshrc ONLY.
 
 # ============================================================
 # Shell Options
@@ -69,7 +69,7 @@ alias cp="cp -i"
 alias mv="mv -i"
 
 # cmux workspaces
-alias mux="~/dev/if/scripts/cmux-workspaces.sh"
+alias mux="$DOTFILES/scripts/cmux-workspaces.sh"
 
 # Misc aliases
 alias path='echo $PATH | tr ":" "\n"'

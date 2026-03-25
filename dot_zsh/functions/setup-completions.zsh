@@ -2,7 +2,7 @@
 # Should be sourced early in .zshrc
 
 # Add custom completions directory to fpath
-fpath=("$DOTFILES/zsh/completions" $fpath)
+fpath=("$HOME/.zsh/completions" $fpath)
 
 # Initialize completion system
 autoload -Uz compinit
@@ -31,4 +31,4 @@ zstyle ':completion:*' cache-path "$cache_dir/zcompcache"
 [[ -d "$cache_dir" ]] || mkdir -p "$cache_dir"
 
 # Git completion styling
-zstyle ':completion:*:*:git:*' script "$DOTFILES/zsh/completions/git-completion.bash" 2>/dev/null
+zstyle ':completion:*:*:git:*' script "$HOME/.zsh/completions/git-completion.bash" 2>/dev/null

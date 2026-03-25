@@ -55,27 +55,27 @@
 
 ## Phase 4: chezmoi Migration
 
-- [ ] [4.1] [P-1] brew install chezmoi && add to Brewfile
-- [ ] [4.2] [P-1] chezmoi init --source=. (initialize chezmoi in current repo)
-- [ ] [4.3] [P-1] Create .chezmoi.toml.tmpl with machine-specific data (hostname, OS, theme)
-- [ ] [4.4] [P-1] Convert zsh/.zshenv → dot_zshenv.tmpl (template machine-specific vars)
-- [ ] [4.5] [P-1] Convert zsh/.zshrc → dot_zshrc
-- [ ] [4.6] [P-1] Convert zsh/rc/ → dot_zsh/rc/ (shared.zsh, darwin.zsh, linux.zsh)
-- [ ] [4.7] [P-1] Convert zsh/functions/ → dot_zsh/functions/
-- [ ] [4.8] [P-1] Convert zsh/completions/ → dot_zsh/completions/
-- [ ] [4.9] [P-1] Convert ghostty/config → dot_config/ghostty/config.tmpl (theme from chezmoi data)
-- [ ] [4.10] [P-1] Convert tmux/tmux.conf → dot_config/tmux/tmux.conf
-- [ ] [4.11] [P-1] Convert tmux/one-hunter-vercel-theme.conf → dot_config/tmux/one-hunter-vercel-theme.conf
-- [ ] [4.12] [P-1] Convert starship/starship.toml → dot_config/starship/starship.toml.tmpl (palette from chezmoi data)
-- [ ] [4.13] [P-1] Create .chezmoiignore with platform-specific ignores
-- [ ] [4.14] [P-1] Delete scripts/symlinks.sh + scripts/symlinks.conf (chezmoi replaces both)
-- [ ] [4.15] [P-1] Convert install.sh to chezmoi run_once_install-packages.sh.tmpl (platform-conditional)
+- [x] [4.1] [P-1] brew install chezmoi && add to Brewfile
+- [x] [4.2] [P-1] chezmoi init --source=. (initialize chezmoi in current repo)
+- [x] [4.3] [P-1] Create .chezmoi.toml.tmpl with machine-specific data (hostname, OS, theme)
+- [x] [4.4] [P-1] Convert zsh/.zshenv → dot_zshenv.tmpl (template machine-specific vars)
+- [x] [4.5] [P-1] Convert zsh/.zshrc → dot_zshrc
+- [x] [4.6] [P-1] Convert zsh/rc/ → dot_zsh/rc/ (shared.zsh, darwin.zsh, linux.zsh)
+- [x] [4.7] [P-1] Convert zsh/functions/ → dot_zsh/functions/
+- [x] [4.8] [P-1] Convert zsh/completions/ → dot_zsh/completions/
+- [x] [4.9] [P-1] Convert ghostty/config → dot_config/ghostty/config.tmpl (theme from chezmoi data)
+- [x] [4.10] [P-1] Convert tmux/tmux.conf → dot_config/tmux/tmux.conf
+- [x] [4.11] [P-1] Convert tmux/one-hunter-vercel-theme.conf → dot_config/tmux/one-hunter-vercel-theme.conf
+- [x] [4.12] [P-1] Convert starship/starship.toml → dot_config/starship/starship.toml.tmpl (palette from chezmoi data)
+- [x] [4.13] [P-1] Create .chezmoiignore with platform-specific ignores
+- [x] [4.14] [P-1] Delete scripts/symlinks.sh + scripts/symlinks.conf (chezmoi replaces both)
+- [x] [4.15] [P-1] Convert install.sh to chezmoi run_once_install-packages.sh.tmpl (platform-conditional)
 - [ ] [4.16] [P-2] Create run_once_install-arch.sh.tmpl from scripts/install-arch.sh
-- [ ] [4.17] [P-2] Move Karabiner config under chezmoi management (dot_config/karabiner/)
-- [ ] [4.18] [P-2] Move LaunchAgent plists under chezmoi management
-- [ ] [4.19] [P-2] Test chezmoi apply on Mac — verify all symlinks/files are correct
-- [ ] [4.20] [P-2] Test chezmoi apply on Homelab (Arch) — verify cross-platform templates work
-- [ ] [4.21] [P-2] Verify chezmoi diff and chezmoi verify work for drift detection
+- [x] [4.17] [P-2] Move Karabiner config under chezmoi management (dot_config/karabiner/)
+- [x] [4.18] [P-2] Move LaunchAgent plists under chezmoi management
+- [ ] [4.19] [P-2] [user] Test chezmoi apply on Mac — verify all symlinks/files are correct
+- [ ] [4.20] [P-2] [user] Test chezmoi apply on Homelab (Arch) — verify cross-platform templates work
+- [ ] [4.21] [P-2] [user] Verify chezmoi diff and chezmoi verify work for drift detection
 
 ## Phase 5: Theme Switching System
 
@@ -92,9 +92,9 @@
 - [x] [6.2] [P-1] Write scripts/generate-raycast.sh (~50 lines) that reads projects.toml and emits per-project scripts
 - [x] [6.3] [P-1] Generate Raycast scripts from projects.toml
 - [x] [6.4] [P-1] Delete 60 hand-written Raycast scripts
-- [ ] [6.5] [P-2] [deferred] Update scripts/cmux-workspaces.sh to read project registry from projects.toml
-- [ ] [6.6] [P-2] [deferred] Update scripts/mux-remote.sh to read from projects.toml
-- [ ] [6.7] [P-2] [deferred] Create chezmoi run_onchange for Raycast regeneration when projects.toml changes
+- [ ] [6.5] [P-2] Update scripts/cmux-workspaces.sh to read project registry from projects.toml
+- [ ] [6.6] [P-2] Update scripts/mux-remote.sh to read from projects.toml
+- [ ] [6.7] [P-2] Create chezmoi run_onchange for Raycast regeneration when projects.toml changes
 
 ## Phase 7: Documentation
 

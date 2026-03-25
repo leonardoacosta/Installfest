@@ -2,6 +2,7 @@
 # mux-remote.sh — Remote-invokable wrapper for cmux-workspaces
 # Called via Apple Shortcuts, NFC, or SSH
 # Uses zsh for Shortcuts compatibility (/bin/bash on macOS is 3.2)
+# Project data: ~/dev/if/projects.toml
 #
 # Usage:
 #   ~/dev/if/scripts/mux-remote.sh         # Interactive picker
@@ -14,6 +15,7 @@ set -euo pipefail
 
 export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 SCRIPT=~/dev/if/scripts/cmux-workspaces.sh
+TOML_FILE=~/dev/if/projects.toml
 
 # Verify cmux is running
 if ! cmux ping >/dev/null 2>&1; then
@@ -21,6 +23,67 @@ if ! cmux ping >/dev/null 2>&1; then
   echo "ERROR: cmux not running" >&2
   exit 1
 fi
+
+# Generate the AppleScript list items for the "Pick Projects" dialog from projects.toml
+generate_picker_applescript() {
+  python3 << 'PYEOF'
+import tomllib, os
+
+toml_file = os.path.expanduser(os.environ["TOML_FILE"])
+with open(toml_file, "rb") as f:
+    data = tomllib.load(f)
+
+projects = data["projects"]
+
+cat_meta = {
+    "b-and-b":  {"emoji": "\U0001f7e1", "label": "B&B"},
+    "client":   {"emoji": "\U0001f7e2", "label": "Clients"},
+    "personal": {"emoji": "\U0001f535", "label": "Personal"},
+}
+cat_order = ["b-and-b", "client", "personal"]
+
+# Group projects by category, preserving TOML order
+groups = {c: [] for c in cat_order}
+for p in projects:
+    cat = p["category"]
+    if cat in groups:
+        groups[cat].append(p)
+
+# Build AppleScript list items
+items = []
+for cat in cat_order:
+    projs = groups[cat]
+    if not projs:
+        continue
+    meta = cat_meta[cat]
+    # Category header (non-selectable — filtered out by "starts with space" check)
+    items.append(f'"{meta["emoji"]} {meta["label"]} ' + "\u2500" * 10 + '"')
+    for i, p in enumerate(projs):
+        code = p["code"]
+        name = p["name"]
+        connector = "\u2514" if i == len(projs) - 1 else "\u251c"
+        # 2-char code, left-padded with spaces to align with header indent
+        items.append(f'"  {connector} {code}  {name}"')
+
+# Emit the full osascript command
+items_str = ", \u00ac\n            ".join(items)
+print(f'''set opts to {{ \u00ac
+            {items_str} \u00ac
+          }}
+          set picked to choose from list opts with title "Pick Projects" with prompt "Select workspaces to open:" with multiple selections allowed
+          if picked is false then return "cancel"
+          set output to ""
+          repeat with anItem in picked
+            -- skip group headers
+            if anItem does not start with "  " then
+            else
+              set code to text 5 thru 6 of anItem
+              set output to output & code & linefeed
+            end if
+          end repeat
+          return output''')
+PYEOF
+}
 
 # No args → show interactive picker
 if [[ $# -eq 0 ]]; then
@@ -46,45 +109,8 @@ EOF
       *Personal*)   args+=(p) ;;
       *All*)        args+=(b c p) ;;
       *Pick*)
-        projects=$(osascript <<'PROJ'
-          set opts to { ¬
-            "🟡 B&B ────────────", ¬
-            "  ├ fb  Fireball", ¬
-            "  ├ ws  Wholesale", ¬
-            "  ├ sc  Sales CRM", ¬
-            "  ├ ew  Enterprise Wiki", ¬
-            "  ├ ic  Infra as Code", ¬
-            "  ├ se  Submission Engine", ¬
-            "  └ dc  DOC", ¬
-            "🟢 Clients ─────────", ¬
-            "  ├ oo  Otaku Odyssey", ¬
-            "  ├ mv  Modern Visa", ¬
-            "  ├ ct  Civalent", ¬
-            "  ├ tl  Tavern Ledger", ¬
-            "  ├ tc  Tribal Cities", ¬
-            "  └ ss  Styles by Silas", ¬
-            "🔵 Personal ────────", ¬
-            "  ├ cw  Central Wholesale", ¬
-            "  ├ co  Central Orchestrator", ¬
-            "  ├ cl  Central Leo", ¬
-            "  ├ hl  Home Lab", ¬
-            "  ├ if  Installfest", ¬
-            "  └ cc  Central Claude" ¬
-          }
-          set picked to choose from list opts with title "Pick Projects" with prompt "Select workspaces to open:" with multiple selections allowed
-          if picked is false then return "cancel"
-          set output to ""
-          repeat with anItem in picked
-            -- skip group headers
-            if anItem does not start with "  " then
-            else
-              set code to text 5 thru 6 of anItem
-              set output to output & code & linefeed
-            end if
-          end repeat
-          return output
-PROJ
-        )
+        picker_script=$(TOML_FILE="$TOML_FILE" generate_picker_applescript)
+        projects=$(osascript -e "$picker_script")
         [[ "$projects" == "cancel" ]] && exit 0
         while IFS= read -r proj; do
           [[ -n "$proj" ]] && args+=("$proj")

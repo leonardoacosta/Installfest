@@ -9,39 +9,35 @@ Personal dotfiles and development environment configuration for macOS and Arch L
 ## Directory Structure
 
 ```
-if/
-├── zsh/                    # Zsh configuration (cross-platform)
-│   ├── .zshenv             # Environment variables only (all shells)
-│   ├── .zshrc              # Interactive shell config
+if/                                    # chezmoi source directory (~/dev/if)
+├── .chezmoi.toml.tmpl                 # chezmoi config template (machine-specific data)
+├── .chezmoiignore                     # Files excluded from chezmoi management
+├── dot_zshenv.tmpl                    # -> ~/.zshenv (env vars, templated)
+├── dot_zshrc                          # -> ~/.zshrc (interactive shell entry)
+├── dot_zsh/                           # -> ~/.zsh/ (shell modules)
 │   ├── rc/
-│   │   ├── shared.zsh      # Options + aliases (cross-platform)
-│   │   ├── darwin.zsh      # macOS-specific (Homebrew, NVM)
-│   │   └── linux.zsh       # Arch-specific (pacman, docker)
+│   │   ├── shared.zsh                 # Options + aliases (cross-platform)
+│   │   ├── darwin.zsh                 # macOS-specific (Homebrew, pnpm)
+│   │   └── linux.zsh                  # Arch-specific (pacman, docker)
 │   ├── functions/
-│   │   ├── setup-completions.zsh
-│   │   ├── load-plugins.zsh
-│   │   ├── load-tools.zsh
-│   │   └── init-starship.zsh
-│   └── completions/        # Custom completion scripts
-├── homebrew/               # Brewfile for macOS packages
-├── starship/               # Starship prompt configuration
-├── wezterm/                # WezTerm terminal config
-├── tmux/                   # Tmux configuration
-├── ssh-mesh/               # Multi-machine SSH setup
-│   ├── configs/            # Per-machine SSH configs
-│   ├── keys/               # SSH keys (gitignored)
-│   └── scripts/            # Setup scripts per platform
-├── raycast-scripts/        # Raycast automation scripts
-├── scripts/                # Installation and setup scripts
-│   ├── prerequisites.sh    # Xcode CLI, Homebrew
-│   ├── brew-install.sh     # Install from Brewfile
-│   ├── symlinks.sh         # Dotfile symlink management
-│   ├── symlinks.conf       # Symlink mappings
-│   ├── osx-defaults.sh     # macOS system preferences
-│   └── install-arch.sh     # Arch Linux package setup
-├── install.sh              # Main interactive installer
-├── sync.sh                 # Sync/backup script
-└── openspec/               # Specification management
+│   │   ├── setup-completions.zsh      # compinit, fpath
+│   │   ├── load-plugins.zsh           # syntax-hl, autosuggestions
+│   │   ├── load-tools.zsh            # zoxide, atuin, fzf, mise
+│   │   └── init-starship.zsh         # prompt (load last)
+│   └── completions/                   # Custom completion scripts
+├── dot_config/                        # -> ~/.config/
+│   ├── ghostty/config.tmpl            # Ghostty terminal (templated)
+│   ├── starship/starship.toml.tmpl    # Starship prompt (templated)
+│   ├── tmux/tmux.conf                 # Tmux config
+│   ├── tmux/one-hunter-vercel-theme.conf
+│   └── karabiner/assets/...           # Karabiner-Elements
+├── Library/LaunchAgents/              # -> ~/Library/LaunchAgents/ (macOS)
+├── run_once_install-packages.sh.tmpl  # One-time package installer
+├── homebrew/                          # Brewfile (repo-only, not deployed)
+├── scripts/                           # Utility scripts (repo-only)
+├── ssh-mesh/                          # Multi-machine SSH setup (repo-only)
+├── raycast-scripts/                   # Raycast automation (repo-only)
+└── openspec/                          # Specification management (repo-only)
 ```
 
 ## Key Concepts
@@ -49,17 +45,17 @@ if/
 ### Shell Configuration Flow
 
 ```
-.zshenv (ALL shells)     .zshrc (interactive only)
-        │                         │
-        ├── DOTFILES export       ├── shared.zsh (setopt, aliases)
-        ├── PATH setup            ├── darwin.zsh OR linux.zsh
-        └── Theme exports         ├── setup-completions.zsh
-                                  ├── load-plugins.zsh
-                                  ├── load-tools.zsh
-                                  └── init-starship.zsh
+~/.zshenv (ALL shells)      ~/.zshrc (interactive only)
+        │                           │
+        ├── DOTFILES export         ├── ~/.zsh/rc/shared.zsh (setopt, aliases)
+        ├── PATH setup              ├── ~/.zsh/rc/darwin.zsh OR linux.zsh
+        └── Theme exports           ├── ~/.zsh/functions/setup-completions.zsh
+                                    ├── ~/.zsh/functions/load-plugins.zsh
+                                    ├── ~/.zsh/functions/load-tools.zsh
+                                    └── ~/.zsh/functions/init-starship.zsh
 ```
 
-**Design principle**: `.zshenv` = environment variables ONLY. All tool inits (starship, zoxide, fzf, plugins) happen in `.zshrc` via dedicated function files.
+**Design principle**: `.zshenv` = environment variables ONLY. All tool inits (starship, zoxide, fzf, plugins) happen in `.zshrc` via dedicated function files. Shell sources from deployed paths (`~/.zsh/`), not repo paths.
 
 ### Platform Detection
 
@@ -76,18 +72,21 @@ Three-machine setup (Mac, Homelab, Arch) with Tailscale for connectivity. See `s
 
 ## Essential Commands
 
-### Installation
+### Deploying Dotfiles (chezmoi)
 
 ```bash
-./install.sh              # Interactive installer (macOS)
-scripts/install-arch.sh   # Arch Linux setup
+chezmoi apply             # Deploy all managed files to ~
+chezmoi diff              # Preview what would change
+chezmoi managed           # List all managed files
+chezmoi edit ~/.zshrc     # Edit source file for ~/.zshrc
+chezmoi re-add ~/.zshrc   # Pull changes from deployed file back to source
 ```
 
-### Symlinks
+### Installation (first-time setup)
 
 ```bash
-scripts/symlinks.sh       # Create dotfile symlinks
-# Mappings defined in scripts/symlinks.conf
+chezmoi init --source=~/dev/if   # Point chezmoi at this repo
+chezmoi apply                     # Deploy dotfiles + run install script
 ```
 
 ### Testing Shell Config
@@ -102,4 +101,7 @@ source ~/.zshrc           # Reload config (or: reload)
 
 - **Platform-aware**: Check `uname -s` before platform-specific advice
 - **No duplicate inits**: Tool inits happen ONCE in `.zshrc`, never in `.zshenv`
-- **Symlinks**: All dotfiles are symlinked from this repo via `scripts/symlinks.conf`
+- **chezmoi managed**: All dotfiles are deployed via `chezmoi apply` from this source dir
+- **dot_ prefix**: `dot_foo` in source deploys to `~/.foo`; `.tmpl` suffix = Go template
+- **$DOTFILES**: Still set in `.zshenv`, points to `~/dev/if` (chezmoi source). Used for `scripts/` references only
+- **Deployed paths**: Shell config sources from `~/.zsh/` (deployed), not `$DOTFILES/dot_zsh/` (source)

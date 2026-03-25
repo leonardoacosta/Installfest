@@ -1,5 +1,5 @@
 # Projects Registry -- single source of truth
-# Consumed by: generate-raycast.sh, cmux-workspaces.sh (planned), mux-remote.sh (planned)
+# Consumed by: generate-raycast.sh, cmux-workspaces.sh, mux-remote.sh
 #
 # Fields:
 #   code      Short code used for script names and cmux workspaces

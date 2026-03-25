@@ -1,0 +1,127 @@
+#!/usr/bin/env bash
+# run_once_install-packages.sh - chezmoi run_once package installer
+# Runs once per machine (chezmoi tracks by content hash)
+
+set -euo pipefail
+
+DOTFILES="{{ .chezmoi.sourceDir }}"
+export DOTFILES
+
+# Source utilities
+. "$DOTFILES/scripts/utils.sh"
+
+info "========================================"
+info "  Dotfiles Package Installer (chezmoi)"
+info "  Platform: $(uname -s) ($(uname -m))"
+info "  Source:   $DOTFILES"
+info "========================================"
+echo
+
+{{ if eq .chezmoi.os "darwin" -}}
+info "Detected macOS"
+
+# Source Mac prerequisites
+. "$DOTFILES/scripts/prerequisites.sh"
+. "$DOTFILES/scripts/brew-install.sh"
+. "$DOTFILES/scripts/osx-defaults.sh"
+. "$DOTFILES/scripts/terminal.sh"
+
+read -p "Install Homebrew and packages? [y/n] " -n 1 -r install_apps
+echo
+
+if [[ $install_apps =~ ^[Yy]$ ]]; then
+    install_xcode
+    install_homebrew
+    run_brew_bundle
+fi
+
+# Apply macOS system defaults
+read -p "Apply macOS system defaults? [y/n] " -n 1 -r
+echo
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    apply_osx_system_defaults
+fi
+
+# Terminal setup
+terminal
+
+# YouTube transcript tool (optional)
+. "$DOTFILES/scripts/youtube-transcript.sh"
+read -p "Install youtube_transcript CLI? [y/n] " -n 1 -r
+echo
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    install_youtube_transcript
+fi
+
+# DB Pro database client (optional, not in Homebrew)
+. "$DOTFILES/scripts/dbpro.sh"
+read -p "Install DB Pro database client? [y/n] " -n 1 -r
+echo
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    install_dbpro
+fi
+
+# ani-cli (anime streaming from terminal)
+. "$DOTFILES/scripts/ani-cli.sh"
+read -p "Install ani-cli? [y/n] " -n 1 -r
+echo
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    install_ani_cli
+fi
+
+# Cursor CLI (opens files from terminal)
+if ! command -v cursor &>/dev/null; then
+    read -p "Install Cursor CLI? [y/n] " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        info "Installing Cursor CLI..."
+        curl -fsSL https://cursor.com/install | bash
+        success "Cursor CLI installed"
+    fi
+else
+    success "Cursor CLI already installed"
+fi
+
+# Load mic-priority LaunchAgent
+if [[ -f "$HOME/Library/LaunchAgents/com.leonardoacosta.mic-priority.plist" ]]; then
+    chmod +x "$DOTFILES/scripts/mic-priority.sh" 2>/dev/null || true
+    if ! launchctl list | grep -q "com.leonardoacosta.mic-priority"; then
+        launchctl bootstrap "gui/$(id -u)" "$HOME/Library/LaunchAgents/com.leonardoacosta.mic-priority.plist" 2>/dev/null || true
+        success "Loaded mic-priority LaunchAgent"
+    fi
+fi
+
+{{ else if eq .chezmoi.os "linux" -}}
+info "Detected Linux"
+
+# Check if Arch Linux
+if [[ -f /etc/arch-release ]]; then
+    . "$DOTFILES/scripts/install-arch.sh"
+
+    # YouTube transcript tool (optional)
+    . "$DOTFILES/scripts/youtube-transcript.sh"
+    read -p "Install youtube_transcript CLI? [y/n] " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        install_youtube_transcript
+    fi
+else
+    warning "Non-Arch Linux detected. Package install skipped."
+    warning "Install zsh plugins manually for your distribution."
+fi
+
+{{ end -}}
+
+# === Final messages ===
+echo
+success "========================================"
+success "  Package Installation Complete!"
+success "========================================"
+echo
+info "Next steps:"
+info "  1. Run 'chezmoi apply' to deploy dotfiles"
+info "  2. Restart your terminal or run: source ~/.zshrc"
+info "  3. Verify starship prompt is working"
+info "  4. Run 'z --help' to learn zoxide"
+info "  5. Run 'atuin login' to sync history (optional)"
+echo
