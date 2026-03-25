@@ -1,53 +1,22 @@
 {
-  "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": "explicit"
+  "files.associations": {
+    "*.zsh": "shellscript",
+    "*.zshrc": "shellscript",
+    "*.zshenv": "shellscript",
+    ".zshrc": "shellscript",
+    ".zshenv": "shellscript"
   },
-  "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "[typescript,typescriptreact]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
-  "editor.formatOnSave": true,
-  "eslint.rules.customizations": [{ "rule": "*", "severity": "warn" }],
-  "eslint.runtime": "node",
-  "eslint.workingDirectories": [
-    {
-      "mode": "auto"
-    }
-  ],
-  "prettier.ignorePath": ".gitignore",
-  "tailwindCSS.classFunctions": ["cva", "cx", "cn"],
-  "tailwindCSS.experimental.configFile": "./tooling/tailwind/web.ts",
-  "typescript.enablePromptUseWorkspaceTsdk": true,
-  "typescript.preferences.autoImportFileExcludePatterns": [
-    "zod/dist/types/index.d.ts",
-    "next/router.d.ts",
-    "next/dist/client/router.d.ts"
-  ],
-  "typescript.tsdk": "node_modules/typescript/lib",
+  "editor.formatOnSave": false,
+  "git.enabled": true,
   "cSpell.words": [
-    "HMAC",
-    "POSTHOG",
-    "Vercel",
+    "chezmoi",
+    "doppler",
     "homelab",
-    "Installfest"
-  ],
-
-  // Performance: prevent CPU spike when opened as workspace
-  "files.watcherExclude": {
-    "**/node_modules/**": true,
-    "**/.git/**": true,
-    "**/dist/**": true,
-    "**/.next/**": true,
-    "**/.turbo/**": true,
-    "**/.Trash/**": true,
-    "**/.npm/**": true,
-    "**/.pnpm-store/**": true
-  },
-  "search.exclude": {
-    "**/node_modules/**": true,
-    "**/.git/**": true
-  },
-  "typescript.disableAutomaticTypeAcquisition": true,
-  "git.enabled": false,
-  "git.autoRepositoryDetection": false
+    "Installfest",
+    "Tailscale",
+    "Ghostty",
+    "starship",
+    "zoxide",
+    "atuin"
+  ]
 }

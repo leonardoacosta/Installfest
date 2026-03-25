@@ -4,16 +4,16 @@
 # Uses zsh for Shortcuts compatibility (/bin/bash on macOS is 3.2)
 #
 # Usage:
-#   ~/dev/if/ghostty/mux-remote.sh         # Interactive picker
-#   ~/dev/if/ghostty/mux-remote.sh b       # Launch B&B
-#   ~/dev/if/ghostty/mux-remote.sh c       # Launch Clients
-#   ~/dev/if/ghostty/mux-remote.sh p       # Launch Personal
-#   ~/dev/if/ghostty/mux-remote.sh b c p   # Launch everything
+#   ~/dev/if/scripts/mux-remote.sh         # Interactive picker
+#   ~/dev/if/scripts/mux-remote.sh b       # Launch B&B
+#   ~/dev/if/scripts/mux-remote.sh c       # Launch Clients
+#   ~/dev/if/scripts/mux-remote.sh p       # Launch Personal
+#   ~/dev/if/scripts/mux-remote.sh b c p   # Launch everything
 
 set -euo pipefail
 
 export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
-SCRIPT=~/dev/if/ghostty/cmux-workspaces.sh
+SCRIPT=~/dev/if/scripts/cmux-workspaces.sh
 
 # Verify cmux is running
 if ! cmux ping >/dev/null 2>&1; then

@@ -21,7 +21,6 @@ export PATH="$HOME/.claude/bin:$HOME/.local/bin:$PATH"
 export TMUX_THEME="one-hunter-vercel"
 export NVIM_THEME="nord"
 export STARSHIP_THEME="nord"
-export WEZTERM_THEME="nord"
 
 # Local overrides (secrets, machine-specific tokens)
 [[ -f ~/.zshenv.local ]] && source ~/.zshenv.local

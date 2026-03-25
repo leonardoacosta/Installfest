@@ -40,11 +40,6 @@ if command -v fzf &>/dev/null; then
   fi
 fi
 
-# direnv (per-directory environment)
-if command -v direnv &>/dev/null; then
-  eval "$(direnv hook zsh)"
-fi
-
 # mise (polyglot version manager - replaces nvm, pyenv, rbenv)
 if command -v mise &>/dev/null; then
   eval "$(mise activate zsh)"

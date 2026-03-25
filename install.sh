@@ -151,7 +151,7 @@ if [[ "$(uname -s)" == "Darwin" ]]; then
 
         # Load the agent if not already loaded
         if ! launchctl list | grep -q "com.leonardoacosta.mic-priority"; then
-            launchctl load "$HOME/Library/LaunchAgents/com.leonardoacosta.mic-priority.plist" 2>/dev/null || true
+            launchctl bootstrap "gui/$(id -u)" "$HOME/Library/LaunchAgents/com.leonardoacosta.mic-priority.plist" 2>/dev/null || true
             success "Loaded mic-priority LaunchAgent"
         fi
     fi

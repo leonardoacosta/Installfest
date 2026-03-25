@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # cmux-workspaces.sh — Launch dev workspaces in cmux over SSH
-# Source of truth: ~/dev/if/ghostty/cmux-workspaces.sh
+# Source of truth: ~/dev/if/scripts/cmux-workspaces.sh
 #
 # Usage:
 #   mux oo tc           # Launch specific projects

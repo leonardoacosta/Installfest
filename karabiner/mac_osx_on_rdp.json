@@ -140,7 +140,7 @@
                         "key_code": "right_arrow",
                         "modifiers": {
                             "mandatory": [
-                                "left_command",
+                                "command",
                                 "shift"
                             ]
                         }
@@ -804,7 +804,7 @@
                         "key_code": "f",
                         "modifiers": {
                             "mandatory": [
-                                "left_command"
+                                "command"
                             ],
                             "optional": [
                                 "any"
@@ -845,7 +845,7 @@
                         "key_code": "o",
                         "modifiers": {
                             "mandatory": [
-                                "left_command"
+                                "command"
                             ],
                             "optional": [
                                 "any"
@@ -886,7 +886,7 @@
                         "key_code": "w",
                         "modifiers": {
                             "mandatory": [
-                                "left_command"
+                                "command"
                             ],
                             "optional": [
                                 "any"
@@ -987,44 +987,6 @@
                             "key_code": "left_shift",
                             "modifiers": [
                                 "left_option"
-                            ]
-                        }
-                    ],
-                    "type": "basic"
-                }
-            ]
-        },
-        {
-            "description": "Mac OSX RDP: Cmd+Space To Switch Input (Left Shift+Left Ctrl)",
-            "manipulators": [
-                {
-                    "conditions": [
-                        {
-                            "bundle_identifiers": [
-                                "^com\\.microsoft\\.rdc$",
-                                "^com\\.microsoft\\.rdc\\.mac$",
-                                "^com\\.microsoft\\.rdc\\.macos$",
-                                "^com\\.microsoft\\.rdc\\.osx\\.beta$",
-                                "^com\\.thinomenon\\.RemoteDesktopConnection$",
-                                "^com\\.teamviewer\\.TeamViewer$",
-                                "^com\\.vmware\\.horizon$"
-                            ],
-                            "type": "frontmost_application_if"
-                        }
-                    ],
-                    "from": {
-                        "key_code": "spacebar",
-                        "modifiers": {
-                            "mandatory": [
-                                "command"
-                            ]
-                        }
-                    },
-                    "to": [
-                        {
-                            "key_code": "left_shift",
-                            "modifiers": [
-                                "left_control"
                             ]
                         }
                     ],

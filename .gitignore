@@ -1,7 +1,3 @@
-env
-.env
-logs
-
 # Environment and Secrets
 .env
 *.key
@@ -11,23 +7,6 @@ logs
 # Logs
 *.log
 logs/
-
-# Service Configuration Directories (contain sensitive data)
-adguardhome/
-tailscale/state/
-radarr/
-sonarr/
-lidarr/
-bazarr/
-prowlarr/
-jellyseerr/
-qbittorrent/
-nzbget/
-gluetun/
-ollama_data/
-ollama_webui_data/
-flaresolverr/
-samba/
 
 # Cache and temporary files
 */cache/
@@ -51,7 +30,6 @@ desktop.ini
 # Backup files
 *.bak
 *.backup
-*~
 
 # SSH keys
 ssh-mesh/keys/

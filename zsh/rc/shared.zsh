@@ -20,6 +20,7 @@ setopt INC_APPEND_HISTORY      # Add commands immediately
 setopt HIST_REDUCE_BLANKS      # Remove superfluous blanks
 setopt HIST_VERIFY             # Show command before executing from history
 setopt EXTENDED_HISTORY        # Save timestamp and duration
+setopt HIST_IGNORE_SPACE       # Don't save commands prefixed with space
 
 # Directory navigation
 setopt AUTO_CD                 # cd by typing directory name
@@ -68,7 +69,7 @@ alias cp="cp -i"
 alias mv="mv -i"
 
 # cmux workspaces
-alias mux="~/dev/if/ghostty/cmux-workspaces.sh"
+alias mux="~/dev/if/scripts/cmux-workspaces.sh"
 
 # Misc aliases
 alias path='echo $PATH | tr ":" "\n"'
