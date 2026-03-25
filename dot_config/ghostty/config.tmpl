@@ -8,7 +8,13 @@ font-size = 13
 font-thicken = true
 
 # === Theme / Appearance ===
+{{ if eq .theme "nord" -}}
+theme = Nord
+{{- else if eq .theme "vercel" -}}
 theme = Vercel
+{{- else -}}
+theme = {{ .theme | title }}
+{{- end }}
 background-opacity = 0.80
 background-blur-radius = 20
 window-decoration = true

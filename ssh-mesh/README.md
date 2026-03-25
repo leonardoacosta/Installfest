@@ -121,9 +121,11 @@ ssh homelab "cd ~/ssh-mesh && bash scripts/setup-homelab.sh"
 ### CloudPC
 
 ```powershell
-# Run as Administrator
-powershell -ExecutionPolicy Bypass -File setup-cloudpc.ps1
+# Run as Administrator (from repo root)
+powershell -ExecutionPolicy Bypass -File windows\setup.ps1
 ```
+
+> **Note:** The CloudPC setup script was consolidated into `windows/setup.ps1` (handles SSH keys, sshd config, Tailscale, and dev tool installation).
 
 ## Mac SSH Config Explained
 
@@ -222,6 +224,6 @@ The old `nc -z -w1` approach hangs on macOS. Use the bash `/dev/tcp` method with
 ⚠️ **This setup uses a single shared key across all machines.** This is convenient but means:
 
 - Compromise of any machine's private key compromises all
-- Consider rotating keys periodically
+- Rotate keys with `ssh-mesh/scripts/rotate-keys.sh` (generates new keypair, deploys to all machines)
 - Keep private key files secure (600 permissions)
 - Never commit private keys to public repositories

@@ -1,298 +1,129 @@
-# Mac Development Environment
+# if (Installfest)
 
-## Overview
+Personal dotfiles managed by [chezmoi](https://www.chezmoi.io/) for macOS and Arch Linux. One command to bootstrap a new machine.
 
-Automated macOS setup for development environment with dotfiles, Homebrew packages, and system configuration. Provides consistent development setup across machines with a single command.
-
-## Setup
-
-### Prerequisites
-
-- macOS (tested on recent versions)
-- Internet connection
-- Administrator access
-
-### Installation
+## Quick Start
 
 ```bash
-cd mac
-./install.sh
+# New machine (clones repo to ~/dev/if, deploys dotfiles to ~)
+chezmoi init --apply leonardoacosta/if --source ~/dev/if
+
+# Existing clone
+chezmoi init --source ~/dev/if
+chezmoi apply
 ```
 
-The installer will:
+## Machines
 
-1. Install Xcode Command Line Tools
-2. Install Homebrew package manager
-3. Install packages from Brewfile
-4. Apply macOS system defaults
-5. Create symlinks for dotfiles
+| Machine | OS | Hostname | User | Connectivity |
+|---------|------|----------|------|-------------|
+| Mac | macOS | macbook-pro | leonardoacosta | LAN + Tailscale |
+| Homelab | Arch Linux | omarchy | nyaptor | Tailscale |
+| CloudPC | Windows 11 | 346-CPC-QJXVZ | leo | Tailscale |
 
-## Configuration
+All three machines share an ED25519 keypair over Tailscale. See `ssh-mesh/README.md` for topology.
 
-### Dotfile Structure
+## Key Tools
 
-**Zsh Configuration:**
+| Tool | Purpose | Config |
+|------|---------|--------|
+| Ghostty | Terminal emulator | `dot_config/ghostty/config.tmpl` |
+| tmux | Terminal multiplexer | `dot_config/tmux/tmux.conf` |
+| Starship | Shell prompt | `dot_config/starship/starship.toml.tmpl` |
+| Zsh | Shell | `dot_zshrc`, `dot_zsh/` |
+| mise | Runtime version manager | `.mise.toml` |
+| Doppler | Secrets management | CLI with `~/.env` fallback |
+| Karabiner | Key remapping (macOS) | `dot_config/karabiner/` |
 
-- Location: `zsh/.zshrc`
-- Symlinked to: `~/.zshrc`
-- Includes: aliases, functions, plugins
+## Directory Structure
 
-**WezTerm Terminal:**
+```
+if/                                     # chezmoi source directory (~/dev/if)
+├── .chezmoi.toml.tmpl                  # Machine-specific config (hostname, theme, ssh user)
+├── .chezmoiignore                      # Files excluded from deployment
+├── dot_zshenv.tmpl                     # -> ~/.zshenv (env vars, templated)
+├── dot_zshrc                           # -> ~/.zshrc (interactive shell entry)
+├── dot_zsh/                            # -> ~/.zsh/
+│   ├── rc/                             #   shared.zsh, darwin.zsh, linux.zsh
+│   ├── functions/                      #   completions, plugins, tools, starship
+│   └── completions/                    #   Custom completion scripts
+├── dot_config/                         # -> ~/.config/
+│   ├── ghostty/config.tmpl             #   Ghostty terminal (templated)
+│   ├── starship/starship.toml.tmpl     #   Starship prompt (templated)
+│   ├── tmux/tmux.conf                  #   Tmux + theme
+│   └── karabiner/                      #   Karabiner-Elements
+├── Library/LaunchAgents/               # -> ~/Library/LaunchAgents/ (macOS only)
+├── run_once_install-packages.sh.tmpl   # One-time package installer (chezmoi run_once)
+├── projects.toml                       # Project registry (repo-only, not deployed)
+├── homebrew/Brewfile                   # Homebrew packages (repo-only)
+├── scripts/                            # Utility scripts (repo-only)
+│   ├── generate-raycast.sh             #   Generate Raycast scripts from projects.toml
+│   ├── cmux-workspaces.sh              #   Generate cmux workspace launchers
+│   └── mux-remote.sh                   #   SSH remote tmux sessions
+├── raycast-scripts/                    # Generated Raycast shortcuts (repo-only)
+├── ssh-mesh/                           # Multi-machine SSH setup (repo-only)
+├── windows/                            # Windows/CloudPC setup scripts (repo-only)
+└── docs/                               # Documentation (repo-only)
+```
 
-- Location: `wezterm/wezterm.lua`
-- Symlinked to: `~/.wezterm.lua`
-- Features: custom key bindings, colors, fonts
+**Naming convention:** `dot_foo` deploys to `~/.foo`. Files ending in `.tmpl` are Go templates processed by chezmoi.
 
-**Starship Prompt:**
+## How chezmoi Works Here
 
-- Location: `starship/starship.toml`
-- Symlinked to: `~/.config/starship.toml`
-- Features: git status, language versions, command duration
+chezmoi reads `.chezmoi.toml.tmpl` to detect which machine it is running on (by hostname), then deploys templated files with the correct values:
 
-**Raycast Scripts:**
+| Variable | Mac | Homelab |
+|----------|-----|---------|
+| `machine` | mac | homelab |
+| `theme` | nord | nord |
+| `ssh_user` | leonardoacosta | nyaptor |
 
-- Location: `raycast-scripts/`
-- Purpose: Automation scripts for Raycast app
+Platform-specific files (Ghostty, Karabiner, Library/) are excluded on Linux via `.chezmoiignore`.
 
-### Homebrew Packages
+## Project Registry
 
-Packages defined in `homebrew/Brewfile`:
+`projects.toml` is the single source of truth for all projects. Scripts consume it to generate:
 
-**Development Tools:**
+- **Raycast scripts** -- keyboard shortcuts to open projects (`scripts/generate-raycast.sh`)
+- **cmux workspaces** -- tmux workspace launchers (`scripts/cmux-workspaces.sh`)
+- **Remote sessions** -- SSH tmux sessions on homelab (`scripts/mux-remote.sh`)
 
-- Git, Node.js, Python, Go
-- Docker, Docker Compose
-- VS Code, JetBrains IDEs
+### Adding a Project
 
-**CLI Utilities:**
+1. Add an entry to `projects.toml`
+2. Run `scripts/generate-raycast.sh` to regenerate Raycast scripts
+3. `chezmoi apply` if any deployed files changed
 
-- tmux, neovim, fzf
-- ripgrep, fd, bat
-- jq, yq, httpie
+## Theme Switching
 
-**Applications:**
+1. Edit `.chezmoi.toml.tmpl` -- change the `$theme` variable
+2. Run `chezmoi apply`
+3. All templated configs (Ghostty, Starship) update to the new theme
 
-- Browsers (Chrome, Firefox)
-- Communication (Slack, Discord)
-- Productivity tools
+## Secrets
 
-**To customize:**
-Edit `homebrew/Brewfile` and re-run installer.
-
-### System Defaults
-
-Applied by `scripts/osx-defaults.sh`:
-
-**Keyboard:**
-
-- Key repeat rate
-- Delay until repeat
-
-**Trackpad:**
-
-- Tap to click
-- Three finger drag
-
-**Finder:**
-
-- Show hidden files
-- Show path bar
-- Default view settings
-
-**Dock:**
-
-- Icon size
-- Position
-- Auto-hide behavior
-
-## Usage
-
-### Managing Dotfiles
-
-**Creating Symlinks:**
+Secrets are managed by [Doppler](https://www.doppler.com/) CLI. Local fallback:
 
 ```bash
-cd mac
-./scripts/symlinks.sh --create
+# Doppler (preferred)
+doppler run -- <command>
+
+# Fallback for machine-local values
+~/.env    # gitignored, never committed
 ```
 
-**Removing Symlinks:**
+Machine-local values (LAN IPs, home automation tokens) stay in `~/.env`. Everything else lives in Doppler.
 
-```bash
-cd mac
-./scripts/symlinks.sh --delete
+## Shell Architecture
+
+```
+~/.zshenv (all shells)        ~/.zshrc (interactive only)
+    ├── DOTFILES export           ├── ~/.zsh/rc/shared.zsh (options, aliases)
+    ├── PATH setup                ├── ~/.zsh/rc/darwin.zsh OR linux.zsh
+    └── Theme exports             ├── ~/.zsh/functions/setup-completions.zsh
+                                  ├── ~/.zsh/functions/load-plugins.zsh
+                                  ├── ~/.zsh/functions/load-tools.zsh
+                                  └── ~/.zsh/functions/init-starship.zsh
 ```
 
-**Updating Dotfiles:**
-
-1. Edit files in repository
-2. Commit changes
-3. Changes immediately active (symlinks)
-
-### Installing Packages
-
-**Add new package:**
-
-1. Edit `homebrew/Brewfile`
-2. Run: `brew bundle --file=homebrew/Brewfile`
-
-**Update packages:**
-
-```bash
-brew update
-brew upgrade
-brew cleanup
-```
-
-### Applying System Defaults
-
-```bash
-cd mac
-./scripts/osx-defaults.sh
-```
-
-Changes take effect after restart or logout/login.
-
-### Component Scripts
-
-**Install Prerequisites:**
-
-```bash
-./scripts/prerequisites.sh
-```
-
-Installs Xcode CLI tools and Homebrew.
-
-**Install Brew Packages:**
-
-```bash
-./scripts/brew-install.sh
-```
-
-Installs packages from Brewfile.
-
-**Apply macOS Defaults:**
-
-```bash
-./scripts/osx-defaults.sh
-```
-
-Configures system preferences.
-
-**Manage Symlinks:**
-
-```bash
-./scripts/symlinks.sh --create  # Create dotfile symlinks
-./scripts/symlinks.sh --delete  # Remove symlinks
-```
-
-## Troubleshooting
-
-### Xcode CLI Tools Not Installing
-
-```bash
-# Remove existing installation
-sudo rm -rf /Library/Developer/CommandLineTools
-
-# Reinstall
-xcode-select --install
-```
-
-### Homebrew Installation Fails
-
-```bash
-# Check Homebrew installation
-which brew
-
-# Reinstall Homebrew
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
-# Verify installation
-brew doctor
-```
-
-### Symlink Conflicts
-
-```bash
-# Check existing symlinks
-ls -la ~ | grep "^l"
-
-# Remove conflicting symlinks
-rm ~/.zshrc
-rm ~/.wezterm.lua
-
-# Recreate symlinks
-cd mac
-./scripts/symlinks.sh --create
-```
-
-### System Defaults Not Applied
-
-- Restart macOS after applying defaults
-- Some settings require logout/login
-- Check for macOS version compatibility
-
-### Package Installation Fails
-
-```bash
-# Update Homebrew
-brew update
-
-# Check for issues
-brew doctor
-
-# View detailed error
-brew install --verbose <package>
-
-# Clean up and retry
-brew cleanup
-brew install <package>
-```
-
-## Best Practices
-
-1. **Version Control Dotfiles**: Commit dotfile changes regularly
-2. **Document Custom Aliases**: Comment complex aliases and functions
-3. **Test Before Committing**: Test dotfile changes before committing
-4. **Backup Before Updates**: Backup existing dotfiles before major changes
-5. **Keep Brewfile Updated**: Document purpose of installed packages
-
-## Customization
-
-### Adding New Dotfiles
-
-1. Create dotfile in appropriate directory (e.g., `zsh/`)
-2. Add symlink logic to `scripts/symlinks.sh`
-3. Test symlink creation/deletion
-4. Update this documentation
-
-### Custom Zsh Plugins
-
-Add to `zsh/.zshrc`:
-
-```bash
-# Load custom plugins
-source ~/.zsh/plugins/my-plugin.zsh
-```
-
-### Custom WezTerm Configuration
-
-Edit `wezterm/wezterm.lua`:
-
-```lua
--- Add custom key bindings
-config.keys = {
-  { key = 'K', mods = 'CMD', action = wezterm.action { ... } },
-}
-```
-
-## References
-
-- **OpenSpec Specification**: [openspec/specs/mac-development-environment/spec.md](../openspec/specs/mac-development-environment/spec.md)
-- **Homebrew Documentation**: <https://docs.brew.sh/>
-- **WezTerm Documentation**: <https://wezfurlong.org/wezterm/>
-- **Starship Documentation**: <https://starship.rs/>
-- **Related Files**:
-  - [mac/install.sh](./install.sh) - Main installer
-  - [homebrew/Brewfile](./homebrew/Brewfile) - Package list
-  - [zsh/.zshrc](./zsh/.zshrc) - Zsh configuration
+**Rule:** `.zshenv` = environment variables only. All tool initialization (starship, zoxide, fzf, mise, plugins) happens in `.zshrc` via dedicated function files.

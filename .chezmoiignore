@@ -17,7 +17,6 @@ scripts
 ssh-mesh
 windows
 homebrew
-openspec
 raycast-scripts
 
 # Platform-specific ignores

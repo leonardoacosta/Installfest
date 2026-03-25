@@ -37,7 +37,8 @@ if/                                    # chezmoi source directory (~/dev/if)
 ├── scripts/                           # Utility scripts (repo-only)
 ├── ssh-mesh/                          # Multi-machine SSH setup (repo-only)
 ├── raycast-scripts/                   # Raycast automation (repo-only)
-└── openspec/                          # Specification management (repo-only)
+├── windows/                           # Windows/CloudPC setup scripts (repo-only)
+└── docs/                              # Documentation (repo-only)
 ```
 
 ## Key Concepts
