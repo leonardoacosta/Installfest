@@ -115,12 +115,6 @@ else
     warning "  scp <source>:~/dev/if/ssh-mesh/keys/id_ed25519* ~/.ssh/"
 fi
 
-# === Git hooks (all platforms) ===
-if [[ -d "$DOTFILES/.git" ]]; then
-    git -C "$DOTFILES" config core.hooksPath scripts/hooks
-    success "Set git hooks path to scripts/hooks/"
-fi
-
 # === Final messages ===
 echo
 success "========================================"

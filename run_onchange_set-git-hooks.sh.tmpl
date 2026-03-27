@@ -1,0 +1,10 @@
+#!/bin/bash
+# Set git hooks path for the dotfiles repo
+# run_onchange_: re-runs whenever this file's content changes
+# {{ "scripts/hooks" }}
+
+DOTFILES="{{ .chezmoi.sourceDir }}"
+
+if [ -d "$DOTFILES/.git" ]; then
+    git -C "$DOTFILES" config core.hooksPath scripts/hooks
+fi
