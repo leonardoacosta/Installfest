@@ -34,22 +34,23 @@ export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
 export XDG_STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
 
 # ============================================================
-# PATH (user binaries)
-# ============================================================
-
-export PATH="$HOME/.claude/bin:$HOME/.local/bin:$PATH"
-
-# ============================================================
 # Platform: {{ .chezmoi.os }}
 # ============================================================
 
 {{ if eq .chezmoi.os "darwin" -}}
-# Homebrew
+# Homebrew (must come before user PATH — brew shellenv calls path_helper
+# which rebuilds PATH and pushes unrecognized entries to the end)
 if [[ -x /opt/homebrew/bin/brew ]]; then
   eval "$(/opt/homebrew/bin/brew shellenv)"
 elif [[ -x /usr/local/bin/brew ]]; then
   eval "$(/usr/local/bin/brew shellenv)"
 fi
+
+# ============================================================
+# PATH (user binaries — AFTER brew shellenv to ensure priority)
+# ============================================================
+
+export PATH="$HOME/.claude/bin:$HOME/.local/bin:$PATH"
 
 # Compilation flags for Homebrew native libs (Python builds, npm C extensions)
 if [[ -n "$HOMEBREW_PREFIX" ]]; then
@@ -67,6 +68,9 @@ export PNPM_HOME="$HOME/Library/pnpm"
 [[ -d "$HOME/.maestro/bin" ]] && export PATH="$PATH:$HOME/.maestro/bin"
 
 {{ else if eq .chezmoi.os "linux" -}}
+# PATH (user binaries — no path_helper on Linux, safe to set early)
+export PATH="$HOME/.claude/bin:$HOME/.local/bin:$PATH"
+
 # pnpm (Linux path)
 export PNPM_HOME="$HOME/.local/share/pnpm"
 

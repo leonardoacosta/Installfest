@@ -2,6 +2,14 @@
 # Sourced by .zshrc on Darwin
 
 # ============================================================
+# PATH priority fix — macOS /etc/zprofile runs path_helper AFTER
+# .zshenv, which rebuilds PATH and pushes user entries to the end.
+# Re-prepend here (.zshrc runs after /etc/zprofile) to ensure
+# ~/.local/bin takes priority over /opt/homebrew/bin.
+# ============================================================
+export PATH="$HOME/.claude/bin:$HOME/.local/bin:$PATH"
+
+# ============================================================
 # macOS Aliases (Homebrew, runtime paths moved to .zshenv)
 # (ls handled by eza in load-tools.zsh)
 # ============================================================
