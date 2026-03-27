@@ -56,7 +56,7 @@ else
 fi
 
 # Load LaunchAgents
-for plist_name in com.leonardoacosta.cloudpc-tunnel; do
+for plist_name in com.leonardoacosta.cloudpc-tunnel com.leonardoacosta.validate-proxy; do
     plist="$HOME/Library/LaunchAgents/${plist_name}.plist"
     if [[ -f "$plist" ]] && ! launchctl list | grep -q "$plist_name"; then
         launchctl bootstrap "gui/$(id -u)" "$plist" 2>/dev/null || true

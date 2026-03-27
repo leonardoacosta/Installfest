@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.leonardoacosta.validate-proxy</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/leonardoacosta/dev/if/scripts/validate-proxy.sh</string>
+    </array>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <!-- Delay 30s after login to let tunnel + ProxyBridge start first -->
+    <key>StartInterval</key>
+    <integer>0</integer>
+
+    <key>ThrottleInterval</key>
+    <integer>30</integer>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin</string>
+        <key>HOME</key>
+        <string>/Users/leonardoacosta</string>
+        <key>DOTFILES</key>
+        <string>/Users/leonardoacosta/dev/if</string>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/Users/leonardoacosta/.local/logs/validate-proxy.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/leonardoacosta/.local/logs/validate-proxy.err.log</string>
+</dict>
+</plist>
