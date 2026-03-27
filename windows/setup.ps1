@@ -135,13 +135,90 @@ function Prompt-YesNo {
 function Install-OpenSSHServer {
     Write-Step "Configuring OpenSSH Server..."
 
-    # Install OpenSSH Server if not present
+    # Install built-in OpenSSH Server if not present (bootstrap only — replaced by GitHub release below)
     $sshCapability = Get-WindowsCapability -Online | Where-Object Name -like "OpenSSH.Server*"
     if ($sshCapability.State -ne "Installed") {
-        Write-Step "Installing OpenSSH Server..."
+        Write-Step "Installing OpenSSH Server (built-in)..."
         Add-WindowsCapability -Online -Name "OpenSSH.Server~~~~0.0.1.0"
     } else {
-        Write-Ok "OpenSSH Server already installed"
+        Write-Ok "OpenSSH Server capability present"
+    }
+
+    # Upgrade to Win32-OpenSSH from GitHub (the built-in is 8.x with SOCKS/ControlMaster bugs)
+    # Target: OpenSSH 10.0+ from https://github.com/PowerShell/Win32-OpenSSH
+    $currentVersion = ""
+    $sshdPath = "$env:ProgramFiles\OpenSSH\sshd.exe"
+    $builtinSshdPath = "$env:SystemRoot\System32\OpenSSH\sshd.exe"
+
+    # Check current version (prefer Program Files install over built-in)
+    if (Test-Path $sshdPath) {
+        $currentVersion = (& $sshdPath -V 2>&1) -replace '.*OpenSSH_for_Windows_(\S+).*', '$1'
+    } elseif (Test-Path $builtinSshdPath) {
+        $currentVersion = (& $builtinSshdPath -V 2>&1) -replace '.*OpenSSH_for_Windows_(\S+).*', '$1'
+    }
+    Write-Step "Current OpenSSH version: $currentVersion"
+
+    $targetVersion = "10.0.0.0"
+    $needsUpgrade = $true
+    if ($currentVersion -match "^(\d+)\.") {
+        $majorVersion = [int]$Matches[1]
+        if ($majorVersion -ge 10) {
+            $needsUpgrade = $false
+            Write-Ok "OpenSSH $currentVersion is current (>= 10.x)"
+        }
+    }
+
+    if ($needsUpgrade) {
+        Write-Step "Upgrading OpenSSH to latest from GitHub..."
+
+        # Get latest release URL
+        $releaseApi = "https://api.github.com/repos/PowerShell/Win32-OpenSSH/releases/latest"
+        $release = Invoke-RestMethod -Uri $releaseApi -UseBasicParsing
+        $asset = $release.assets | Where-Object { $_.name -like "OpenSSH-Win64*.msi" } | Select-Object -First 1
+
+        if (-not $asset) {
+            # Fallback to zip if no MSI
+            $asset = $release.assets | Where-Object { $_.name -like "OpenSSH-Win64.zip" } | Select-Object -First 1
+        }
+
+        if ($asset) {
+            $downloadPath = "$env:TEMP\$($asset.name)"
+            Write-Step "Downloading $($asset.name) ($($release.tag_name))..."
+            Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $downloadPath -UseBasicParsing
+
+            # Stop sshd before upgrading
+            Stop-Service sshd -ErrorAction SilentlyContinue
+
+            if ($asset.name -like "*.msi") {
+                Write-Step "Installing via MSI..."
+                Start-Process msiexec.exe -ArgumentList "/i `"$downloadPath`" /qn" -Wait -NoNewWindow
+            } else {
+                # ZIP install — extract to Program Files\OpenSSH
+                Write-Step "Installing from ZIP..."
+                $installDir = "$env:ProgramFiles\OpenSSH"
+                if (Test-Path $installDir) {
+                    # Backup existing
+                    Rename-Item $installDir "$installDir.bak.$(Get-Date -Format yyyyMMdd)" -ErrorAction SilentlyContinue
+                }
+                Expand-Archive -Path $downloadPath -DestinationPath "$env:ProgramFiles" -Force
+                # The ZIP extracts to OpenSSH-Win64, rename to OpenSSH
+                if (Test-Path "$env:ProgramFiles\OpenSSH-Win64") {
+                    Rename-Item "$env:ProgramFiles\OpenSSH-Win64" "OpenSSH"
+                }
+                # Install sshd service from new binary
+                & "$installDir\install-sshd.ps1"
+            }
+
+            Remove-Item $downloadPath -ErrorAction SilentlyContinue
+
+            # Verify upgrade
+            if (Test-Path "$env:ProgramFiles\OpenSSH\sshd.exe") {
+                $newVersion = (& "$env:ProgramFiles\OpenSSH\sshd.exe" -V 2>&1)
+                Write-Ok "Upgraded to: $newVersion"
+            }
+        } else {
+            Write-Warn "Could not find OpenSSH Win64 release asset — skipping upgrade"
+        }
     }
 
     # Generate default config if it doesn't exist
