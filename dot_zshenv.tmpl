@@ -6,11 +6,87 @@
 # IMPORTANT: This file should ONLY set environment variables.
 # Tool inits (starship, zoxide, fzf) belong in .zshrc for interactive shells.
 
-# Set DOTFILES path (used by all other scripts)
+# ============================================================
+# Core
+# ============================================================
+
+# Dotfiles source directory
 export DOTFILES="${DOTFILES:-$HOME/dev/if}"
 
-# PATH additions (user binaries)
+# Locale
+export LANG="en_US.UTF-8"
+export LC_ALL="en_US.UTF-8"
+
+# Editor (fallback chain: cursor → nvim → vim)
+if command -v cursor &>/dev/null; then
+  export EDITOR="cursor"
+elif command -v nvim &>/dev/null; then
+  export EDITOR="nvim"
+else
+  export EDITOR="vim"
+fi
+export VISUAL="$EDITOR"
+
+# XDG Base Directories
+export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
+export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
+export XDG_STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
+
+# ============================================================
+# PATH (user binaries)
+# ============================================================
+
 export PATH="$HOME/.claude/bin:$HOME/.local/bin:$PATH"
 
+# ============================================================
+# Platform: {{ .chezmoi.os }}
+# ============================================================
+
+{{ if eq .chezmoi.os "darwin" -}}
+# Homebrew
+if [[ -x /opt/homebrew/bin/brew ]]; then
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+elif [[ -x /usr/local/bin/brew ]]; then
+  eval "$(/usr/local/bin/brew shellenv)"
+fi
+
+# Compilation flags for Homebrew native libs (Python builds, npm C extensions)
+if [[ -n "$HOMEBREW_PREFIX" ]]; then
+  export LDFLAGS="-L$HOMEBREW_PREFIX/opt/zlib/lib -L$HOMEBREW_PREFIX/opt/bzip2/lib"
+  export CPPFLAGS="-I$HOMEBREW_PREFIX/opt/zlib/include -I$HOMEBREW_PREFIX/opt/bzip2/include"
+fi
+
+# pnpm (macOS path)
+export PNPM_HOME="$HOME/Library/pnpm"
+
+# .NET tools
+[[ -d "$HOME/.dotnet/tools" ]] && export PATH="$PATH:$HOME/.dotnet/tools"
+
+# Maestro (mobile testing)
+[[ -d "$HOME/.maestro/bin" ]] && export PATH="$PATH:$HOME/.maestro/bin"
+
+{{ else if eq .chezmoi.os "linux" -}}
+# pnpm (Linux path)
+export PNPM_HOME="$HOME/.local/share/pnpm"
+
+{{ end -}}
+# ============================================================
+# Shared dev toolchains
+# ============================================================
+
+# pnpm (add to PATH if installed)
+[[ -d "$PNPM_HOME" ]] && [[ ":$PATH:" != *":$PNPM_HOME:"* ]] && export PATH="$PNPM_HOME:$PATH"
+
+# Cargo/Rust
+[[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
+
+# Go
+[[ -d "/usr/local/go/bin" ]] && export PATH="$PATH:/usr/local/go/bin"
+[[ -d "$HOME/go/bin" ]] && export PATH="$PATH:$HOME/go/bin"
+
+# ============================================================
 # Local overrides (secrets, machine-specific tokens)
+# ============================================================
+
 [[ -f ~/.zshenv.local ]] && source ~/.zshenv.local

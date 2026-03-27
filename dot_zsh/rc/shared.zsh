@@ -10,8 +10,8 @@
 
 # History configuration
 HISTFILE="${HOME}/.zsh_history"
-HISTSIZE=50000
-SAVEHIST=50000
+HISTSIZE=100000
+SAVEHIST=100000
 
 # History options
 setopt HIST_IGNORE_ALL_DUPS    # Remove older duplicate entries
@@ -63,10 +63,12 @@ alias gc="git commit"
 alias gco="git checkout"
 alias gb="git branch"
 
-# Safety aliases
-alias rm="rm -i"
-alias cp="cp -i"
-alias mv="mv -i"
+# Safety aliases (interactive shells only — avoids breaking scripts, CI, Claude Code)
+if [[ -o interactive ]]; then
+  alias rm="rm -i"
+  alias cp="cp -i"
+  alias mv="mv -i"
+fi
 
 # cmux workspaces
 alias mux="$DOTFILES/scripts/cmux-workspaces.sh"

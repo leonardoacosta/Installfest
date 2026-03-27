@@ -3,8 +3,10 @@
 
 # zoxide (smart cd replacement)
 if command -v zoxide &>/dev/null; then
+  export _ZO_DOCTOR=0  # Suppress config warnings in non-interactive shells
   eval "$(zoxide init zsh)"
-  alias cd="z"  # Optional: replace cd entirely
+  # Only alias cd→z in interactive shells (avoids breaking CI, scripts, Claude Code)
+  [[ -o interactive ]] && alias cd="z"
 fi
 
 # atuin (better shell history)
@@ -58,9 +60,9 @@ fi
 
 # eza (better ls)
 if command -v eza &>/dev/null; then
-  alias ls="eza --icons"
-  alias ll="eza -l --icons --git"
-  alias la="eza -la --icons --git"
+  alias ls="eza --icons --grid --group-directories-first"
+  alias ll="eza -l --icons --git --group-directories-first"
+  alias la="eza -la --icons --git --group-directories-first"
   alias lt="eza --tree --level=2 --icons"
 fi
 

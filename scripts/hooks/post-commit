@@ -1,0 +1,12 @@
+#!/bin/sh
+#
+# post-commit — runs after git commit
+#
+# Deploy chezmoi dotfiles so local config always matches committed source.
+
+HOOKS_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# --- chezmoi apply ---
+"$HOOKS_DIR/chezmoi-apply"
+
+exit 0

@@ -1,0 +1,41 @@
+#!/bin/sh
+#
+# post-merge — runs after git pull / git merge
+#
+# 1. Import beads changes from merged JSONL
+# 2. Deploy chezmoi dotfiles
+
+HOOKS_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# --- beads import ---
+if command -v bd >/dev/null 2>&1; then
+    BEADS_DIR=""
+    if git rev-parse --git-dir >/dev/null 2>&1; then
+        if [ "$(git rev-parse --git-dir)" != "$(git rev-parse --git-common-dir)" ]; then
+            MAIN_REPO_ROOT="$(dirname "$(git rev-parse --git-common-dir)")"
+            [ -d "$MAIN_REPO_ROOT/.beads" ] && BEADS_DIR="$MAIN_REPO_ROOT/.beads"
+        else
+            [ -d .beads ] && BEADS_DIR=".beads"
+        fi
+    fi
+
+    if [ -n "$BEADS_DIR" ]; then
+        # Skip Dolt backend
+        if [ -f "$BEADS_DIR/metadata.json" ]; then
+            if grep -q '"backend"[[:space:]]*:[[:space:]]*"dolt"' "$BEADS_DIR/metadata.json" 2>/dev/null; then
+                BEADS_DIR=""
+            fi
+        fi
+
+        if [ -n "$BEADS_DIR" ] && [ -f "$BEADS_DIR/issues.jsonl" ]; then
+            if ! bd import -i "$BEADS_DIR/issues.jsonl" >/dev/null 2>&1; then
+                echo "Warning: Failed to import bd changes after merge" >&2
+            fi
+        fi
+    fi
+fi
+
+# --- chezmoi apply ---
+"$HOOKS_DIR/chezmoi-apply"
+
+exit 0
