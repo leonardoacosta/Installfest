@@ -1,0 +1,68 @@
+#!/bin/sh
+# az — Smart Azure CLI wrapper
+# Routes all traffic through CloudPC SOCKS5 tunnel (proxychains4)
+# Auto-selects identity based on subcommand/arguments
+#
+# Identities:
+#   BBAdmin (BBAdminLAcosta@bbins.com)   — Azure RM, ADO, PIM (default)
+#   O365 (leonardo.acosta@bridgespecialty.com) — Microsoft Graph API
+#
+# Override flags:
+#   --as-o365   Force O365 identity
+#   --as-admin  Force BBAdmin identity
+
+set -e
+
+# --- Find real az binary (skip this wrapper) ---
+REAL_AZ=""
+for candidate in \
+    "$HOME/.local/share/pipx/venvs/azure-cli/bin/az" \
+    "/usr/bin/az" \
+    "/usr/local/bin/az" \
+    "/opt/homebrew/bin/az"; do
+    [ -x "$candidate" ] && REAL_AZ="$candidate" && break
+done
+
+if [ -z "$REAL_AZ" ]; then
+    echo "error: az CLI not found. Install via: pipx install azure-cli" >&2
+    exit 1
+fi
+
+# --- Default: BBAdmin identity ---
+export AZURE_CONFIG_DIR="$HOME/.azure-bbadmin"
+IDENTITY="bbadmin"
+
+# --- Check for override flags ---
+ARGS="$*"
+case "$ARGS" in
+    *--as-o365*)
+        export AZURE_CONFIG_DIR="$HOME/.azure-o365"
+        IDENTITY="o365"
+        ARGS=$(echo "$ARGS" | sed 's/--as-o365//g')
+        ;;
+    *--as-admin*)
+        # Explicit BBAdmin (default, but strip the flag)
+        ARGS=$(echo "$ARGS" | sed 's/--as-admin//g')
+        ;;
+esac
+
+# --- Auto-detect identity from subcommand/arguments ---
+if [ "$IDENTITY" = "bbadmin" ]; then
+    case "$ARGS" in
+        *graph.microsoft.com*)
+            export AZURE_CONFIG_DIR="$HOME/.azure-o365"
+            IDENTITY="o365"
+            ;;
+    esac
+fi
+
+# --- Route through CloudPC SOCKS5 tunnel ---
+PROXYCHAINS_CONF="$HOME/.config/proxychains/proxychains.conf"
+
+if [ -f "$PROXYCHAINS_CONF" ] && command -v proxychains4 >/dev/null 2>&1; then
+    exec proxychains4 -q -f "$PROXYCHAINS_CONF" "$REAL_AZ" $ARGS
+else
+    # Fallback: run without proxy (will fail CAE but won't break az entirely)
+    echo "warning: proxychains4 not available, running az without SOCKS proxy" >&2
+    exec "$REAL_AZ" $ARGS
+fi

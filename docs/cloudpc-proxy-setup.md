@@ -168,6 +168,63 @@ The systemd/LaunchAgent services auto-restart on failure.
 exec proxychains4 -f "$HOME/.config/proxychains/proxychains.conf" <binary-name> "$@"
 ```
 
+## az CLI Wrapper
+
+The `az` CLI wrapper at `~/.local/bin/az` routes all Azure CLI traffic through the CloudPC tunnel
+and auto-selects the correct Azure identity based on what you're calling.
+
+### Dual Identity Architecture
+
+| Identity | Config Dir | Account | Used For |
+|----------|-----------|---------|----------|
+| **BBAdmin** (default) | `~/.azure-bbadmin` | BBAdminLAcosta@bbins.com | Azure RM, ADO, PIM |
+| **O365** | `~/.azure-o365` | leonardo.acosta@bridgespecialty.com | Microsoft Graph API |
+
+Each identity has its own `AZURE_CONFIG_DIR` — both stay logged in simultaneously, no switching.
+
+### Auto-Detection Logic
+
+| Command Pattern | Identity Selected |
+|----------------|------------------|
+| `az rest --url https://graph.microsoft.com/*` | O365 |
+| `az rest --resource https://graph.microsoft.com*` | O365 |
+| `az devops *`, `az pipelines *`, `az repos *` | BBAdmin |
+| `az group *`, `az vm *`, `az webapp *` | BBAdmin |
+| Any unrecognized command | BBAdmin (default) |
+
+### Override Flags
+
+```bash
+az account show --as-o365     # Force O365 identity
+az account show --as-admin    # Force BBAdmin identity (explicit default)
+```
+
+Flags are stripped before passing to the real `az` binary.
+
+### First-Time Setup
+
+```bash
+scripts/setup-az-wrapper.sh
+```
+
+This creates config directories, verifies dependencies, and runs device-code login for both
+identities. Interactive — requires browser sign-in.
+
+### Manual Login (token refresh)
+
+```bash
+az login --use-device-code --as-o365     # Refresh O365 token
+az login --use-device-code --as-admin    # Refresh BBAdmin token
+```
+
+### Verification
+
+```bash
+az account show --as-o365     # Should show leonardo.acosta@bridgespecialty.com
+az account show --as-admin    # Should show BBAdminLAcosta@bbins.com
+which az                       # Should return ~/.local/bin/az (wrapper)
+```
+
 ## Platform Comparison
 
 | Feature | macOS (ProxyBridge) | Linux (proxychains-ng) |

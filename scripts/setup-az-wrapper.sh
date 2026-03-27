@@ -1,0 +1,85 @@
+#!/bin/bash
+# setup-az-wrapper.sh — First-time setup for the smart az CLI wrapper
+# Creates identity directories, verifies dependencies, and runs device-code login
+set -euo pipefail
+
+DOTFILES="${DOTFILES:-$HOME/dev/if}"
+source "$DOTFILES/scripts/utils.sh" 2>/dev/null || {
+    info() { echo "[INFO] $*"; }
+    success() { echo "[OK] $*"; }
+    warning() { echo "[WARN] $*"; }
+}
+
+echo "=== az CLI Wrapper Setup ==="
+echo ""
+
+# --- 1. Create identity config directories ---
+mkdir -p "$HOME/.azure-bbadmin" "$HOME/.azure-o365"
+success "Created ~/.azure-bbadmin and ~/.azure-o365"
+
+# --- 2. Verify real az binary ---
+REAL_AZ=""
+for candidate in \
+    "$HOME/.local/share/pipx/venvs/azure-cli/bin/az" \
+    "/usr/bin/az" \
+    "/usr/local/bin/az" \
+    "/opt/homebrew/bin/az"; do
+    [ -x "$candidate" ] && REAL_AZ="$candidate" && break
+done
+
+if [ -z "$REAL_AZ" ]; then
+    echo "ERROR: Azure CLI not found." >&2
+    echo "Install via: pipx install azure-cli" >&2
+    exit 1
+fi
+success "Found az binary: $REAL_AZ"
+
+# --- 3. Verify proxychains config ---
+PROXYCHAINS_CONF="$HOME/.config/proxychains/proxychains.conf"
+if [ -f "$PROXYCHAINS_CONF" ]; then
+    success "proxychains config: $PROXYCHAINS_CONF"
+else
+    warning "proxychains config not found at $PROXYCHAINS_CONF"
+    warning "Run 'chezmoi apply' to deploy it"
+fi
+
+# --- 4. Verify SOCKS tunnel ---
+if pgrep -f "ssh.*-D.*1080.*cloudpc" >/dev/null 2>&1; then
+    success "SOCKS tunnel is running"
+else
+    warning "SOCKS tunnel not running"
+    warning "Start with: systemctl --user start cloudpc-tunnel"
+fi
+
+# --- 5. Login: BBAdmin ---
+echo ""
+info "=== BBAdmin Login (BBAdminLAcosta@bbins.com) ==="
+info "Sign in as: BBAdminLAcosta@bbins.com"
+echo ""
+AZURE_CONFIG_DIR="$HOME/.azure-bbadmin" proxychains4 -q -f "$PROXYCHAINS_CONF" "$REAL_AZ" login --use-device-code
+
+# --- 6. Login: O365 ---
+echo ""
+info "=== O365 Login (leonardo.acosta@bridgespecialty.com) ==="
+info "Sign in as: leonardo.acosta@bridgespecialty.com"
+echo ""
+AZURE_CONFIG_DIR="$HOME/.azure-o365" proxychains4 -q -f "$PROXYCHAINS_CONF" "$REAL_AZ" login --use-device-code
+
+# --- 7. Verify both identities ---
+echo ""
+info "Verifying identities..."
+
+BBADMIN_ACCOUNT=$(AZURE_CONFIG_DIR="$HOME/.azure-bbadmin" proxychains4 -q -f "$PROXYCHAINS_CONF" "$REAL_AZ" account show --query "user.name" -o tsv 2>/dev/null || echo "FAILED")
+O365_ACCOUNT=$(AZURE_CONFIG_DIR="$HOME/.azure-o365" proxychains4 -q -f "$PROXYCHAINS_CONF" "$REAL_AZ" account show --query "user.name" -o tsv 2>/dev/null || echo "FAILED")
+
+echo ""
+echo "=== Summary ==="
+echo "  BBAdmin: $BBADMIN_ACCOUNT"
+echo "  O365:    $O365_ACCOUNT"
+echo ""
+
+if [ "$BBADMIN_ACCOUNT" != "FAILED" ] && [ "$O365_ACCOUNT" != "FAILED" ]; then
+    success "Both identities configured successfully"
+else
+    warning "One or more identities failed — re-run setup or login manually"
+fi
