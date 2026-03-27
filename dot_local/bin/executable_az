@@ -60,9 +60,12 @@ fi
 PROXYCHAINS_CONF="$HOME/.config/proxychains/proxychains.conf"
 
 if [ -f "$PROXYCHAINS_CONF" ] && command -v proxychains4 >/dev/null 2>&1; then
+    # Linux: proxychains LD_PRELOAD intercept
     exec proxychains4 -q -f "$PROXYCHAINS_CONF" "$REAL_AZ" $ARGS
 else
-    # Fallback: run without proxy (will fail CAE but won't break az entirely)
-    echo "warning: proxychains4 not available, running az without SOCKS proxy" >&2
+    # macOS (or no proxychains): use HTTPS_PROXY env var
+    # az CLI natively respects HTTPS_PROXY for all HTTP requests
+    export HTTPS_PROXY="socks5h://127.0.0.1:1080"
+    export HTTP_PROXY="socks5h://127.0.0.1:1080"
     exec "$REAL_AZ" $ARGS
 fi

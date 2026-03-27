@@ -21,34 +21,50 @@ success "Created ~/.azure-bbadmin and ~/.azure-o365"
 REAL_AZ=""
 for candidate in \
     "$HOME/.local/share/pipx/venvs/azure-cli/bin/az" \
-    "/usr/bin/az" \
+    "/opt/homebrew/bin/az" \
     "/usr/local/bin/az" \
-    "/opt/homebrew/bin/az"; do
+    "/usr/bin/az"; do
     [ -x "$candidate" ] && REAL_AZ="$candidate" && break
 done
 
 if [ -z "$REAL_AZ" ]; then
     echo "ERROR: Azure CLI not found." >&2
-    echo "Install via: pipx install azure-cli" >&2
+    echo "Install via: brew install azure-cli (macOS) or pipx install azure-cli (Linux)" >&2
     exit 1
 fi
 success "Found az binary: $REAL_AZ"
 
-# --- 3. Verify proxychains config ---
+# --- 3. Detect proxy method ---
+# Linux: proxychains4 (LD_PRELOAD)
+# macOS: HTTPS_PROXY env var (az natively supports it)
 PROXYCHAINS_CONF="$HOME/.config/proxychains/proxychains.conf"
-if [ -f "$PROXYCHAINS_CONF" ]; then
-    success "proxychains config: $PROXYCHAINS_CONF"
+USE_PROXYCHAINS=false
+
+if [ -f "$PROXYCHAINS_CONF" ] && command -v proxychains4 >/dev/null 2>&1; then
+    USE_PROXYCHAINS=true
+    success "Proxy method: proxychains4"
 else
-    warning "proxychains config not found at $PROXYCHAINS_CONF"
-    warning "Run 'chezmoi apply' to deploy it"
+    success "Proxy method: HTTPS_PROXY=socks5h://127.0.0.1:1080"
 fi
+
+# Helper: run az through the tunnel
+run_az() {
+    if [ "$USE_PROXYCHAINS" = true ]; then
+        proxychains4 -q -f "$PROXYCHAINS_CONF" "$REAL_AZ" "$@"
+    else
+        HTTPS_PROXY="socks5h://127.0.0.1:1080" HTTP_PROXY="socks5h://127.0.0.1:1080" "$REAL_AZ" "$@"
+    fi
+}
 
 # --- 4. Verify SOCKS tunnel ---
 if pgrep -f "ssh.*-D.*1080.*cloudpc" >/dev/null 2>&1; then
     success "SOCKS tunnel is running"
 else
     warning "SOCKS tunnel not running"
-    warning "Start with: systemctl --user start cloudpc-tunnel"
+    case "$(uname -s)" in
+        Darwin) warning "Start with: launchctl start com.leonardoacosta.cloudpc-tunnel" ;;
+        Linux)  warning "Start with: systemctl --user start cloudpc-tunnel" ;;
+    esac
 fi
 
 # --- 5. Login: BBAdmin ---
@@ -56,21 +72,21 @@ echo ""
 info "=== BBAdmin Login (BBAdminLAcosta@bbins.com) ==="
 info "Sign in as: BBAdminLAcosta@bbins.com"
 echo ""
-AZURE_CONFIG_DIR="$HOME/.azure-bbadmin" proxychains4 -q -f "$PROXYCHAINS_CONF" "$REAL_AZ" login --use-device-code
+AZURE_CONFIG_DIR="$HOME/.azure-bbadmin" run_az login --use-device-code
 
 # --- 6. Login: O365 ---
 echo ""
 info "=== O365 Login (leonardo.acosta@bridgespecialty.com) ==="
 info "Sign in as: leonardo.acosta@bridgespecialty.com"
 echo ""
-AZURE_CONFIG_DIR="$HOME/.azure-o365" proxychains4 -q -f "$PROXYCHAINS_CONF" "$REAL_AZ" login --use-device-code
+AZURE_CONFIG_DIR="$HOME/.azure-o365" run_az login --use-device-code
 
 # --- 7. Verify both identities ---
 echo ""
 info "Verifying identities..."
 
-BBADMIN_ACCOUNT=$(AZURE_CONFIG_DIR="$HOME/.azure-bbadmin" proxychains4 -q -f "$PROXYCHAINS_CONF" "$REAL_AZ" account show --query "user.name" -o tsv 2>/dev/null || echo "FAILED")
-O365_ACCOUNT=$(AZURE_CONFIG_DIR="$HOME/.azure-o365" proxychains4 -q -f "$PROXYCHAINS_CONF" "$REAL_AZ" account show --query "user.name" -o tsv 2>/dev/null || echo "FAILED")
+BBADMIN_ACCOUNT=$(AZURE_CONFIG_DIR="$HOME/.azure-bbadmin" run_az account show --query "user.name" -o tsv 2>/dev/null || echo "FAILED")
+O365_ACCOUNT=$(AZURE_CONFIG_DIR="$HOME/.azure-o365" run_az account show --query "user.name" -o tsv 2>/dev/null || echo "FAILED")
 
 echo ""
 echo "=== Summary ==="
