@@ -2,26 +2,11 @@
 # Sourced by .zshrc on Linux
 
 # ============================================================
-# Runtime Paths
+# Aliases (runtime paths moved to .zshenv)
 # ============================================================
 
-# pnpm (Linux path)
-export PNPM_HOME="$HOME/.local/share/pnpm"
-[[ -d "$PNPM_HOME" ]] && export PATH="$PNPM_HOME:$PATH"
-
-# Cargo (Rust)
-[[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
-
-# Go
-[[ -d "/usr/local/go/bin" ]] && export PATH="$PATH:/usr/local/go/bin"
-[[ -d "$HOME/go/bin" ]] && export PATH="$PATH:$HOME/go/bin"
-
-# ============================================================
-# Aliases
-# ============================================================
-
-# GNU coreutils color support
-alias ls="ls --color=auto"
+# Color support (ls handled by eza in load-tools.zsh)
+# alias ls="ls --color=auto"  # Superseded by eza
 alias grep="grep --color=auto"
 alias fgrep="fgrep --color=auto"
 alias egrep="egrep --color=auto"
@@ -74,3 +59,54 @@ fi
 
 # Open file manager
 alias open="xdg-open"
+
+# Nexus CLI shortcut
+alias nx="nexus"
+
+# ============================================================
+# File server (cmux embedded browser)
+# ============================================================
+
+# fview - open file in cmux embedded browser via file server
+# Usage: fview path/to/file.md
+#        fview path/to/file.md --split   (open as split pane)
+fview() {
+  local file="${1:?usage: fview <file> [--split]}"
+  local abs_path
+  abs_path=$(realpath "$file" 2>/dev/null || echo "$file")
+  local host
+  host=$(tailscale ip -4 2>/dev/null \
+    || ip -4 addr show tailscale0 2>/dev/null | grep -oP 'inet \K[\d.]+' \
+    || echo "localhost")
+  local port="${FILE_SERVER_PORT:-8787}"
+  local url="http://${host}:${port}${abs_path}"
+
+  if [ -S /tmp/cmux.sock ]; then
+    # Local Mac — use cmux CLI directly
+    cmux browser open-split "$url" >/dev/null 2>&1
+  elif [ -S "${CMUX_SOCKET_PATH:-/tmp/cmux-remote.sock}" ]; then
+    # Remote — forwarded socket from Mac via SSH -R
+    python3 "$DOTFILES/scripts/cmux-bridge.py" browser-open "$url" >/dev/null 2>&1
+  else
+    # Fallback — print OSC 8 clickable link
+    printf '\e]8;;%s\e\\%s\e]8;;\e\\\n' "$url" "$abs_path"
+    return
+  fi
+  echo "Opened: $abs_path"
+}
+
+# flink - print OSC 8 clickable hyperlink (for terminal output)
+# Usage: flink path/to/file.md [label]
+flink() {
+  local file="${1:?usage: flink <file> [label]}"
+  local abs_path
+  abs_path=$(realpath "$file" 2>/dev/null || echo "$file")
+  local label="${2:-$abs_path}"
+  local host
+  host=$(tailscale ip -4 2>/dev/null \
+    || ip -4 addr show tailscale0 2>/dev/null | grep -oP 'inet \K[\d.]+' \
+    || echo "localhost")
+  local port="${FILE_SERVER_PORT:-8787}"
+  local url="http://${host}:${port}${abs_path}"
+  printf '\e]8;;%s\e\\%s\e]8;;\e\\\n' "$url" "$label"
+}

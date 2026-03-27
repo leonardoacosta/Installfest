@@ -1,12 +1,14 @@
-# Routing macOS Apps Through CloudPC Network
+# Routing Apps Through CloudPC Network
 
-Route native macOS apps (Teams, Outlook) through cloudpc's network to pass Microsoft Conditional
-Access Evaluation (CAE). CAE checks the originating IP — your Mac isn't trusted, but cloudpc is.
+Route Microsoft apps (Teams, Outlook, Edge) through cloudpc's network to pass Microsoft Conditional
+Access Evaluation (CAE). CAE checks the originating IP — your local machine isn't trusted, but
+cloudpc is.
 
 ## Architecture
 
 ```
-macOS App (Teams) → ProxyBridge (per-app intercept) → SSH SOCKS5 tunnel → cloudpc → Microsoft
+macOS:  App (Teams) → ProxyBridge (per-app intercept) → SSH SOCKS5 → cloudpc → Microsoft
+Linux:  App (Edge)  → proxychains-ng (LD_PRELOAD)     → SSH SOCKS5 → cloudpc → Microsoft
 ```
 
 - **TCP traffic** (auth, SSO, API): routes through cloudpc — CAE passes
@@ -16,24 +18,41 @@ macOS App (Teams) → ProxyBridge (per-app intercept) → SSH SOCKS5 tunnel → 
 ## Prerequisites
 
 - SSH access to `cloudpc` (configured in `~/.ssh/config`)
-- [ProxyBridge](https://github.com/InterceptSuite/ProxyBridge) installed on macOS
-- ProxyBridge Network Extension approved: System Settings → General → Login Items & Extensions → Network Extensions
+- **macOS**: [ProxyBridge](https://github.com/InterceptSuite/ProxyBridge) (installed by `chezmoi apply`)
+- **Linux**: `proxychains-ng` (installed by `scripts/install-arch.sh`)
 
 ## Setup
 
-### 1. Start the SOCKS5 tunnel
+### 1. SOCKS5 Tunnel (both platforms)
+
+The tunnel auto-starts on login via platform services (deployed by chezmoi):
+
+- **macOS**: `~/Library/LaunchAgents/com.leonardoacosta.cloudpc-tunnel.plist`
+- **Linux**: `~/.config/systemd/user/cloudpc-tunnel.service`
+
+To enable after first `chezmoi apply`:
+
+```bash
+# macOS
+launchctl load ~/Library/LaunchAgents/com.leonardoacosta.cloudpc-tunnel.plist
+
+# Linux
+systemctl --user enable --now cloudpc-tunnel.service
+```
+
+Manual start (if needed):
 
 ```bash
 ssh -D 1080 -f -N cloudpc
 ```
 
-Or use the helper (from the `ws` repo):
-```bash
-~/dev/ws/scripts/chrome-proxy        # starts tunnel + launches proxied Chrome
-~/dev/ws/scripts/chrome-proxy --status  # check if tunnel is active
-```
+### 2a. macOS — ProxyBridge
 
-### 2. Configure ProxyBridge
+ProxyBridge is installed automatically by `chezmoi apply` (via `run_once_install-packages.sh`).
+
+**First-launch (one-time manual step):**
+1. Open ProxyBridge
+2. Approve Network Extension: System Settings → General → Login Items & Extensions → Network Extensions
 
 **Add proxy server:**
 - Type: `SOCKS5`
@@ -42,114 +61,120 @@ Or use the helper (from the `ws` repo):
 
 **Import rules** (Menu Bar → Proxy → Proxy Rules → Import):
 
+Use the standalone rules file: `scripts/proxybridge-rules.json`
+
+Or import inline:
+
 ```json
 [
-  {
-    "action": "PROXY",
-    "enabled": true,
-    "processNames": "MSTeams",
-    "protocol": "TCP",
-    "targetHosts": "*",
-    "targetPorts": "*"
-  },
-  {
-    "action": "PROXY",
-    "enabled": true,
-    "processNames": "Microsoft Teams WebView Helper",
-    "protocol": "TCP",
-    "targetHosts": "*",
-    "targetPorts": "*"
-  },
-  {
-    "action": "PROXY",
-    "enabled": true,
-    "processNames": "Microsoft Teams",
-    "protocol": "TCP",
-    "targetHosts": "*",
-    "targetPorts": "*"
-  },
-  {
-    "action": "PROXY",
-    "enabled": true,
-    "processNames": "Microsoft Outlook",
-    "protocol": "TCP",
-    "targetHosts": "*",
-    "targetPorts": "*"
-  }
+  { "action": "PROXY", "enabled": true, "processNames": "MSTeams", "protocol": "TCP", "targetHosts": "*", "targetPorts": "*" },
+  { "action": "PROXY", "enabled": true, "processNames": "Microsoft Teams WebView Helper", "protocol": "TCP", "targetHosts": "*", "targetPorts": "*" },
+  { "action": "PROXY", "enabled": true, "processNames": "Microsoft Teams", "protocol": "TCP", "targetHosts": "*", "targetPorts": "*" },
+  { "action": "PROXY", "enabled": true, "processNames": "Microsoft Outlook", "protocol": "TCP", "targetHosts": "*", "targetPorts": "*" },
+  { "action": "PROXY", "enabled": true, "processNames": "Microsoft Edge", "protocol": "TCP", "targetHosts": "*", "targetPorts": "*" },
+  { "action": "PROXY", "enabled": true, "processNames": "Microsoft Edge Helper", "protocol": "TCP", "targetHosts": "*", "targetPorts": "*" }
 ]
 ```
 
-### 3. Restart Teams
+### 2b. Linux — proxychains-ng
 
-Quit and reopen Teams. ProxyBridge intercepts TCP connections on launch.
+proxychains-ng is installed by `scripts/install-arch.sh`. Config deployed to
+`~/.config/proxychains/proxychains.conf`.
+
+**Use wrapper scripts** (deployed to `~/.local/bin/`):
+
+```bash
+edge-proxied              # Launch Edge through CloudPC
+teams-proxied             # Launch Teams through CloudPC
+outlook-proxied           # Launch Outlook through CloudPC
+```
+
+**Or wrap any command manually:**
+
+```bash
+proxychains4 -f ~/.config/proxychains/proxychains.conf <command>
+```
+
+### 3. Restart proxied apps
+
+Quit and reopen Teams, Outlook, and Edge. Both ProxyBridge (macOS) and proxychains (Linux)
+intercept TCP connections on launch.
 
 ## Verification
 
-ProxyBridge logs should show:
+```bash
+# Verify tunnel is routing through CloudPC (both platforms)
+curl --socks5-hostname localhost:1080 https://ifconfig.me
+# Should return cloudpc's IP, not your machine's
+
+# Linux — verify proxychains
+proxychains4 -f ~/.config/proxychains/proxychains.conf curl -s https://ifconfig.me
+# Should return cloudpc's IP
+
+# Check tunnel process
+pgrep -f "ssh.*-D.*1080.*cloudpc" && echo "Running" || echo "Not running"
+```
+
+**macOS — ProxyBridge logs** should show:
 ```
 [INFO] SOCKS5 connection established to 51.116.253.170:443
 ```
 
-If you see `→ Direct` on MSTeams connections, the rules aren't matching — check process names.
-
-To verify the tunnel itself:
-```bash
-curl --socks5-hostname localhost:1080 https://ifconfig.me
-# Should return cloudpc's IP, not your Mac's
-```
+If you see `→ Direct` on proxied connections, the rules aren't matching — check process names.
 
 ## Gotchas
 
-### 1. Process Names ≠ App Name
+### 1. Process Names (macOS ProxyBridge)
 
-Teams runs as **three separate processes**. All three need rules:
+Microsoft apps spawn multiple processes. All need rules:
 
-| Process | What it does |
-|---------|-------------|
-| `MSTeams` | Main Teams process |
-| `Microsoft Teams WebView Helper` | WebView2 content renderer |
-| `Microsoft Teams` | Parent app process |
+| Process | App | What it does |
+|---------|-----|-------------|
+| `MSTeams` | Teams | Main Teams process |
+| `Microsoft Teams WebView Helper` | Teams | WebView2 content renderer |
+| `Microsoft Teams` | Teams | Parent app process |
+| `Microsoft Outlook` | Outlook | Mail/calendar process |
+| `Microsoft Edge` | Edge | Main browser process |
+| `Microsoft Edge Helper` | Edge | Renderer/utility subprocess |
 
 ### 2. TCP Only — No UDP
 
-SSH SOCKS5 (`ssh -D`) only supports TCP. Setting protocol to `BOTH` causes:
-```
-SOCKS5 UDP ASSOCIATE response error: Socket is not connected
-```
+SSH SOCKS5 (`ssh -D`) only supports TCP. Both ProxyBridge (macOS) and proxychains-ng (Linux) are
+configured for TCP only. UDP media (calls/video) goes direct with no latency penalty.
 
-This is fine — CAE only evaluates TCP connections. UDP media (calls/video) goes direct with no
-latency penalty.
+### 3. macOS: Network Extension Must Be Approved
 
-### 3. Network Extension Must Be Approved
-
-ProxyBridge rules stay disabled until the macOS Network Extension is approved. If rules aren't
-matching or can't be added, check:
-
+ProxyBridge rules stay disabled until the macOS Network Extension is approved:
 System Settings → General → Login Items & Extensions → Network Extensions
 
-### 4. SSH Tunnel Must Be Running First
+### 4. Linux: proxychains-ng Limitations
 
-ProxyBridge routes to `127.0.0.1:1080`. If the SSH tunnel isn't running, all proxied connections
-fail silently. Check with:
+- Only works with **dynamically linked** binaries (most Electron apps are fine)
+- Does NOT work with Flatpak/Snap apps (sandbox blocks LD_PRELOAD)
+- If an app is statically linked, use `graftcp` (ptrace-based) as fallback
 
-```bash
-pgrep -f "ssh.*-D.*1080.*cloudpc" && echo "Running" || echo "Not running"
-```
+### 5. Tunnel Must Be Running First
+
+Both platforms route to `127.0.0.1:1080`. If the tunnel isn't running, proxied connections fail.
+The systemd/LaunchAgent services auto-restart on failure.
 
 ## Adding More Apps
 
-To route another app through cloudpc:
+**macOS:** Open ProxyBridge logs to see the actual process name, add a rule with that name + TCP.
 
-1. Open ProxyBridge logs to see the actual process name
-2. Add a rule with that exact process name, protocol `TCP`
-3. Common apps to add: `Microsoft Outlook`, `Safari`, `com.apple.Safari`
+**Linux:** Create a new wrapper in `~/.local/bin/`:
+```bash
+#!/bin/sh
+exec proxychains4 -f "$HOME/.config/proxychains/proxychains.conf" <binary-name> "$@"
+```
 
-## Alternatives
+## Platform Comparison
 
-| Method | Per-app | Cost | Notes |
-|--------|---------|------|-------|
-| **ProxyBridge** | ✅ | Free | Open-source, Network Extension |
-| **Proxifier** | ✅ | $40 one-time | Commercial, same approach |
-| **System SOCKS proxy** | ❌ All traffic | Free | `networksetup -setsocksfirewallproxy Wi-Fi localhost 1080` |
-| **Tailscale exit node** | ❌ All traffic | Free | Requires Tailscale on cloudpc |
-| **Chrome `--proxy-server`** | Browser only | Free | Only works for Chromium-based apps |
+| Feature | macOS (ProxyBridge) | Linux (proxychains-ng) |
+|---------|--------------------|-----------------------|
+| Mechanism | Network Extension (kernel) | LD_PRELOAD (userspace) |
+| Per-app routing | Rule-based (process name) | Wrapper scripts |
+| Always-on | Yes (intercepts matching apps) | Per-launch (must use wrapper) |
+| TCP-only | Rule config | By design |
+| Flatpak/Snap | N/A | Not supported |
+| Setup | Auto-install + one manual approval | Auto-install via pacman |

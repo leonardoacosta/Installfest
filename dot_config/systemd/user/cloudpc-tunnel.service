@@ -1,0 +1,14 @@
+[Unit]
+Description=SOCKS5 tunnel to CloudPC for Microsoft CAE bypass
+Documentation=file://%h/dev/if/docs/cloudpc-proxy-setup.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/ssh -D 1080 -N -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -o ExitOnForwardFailure=yes cloudpc
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target

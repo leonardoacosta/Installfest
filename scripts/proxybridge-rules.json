@@ -1,0 +1,50 @@
+[
+  {
+    "action": "PROXY",
+    "enabled": true,
+    "processNames": "MSTeams",
+    "protocol": "TCP",
+    "targetHosts": "*",
+    "targetPorts": "*"
+  },
+  {
+    "action": "PROXY",
+    "enabled": true,
+    "processNames": "Microsoft Teams WebView Helper",
+    "protocol": "TCP",
+    "targetHosts": "*",
+    "targetPorts": "*"
+  },
+  {
+    "action": "PROXY",
+    "enabled": true,
+    "processNames": "Microsoft Teams",
+    "protocol": "TCP",
+    "targetHosts": "*",
+    "targetPorts": "*"
+  },
+  {
+    "action": "PROXY",
+    "enabled": true,
+    "processNames": "Microsoft Outlook",
+    "protocol": "TCP",
+    "targetHosts": "*",
+    "targetPorts": "*"
+  },
+  {
+    "action": "PROXY",
+    "enabled": true,
+    "processNames": "Microsoft Edge",
+    "protocol": "TCP",
+    "targetHosts": "*",
+    "targetPorts": "*"
+  },
+  {
+    "action": "PROXY",
+    "enabled": true,
+    "processNames": "Microsoft Edge Helper",
+    "protocol": "TCP",
+    "targetHosts": "*",
+    "targetPorts": "*"
+  }
+]

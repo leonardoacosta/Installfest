@@ -41,6 +41,8 @@ install_arch_packages() {
         # Azure DevOps CLI
         python-pipx
         python-packaging
+        # Networking
+        proxychains-ng
         # Nerd Fonts (required for starship icons)
         ttf-jetbrains-mono-nerd
         ttf-cascadia-mono-nerd

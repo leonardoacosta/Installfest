@@ -39,6 +39,30 @@ apply_osx_system_defaults || warning "Some macOS defaults failed (non-fatal)"
 # Terminal setup
 terminal || true
 
+# Install ProxyBridge (per-app SOCKS5 proxy for Microsoft CAE bypass)
+if [[ ! -d "/Applications/ProxyBridge.app" ]]; then
+    PROXYBRIDGE_VERSION="3.2.0"
+    PROXYBRIDGE_PKG="/tmp/ProxyBridge.pkg"
+    info "Installing ProxyBridge v${PROXYBRIDGE_VERSION}..."
+    curl -Lo "$PROXYBRIDGE_PKG" "https://github.com/InterceptSuite/ProxyBridge/releases/download/v${PROXYBRIDGE_VERSION}/ProxyBridge-v${PROXYBRIDGE_VERSION}-Universal-Installer.pkg"
+    sudo installer -pkg "$PROXYBRIDGE_PKG" -target / && success "ProxyBridge installed" || warning "ProxyBridge install failed (may need manual install)"
+    rm -f "$PROXYBRIDGE_PKG"
+    info "NOTE: Approve ProxyBridge Network Extension on first launch:"
+    info "  System Settings → General → Login Items & Extensions → Network Extensions"
+    info "Import proxy rules from: $DOTFILES/scripts/proxybridge-rules.json"
+else
+    success "ProxyBridge already installed"
+fi
+
+# Load LaunchAgents
+for plist_name in com.leonardoacosta.cloudpc-tunnel; do
+    plist="$HOME/Library/LaunchAgents/${plist_name}.plist"
+    if [[ -f "$plist" ]] && ! launchctl list | grep -q "$plist_name"; then
+        launchctl bootstrap "gui/$(id -u)" "$plist" 2>/dev/null || true
+        success "Loaded $plist_name LaunchAgent"
+    fi
+done
+
 # Load mic-priority LaunchAgent
 if [[ -f "$HOME/Library/LaunchAgents/com.leonardoacosta.mic-priority.plist" ]]; then
     chmod +x "$DOTFILES/scripts/mic-priority.sh" 2>/dev/null || true
@@ -59,7 +83,23 @@ else
     warning "Install zsh plugins manually for your distribution."
 fi
 
+# Enable systemd user services (file-server + cloudpc tunnel)
+if command -v systemctl &>/dev/null; then
+    for svc in file-server cloudpc-tunnel; do
+        if [[ -f "$HOME/.config/systemd/user/${svc}.service" ]]; then
+            systemctl --user enable "$svc" 2>/dev/null && success "Enabled $svc service" || true
+        fi
+    done
+    systemctl --user daemon-reload 2>/dev/null || true
+fi
+
 {{ end -}}
+
+# === Git hooks (all platforms) ===
+if [[ -d "$DOTFILES/.git" ]]; then
+    git -C "$DOTFILES" config core.hooksPath scripts/hooks
+    success "Set git hooks path to scripts/hooks/"
+fi
 
 # === Final messages ===
 echo
