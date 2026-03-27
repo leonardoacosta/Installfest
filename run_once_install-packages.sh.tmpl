@@ -8,6 +8,7 @@ set -uo pipefail
 
 DOTFILES="{{ .chezmoi.sourceDir }}"
 export DOTFILES
+export CHEZMOI=1
 
 # Source utilities
 . "$DOTFILES/scripts/utils.sh"
@@ -95,6 +96,25 @@ fi
 
 {{ end -}}
 
+# === SSH mesh setup (all platforms) ===
+# SSH config is managed by chezmoi (private_dot_ssh/config.tmpl)
+# Keys must be placed manually once — they are gitignored for security
+if [[ -f "$HOME/.ssh/id_ed25519.pub" ]]; then
+    # Set up authorized_keys for inbound SSH connections
+    mkdir -p "$HOME/.ssh"
+    chmod 700 "$HOME/.ssh"
+    cp "$HOME/.ssh/id_ed25519.pub" "$HOME/.ssh/authorized_keys"
+    chmod 600 "$HOME/.ssh/authorized_keys"
+    success "SSH authorized_keys configured for inbound connections"
+
+    # Add key to SSH agent
+    ssh-add "$HOME/.ssh/id_ed25519" 2>/dev/null || true
+else
+    warning "SSH key not found (~/.ssh/id_ed25519)"
+    warning "Copy the mesh key pair to this machine for SSH mesh connectivity"
+    warning "  scp <source>:~/dev/if/ssh-mesh/keys/id_ed25519* ~/.ssh/"
+fi
+
 # === Git hooks (all platforms) ===
 if [[ -d "$DOTFILES/.git" ]]; then
     git -C "$DOTFILES" config core.hooksPath scripts/hooks
@@ -108,9 +128,11 @@ success "  Package Installation Complete!"
 success "========================================"
 echo
 info "Next steps:"
-info "  1. Run 'chezmoi apply' to deploy dotfiles"
-info "  2. Restart your terminal or run: source ~/.zshrc"
-info "  3. Verify starship prompt is working"
-info "  4. Run 'z --help' to learn zoxide"
-info "  5. Run 'atuin login' to sync history (optional)"
+info "  1. Restart your terminal or run: source ~/.zshrc"
+info "  2. Verify starship prompt is working"
+info "  3. Run 'z --help' to learn zoxide"
+info "  4. Run 'atuin login' to sync history (optional)"
+if [[ ! -f "$HOME/.ssh/id_ed25519" ]]; then
+    info "  5. Copy SSH mesh keys: scp <source>:~/dev/if/ssh-mesh/keys/id_ed25519* ~/.ssh/"
+fi
 echo

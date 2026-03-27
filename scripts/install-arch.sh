@@ -131,18 +131,29 @@ set_default_shell() {
 # Main installation flow
 info "=== Arch Linux Installation ==="
 
-read -p "Install packages? [y/n] " -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
+# Non-interactive when sourced by chezmoi run_once
+# Interactive prompts only when run directly (./install-arch.sh)
+if [[ "${CHEZMOI:-0}" == "1" ]] || [[ ! -t 0 ]]; then
+    # Non-interactive: run everything
     install_arch_packages
     install_aur_packages
     install_azure_cli
-fi
-
-read -p "Set zsh as default shell? [y/n] " -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
     set_default_shell
+else
+    # Interactive: ask first
+    read -p "Install packages? [y/n] " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        install_arch_packages
+        install_aur_packages
+        install_azure_cli
+    fi
+
+    read -p "Set zsh as default shell? [y/n] " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        set_default_shell
+    fi
 fi
 
 success "Arch Linux setup complete"
