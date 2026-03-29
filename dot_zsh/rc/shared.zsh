@@ -76,3 +76,33 @@ alias mux="$DOTFILES/scripts/cmux-workspaces.sh"
 # Misc aliases
 alias path='echo $PATH | tr ":" "\n"'
 alias reload="source ~/.zshrc"
+
+# ============================================================
+# Per-Project CLI Routing
+# ============================================================
+# Project-aware wrappers for CLIs that need different auth/config
+# per project. Add new projects as case branches.
+
+# Azure CLI — bypass BB admin wrapper + SOCKS proxy for personal projects
+az() {
+  case "$PWD" in
+    */dev/ct|*/dev/ct/*)
+      # Civalent: personal Azure identity, no proxy
+      AZURE_CONFIG_DIR="$HOME/.azure-civalent" \
+        "$HOME/.local/share/pipx/venvs/azure-cli/bin/python" \
+        -m azure.cli "$@" ;;
+    *)
+      # Default: BB admin wrapper at ~/.local/bin/az
+      command az "$@" ;;
+  esac
+}
+
+# Vercel CLI — per-project token routing
+vercel() {
+  case "$PWD" in
+    */dev/ct|*/dev/ct/*)
+      command vercel --token "$VERCEL_TOKEN_PRICELESS_" "$@" ;;
+    *)
+      command vercel "$@" ;;
+  esac
+}
