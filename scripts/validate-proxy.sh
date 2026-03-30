@@ -61,55 +61,64 @@ if ! pgrep -f "ProxyBridge" >/dev/null 2>&1; then
 fi
 
 # --- 3. Compare rules ---
-if [ -f "$RULES_SOURCE" ]; then
-    EXPECTED=$(python3 -c "
-import json, sys
-rules = json.load(open('$RULES_SOURCE'))
-for r in rules:
-    print(r.get('processNames', ''))
-" 2>/dev/null | sort)
+# Note: `defaults read` fails in LaunchAgent context (cfprefsd session isolation).
+# Read the plist file directly instead.
+# ProxyBridge is sandboxed — prefs live in the app container, not ~/Library/Preferences/
+PREFS_PLIST="$HOME/Library/Containers/com.interceptsuite.ProxyBridge/Data/Library/Preferences/com.interceptsuite.ProxyBridge.plist"
 
-    LIVE_PLIST=$(defaults read com.interceptsuite.ProxyBridge proxyRules 2>/dev/null || echo "")
+if [ -f "$RULES_SOURCE" ] && [ -f "$PREFS_PLIST" ]; then
+    RULE_CHECK=$(python3 -c "
+import json, plistlib, sys
 
-    if [ -z "$LIVE_PLIST" ]; then
-        ISSUES+=("ProxyBridge has no rules configured")
-    else
-        LIVE=$(echo "$LIVE_PLIST" | python3 -c "
-import sys, re
-raw = sys.stdin.read()
-names = re.findall(r'processNames\s*=\s*\"?([^\";\n]+)\"?', raw)
-for n in sorted(set(n.strip() for n in names)):
-    print(n)
-" 2>/dev/null | sort)
+# Load expected rules from source JSON
+with open('$RULES_SOURCE') as f:
+    expected = {r['processNames'] for r in json.load(f)}
 
-        # Find missing rules
-        MISSING=""
-        while IFS= read -r name; do
-            [ -z "$name" ] && continue
-            if ! echo "$LIVE" | grep -qF "$name"; then
-                MISSING="${MISSING}${name}, "
-            fi
-        done <<< "$EXPECTED"
+# Load live rules from ProxyBridge plist (binary plist, not defaults)
+with open('$PREFS_PLIST', 'rb') as f:
+    prefs = plistlib.load(f)
 
-        if [ -n "$MISSING" ]; then
-            MISSING="${MISSING%, }"
-            ISSUES+=("Missing ProxyBridge rules: $MISSING")
-        fi
+rules = prefs.get('proxyRules', [])
+if not rules:
+    print('NO_RULES')
+    sys.exit(0)
 
-        # Check for protocol drift (all rules should be TCP)
-        NON_TCP=$(echo "$LIVE_PLIST" | python3 -c "
-import sys, re
-raw = sys.stdin.read()
-protocols = re.findall(r'protocol\s*=\s*\"?([^\";\n]+)\"?', raw)
-for p in protocols:
-    p = p.strip()
-    if p != 'TCP':
-        print(p)
+live_names = {r.get('processNames', '') for r in rules}
+
+# Check missing rules
+missing = expected - live_names
+if missing:
+    print('MISSING:' + ','.join(sorted(missing)))
+
+# Check protocol drift (all should be TCP)
+non_tcp = [r['protocol'] for r in rules if r.get('protocol') != 'TCP']
+if non_tcp:
+    print('NON_TCP:' + ','.join(non_tcp))
+
+if not missing and not non_tcp:
+    print('OK')
 " 2>/dev/null)
-        if [ -n "$NON_TCP" ]; then
-            ISSUES+=("ProxyBridge has non-TCP rules (found: $NON_TCP) — re-import from source")
-        fi
-    fi
+
+    case "$RULE_CHECK" in
+        NO_RULES)
+            ISSUES+=("ProxyBridge has no rules configured") ;;
+        MISSING:*)
+            ISSUES+=("Missing ProxyBridge rules: ${RULE_CHECK#MISSING:}") ;;
+        NON_TCP:*)
+            ISSUES+=("ProxyBridge has non-TCP rules (${RULE_CHECK#NON_TCP:}) — re-import from source") ;;
+        OK) ;;
+        *)
+            # Multiple issues possible (MISSING + NON_TCP on separate lines)
+            while IFS= read -r line; do
+                case "$line" in
+                    MISSING:*) ISSUES+=("Missing ProxyBridge rules: ${line#MISSING:}") ;;
+                    NON_TCP:*) ISSUES+=("ProxyBridge has non-TCP rules (${line#NON_TCP:}) — re-import") ;;
+                esac
+            done <<< "$RULE_CHECK"
+            ;;
+    esac
+elif [ -f "$RULES_SOURCE" ] && [ ! -f "$PREFS_PLIST" ]; then
+    ISSUES+=("ProxyBridge preferences file not found")
 fi
 
 # --- 4. Report ---
