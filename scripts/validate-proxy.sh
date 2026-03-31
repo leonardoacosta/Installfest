@@ -2,7 +2,7 @@
 # validate-proxy.sh — Periodic validation + remediation of CloudPC proxy stack
 # Checks: SOCKS tunnel (process + port), ProxyBridge running
 # Remediates: kills zombie tunnels, restarts via launchctl
-# Notifies: single updating notification (not spam), click opens log
+# Notifies: via nexus-agent (TTS + banner), deduped with attempt counter
 #
 # Note: ProxyBridge rule checking is skipped when running from launchd.
 # macOS App Sandbox blocks LaunchAgents from reading container prefs
@@ -13,74 +13,38 @@ DOTFILES="${DOTFILES:-$HOME/dev/if}"
 RULES_SOURCE="$DOTFILES/scripts/proxybridge-rules.json"
 STATE_FILE="$HOME/.local/logs/validate-proxy.state"
 LOG_FILE="$HOME/.local/logs/validate-proxy.err.log"
+NEXUS_SOCKET="${NEXUS_SOCKET:-/tmp/nexus-agent.sock}"
 ISSUES=()
 FIXED=()
 CHECK_RULES=false
 
-# Parse args
 for arg in "$@"; do
     [ "$arg" = "--rules" ] && CHECK_RULES=true
 done
 
-# --- State: track consecutive failures to avoid notification spam ---
+# --- State: track consecutive failures ---
 read_state() {
     if [ -f "$STATE_FILE" ]; then
         FAIL_COUNT=$(grep -c '' "$STATE_FILE" 2>/dev/null || echo 0)
-        LAST_ISSUE=$(tail -1 "$STATE_FILE" 2>/dev/null || echo "")
     else
         FAIL_COUNT=0
-        LAST_ISSUE=""
     fi
 }
 
 write_fail() {
-    local issue="$1"
     mkdir -p "$(dirname "$STATE_FILE")"
-    echo "$(date '+%Y-%m-%d %H:%M:%S') $issue" >> "$STATE_FILE"
+    echo "$(date '+%Y-%m-%d %H:%M:%S') $1" >> "$STATE_FILE"
 }
 
-clear_state() {
-    rm -f "$STATE_FILE"
-}
+clear_state() { rm -f "$STATE_FILE"; }
 
-# --- Helper: notify with dedup (replaces previous notification) ---
-notify() {
+# --- Notify via nexus-agent socket ---
+nx_notify() {
     local msg="$1"
-    local channels="${2:-tts,banner}"
-
-    # terminal-notifier: -group replaces previous, -open opens log on click
-    if command -v terminal-notifier >/dev/null 2>&1; then
-        terminal-notifier \
-            -title "CloudPC Proxy" \
-            -message "$msg" \
-            -group "cloudpc-proxy" \
-            -open "file://$LOG_FILE" \
-            2>/dev/null || true
-    fi
-
-    # Also try claude-notify / socat for TTS
-    local claude_notify="$HOME/.claude/bin/claude-notify"
-    if [ -x "$claude_notify" ]; then
-        echo "{\"message\":\"$msg\"}" | "$claude_notify" --notify --channels "$channels" --type proxy-health 2>/dev/null || true
-    else
-        echo "{\"event\":\"notification\",\"message\":\"$msg\"}" | socat - UNIX-CONNECT:/tmp/nexus-agent.sock 2>/dev/null || true
-    fi
-}
-
-notify_recovery() {
-    local msg="$1"
-    if command -v terminal-notifier >/dev/null 2>&1; then
-        terminal-notifier \
-            -title "CloudPC Proxy" \
-            -subtitle "Recovered" \
-            -message "$msg" \
-            -group "cloudpc-proxy" \
-            2>/dev/null || true
-    fi
-}
-
-clear_notification() {
-    terminal-notifier -remove "cloudpc-proxy" 2>/dev/null || true
+    local type="${2:-proxy-health}"
+    [ -S "$NEXUS_SOCKET" ] || return 0
+    printf '{"event":"notification","message":"%s","type":"%s","project":"if"}\n' "$msg" "$type" \
+        | socat - UNIX-CONNECT:"$NEXUS_SOCKET" 2>/dev/null || true
 }
 
 # --- 1. Check SOCKS tunnel (process + port health) ---
@@ -101,7 +65,7 @@ if [ -z "$TUNNEL_PID" ]; then
         sleep 3
         if pgrep -f "ssh.*-D.*1080.*cloudpc" >/dev/null 2>&1 && \
            lsof -i :1080 -P -n 2>/dev/null | grep -q LISTEN; then
-            FIXED+=("SOCKS tunnel was down — restarted via launchd")
+            FIXED+=("SOCKS tunnel restored via launchd")
         else
             ISSUES+=("SOCKS tunnel down — launchd restart failed")
         fi
@@ -154,18 +118,18 @@ fi
 # --- 4. Report with dedup ---
 read_state
 
-# Handle fixes
 if [ ${#FIXED[@]} -gt 0 ]; then
     for fix in "${FIXED[@]}"; do
         echo "[validate-proxy] Fixed: $fix" >&2
     done
     if [ "$FAIL_COUNT" -gt 0 ]; then
-        notify_recovery "Restored after $FAIL_COUNT failed attempts"
+        nx_notify "CloudPC proxy recovered after $FAIL_COUNT checks"
         clear_state
+    else
+        nx_notify "${FIXED[0]}"
     fi
 fi
 
-# Handle issues
 if [ ${#ISSUES[@]} -gt 0 ]; then
     echo "[validate-proxy] Issues found:" >&2
     for issue in "${ISSUES[@]}"; do
@@ -173,34 +137,20 @@ if [ ${#ISSUES[@]} -gt 0 ]; then
     done
 
     write_fail "${ISSUES[0]}"
-    read_state  # re-read to get updated count
+    read_state
 
-    # Notification strategy: notify on 1st failure, then update with count
-    # TTS only on 1st failure to avoid audio spam
+    # TTS on 1st failure only; log-only on subsequent
     if [ "$FAIL_COUNT" -eq 1 ]; then
-        notify "${ISSUES[0]}" "tts,banner"
-    else
-        # Update the existing notification with attempt count (no TTS)
-        if command -v terminal-notifier >/dev/null 2>&1; then
-            terminal-notifier \
-                -title "CloudPC Proxy" \
-                -subtitle "$FAIL_COUNT attempts" \
-                -message "${ISSUES[0]}" \
-                -group "cloudpc-proxy" \
-                -open "file://$LOG_FILE" \
-                2>/dev/null || true
-        fi
+        nx_notify "${ISSUES[0]}"
     fi
+    # Always log (but no notification spam)
     exit 1
 fi
 
-# All clear — if we were failing before, notify recovery and clean up
+# All clear — recover if we were failing
 if [ "$FAIL_COUNT" -gt 0 ]; then
-    notify_recovery "All checks passing (was down for $FAIL_COUNT checks)"
-    notify "CloudPC proxy recovered after $FAIL_COUNT failed checks" "tts,banner"
+    nx_notify "CloudPC proxy recovered after $FAIL_COUNT failed checks"
     clear_state
 fi
 
-# Remove any lingering notification
-clear_notification
 exit 0
