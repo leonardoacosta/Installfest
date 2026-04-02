@@ -33,7 +33,8 @@ Host cloudpc
 # Global settings
 Host *
     SendEnv LANG LC_*
-    SetEnv TERM=xterm-256color
+    # TERM propagated by terminal emulator (Ghostty sends xterm-ghostty)
+    # Requires xterm-ghostty terminfo on remote — install via: ghostty +show-terminfo | tic -x -
     AddKeysToAgent yes
     ServerAliveInterval 30
     ServerAliveCountMax 3

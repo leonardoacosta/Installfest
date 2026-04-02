@@ -35,6 +35,7 @@ set -g set-clipboard on
 # Set terminal type for proper colors
 set -g default-terminal "tmux-256color"
 set -as terminal-features ',xterm-256color:RGB'
+set -as terminal-features ',xterm-ghostty:RGB'
 
 # Activity monitoring
 setw -g monitor-activity off
@@ -183,4 +184,4 @@ set -g status-justify left
 
 # Theme: {{ .theme }}
 # To add themes: create ~/.config/tmux/<theme>-theme.conf and update .chezmoi.toml.tmpl
-source-file ~/.config/tmux/one-hunter-vercel-theme.conf
+source-file ~/.config/tmux/{{ .theme }}-theme.conf
