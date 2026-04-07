@@ -33,13 +33,14 @@ fi
 if command -v chezmoi >/dev/null 2>&1; then
     REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
     CHEZMOI_SOURCE="$(chezmoi source-path 2>/dev/null)"
-    if [ "$REPO_ROOT" = "$CHEZMOI_SOURCE" ]; then
+    # .chezmoiroot makes source-path return home/ subdir — match prefix
+    case "$CHEZMOI_SOURCE" in "$REPO_ROOT"*)
         if chezmoi apply --no-tty 2>/dev/null; then
             echo "chezmoi: applied dotfiles"
         else
             echo "chezmoi: apply failed (run 'chezmoi apply' manually)" >&2
         fi
-    fi
+        ;; esac
 fi
 
 exit 0
