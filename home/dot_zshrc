@@ -10,6 +10,15 @@ if [[ -n "$SSH_CONNECTION" && -z "$TMUX" && -z "$VSCODE_TERMINAL" ]]; then
   tmux new-session -A -s "${PWD##*/}"
 fi
 
+# Cursor/VS Code: new tmux window in primary session, named after CWD
+if [[ "$TERM_PROGRAM" == "vscode" && -z "$TMUX" && -z "$CLAUDE_CODE" ]]; then
+  _tmux_target=$(tmux list-sessions -F '#{session_created} #{session_name}' 2>/dev/null | sort -n | head -1 | awk '{print $2}')
+  if [[ -n "$_tmux_target" ]]; then
+    exec tmux new-window -t "$_tmux_target" -n "${PWD##*/}" -c "$PWD" \; attach-session -t "$_tmux_target"
+  fi
+  unset _tmux_target
+fi
+
 # Load secrets via Doppler (falls back to ~/.env if Doppler unavailable)
 if command -v doppler &>/dev/null; then
   eval "$(doppler secrets download --no-file --format env 2>/dev/null)"
