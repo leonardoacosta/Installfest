@@ -1,12 +1,45 @@
 #!/bin/sh
 #
-# post-commit — runs after git commit
+# post-commit — local deploy (also symlinked as post-merge)
 #
-# Deploy chezmoi dotfiles so local config always matches committed source.
+# 1. Import beads changes (idempotent, safe on commit and merge)
+# 2. Deploy chezmoi dotfiles
 
-HOOKS_DIR="$(cd "$(dirname "$0")" && pwd)"
+# --- beads import ---
+if command -v bd >/dev/null 2>&1; then
+    BEADS_DIR=""
+    if git rev-parse --git-dir >/dev/null 2>&1; then
+        if [ "$(git rev-parse --git-dir)" != "$(git rev-parse --git-common-dir)" ]; then
+            MAIN_REPO_ROOT="$(dirname "$(git rev-parse --git-common-dir)")"
+            [ -d "$MAIN_REPO_ROOT/.beads" ] && BEADS_DIR="$MAIN_REPO_ROOT/.beads"
+        else
+            [ -d .beads ] && BEADS_DIR=".beads"
+        fi
+    fi
+
+    if [ -n "$BEADS_DIR" ]; then
+        if [ -f "$BEADS_DIR/metadata.json" ]; then
+            if grep -q '"backend"[[:space:]]*:[[:space:]]*"dolt"' "$BEADS_DIR/metadata.json" 2>/dev/null; then
+                BEADS_DIR=""
+            fi
+        fi
+        if [ -n "$BEADS_DIR" ] && [ -f "$BEADS_DIR/issues.jsonl" ]; then
+            bd import -i "$BEADS_DIR/issues.jsonl" >/dev/null 2>&1 || true
+        fi
+    fi
+fi
 
 # --- chezmoi apply ---
-"$HOOKS_DIR/chezmoi-apply"
+if command -v chezmoi >/dev/null 2>&1; then
+    REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
+    CHEZMOI_SOURCE="$(chezmoi source-path 2>/dev/null)"
+    if [ "$REPO_ROOT" = "$CHEZMOI_SOURCE" ]; then
+        if chezmoi apply --no-tty 2>/dev/null; then
+            echo "chezmoi: applied dotfiles"
+        else
+            echo "chezmoi: apply failed (run 'chezmoi apply' manually)" >&2
+        fi
+    fi
+fi
 
 exit 0

@@ -1,15 +1,24 @@
-#!/usr/bin/env sh
+#!/bin/sh
 #
-# pre-push — sync dotfiles to Mac after push
+# pre-push — bidirectional remote deploy
 #
-# Mirrors cc's pattern: background SSH pull with delay
-# so the push completes before the remote fetches.
-# chezmoi apply is explicit since git reset --hard
-# doesn't trigger post-merge hooks.
+# After push completes, SSH to the OTHER machine and pull + apply.
+# Background with sleep to let push finish first.
 
-# After successful push from Arch: sync Mac in background
-if [ "$(hostname)" = "omarchy" ]; then
-    (sleep 2 && ssh mac "cd ~/dev/if && git fetch origin main -q && git reset --hard origin/main -q && chezmoi apply --no-tty 2>/dev/null; true" &) 2>/dev/null
-fi
+# Guard: skip if triggered by remote deploy SSH
+[ "$IF_REMOTE_DEPLOY" = "1" ] && exit 0
+
+deploy_remote() {
+    target="$1"
+    (sleep 2 && IF_REMOTE_DEPLOY=1 ssh "$target" \
+        "cd ~/dev/if && git fetch origin main -q && git reset --hard origin/main -q && chezmoi apply --no-tty 2>/dev/null; true" &) 2>/dev/null
+}
+
+case "$(hostname)" in
+    omarchy)
+        deploy_remote mac ;;
+    leonardoacostas-MacBook-Pro)
+        deploy_remote homelab ;;
+esac
 
 exit 0
