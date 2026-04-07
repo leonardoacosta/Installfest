@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # cmux-workspaces.sh — Launch dev workspaces in cmux over SSH
 # Source of truth: ~/dev/if/scripts/cmux-workspaces.sh
-# Project data: ~/dev/if/projects.toml
+# Project data: ~/dev/if/home/projects.toml
 #
 # Usage:
 #   mux oo tc           # Launch specific projects
@@ -23,7 +23,7 @@ MAC_TAILSCALE_IP="${CMUX_BRIDGE_HOST:-$(tailscale ip -4 2>/dev/null || echo "")}
 
 # --- Load project registry from projects.toml ---
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TOML_FILE="$SCRIPT_DIR/../projects.toml"
+TOML_FILE="$SCRIPT_DIR/../home/projects.toml"
 
 if [[ ! -f "$TOML_FILE" ]]; then
   echo "Error: $TOML_FILE not found" >&2

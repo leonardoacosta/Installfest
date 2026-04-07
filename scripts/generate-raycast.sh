@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # generate-raycast.sh — Generate Raycast scripts from projects.toml
-# Source of truth: ~/dev/if/projects.toml
+# Source of truth: ~/dev/if/home/projects.toml
 #
 # Usage:
 #   bash scripts/generate-raycast.sh          # Generate all scripts
@@ -17,8 +17,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-export TOML_FILE="$REPO_ROOT/projects.toml"
-export RAYCAST_DIR="$REPO_ROOT/raycast-scripts"
+export TOML_FILE="$REPO_ROOT/home/projects.toml"
+export RAYCAST_DIR="$REPO_ROOT/platform/raycast-scripts"
 export DRY_RUN=false
 
 [[ "${1:-}" == "--dry-run" ]] && export DRY_RUN=true

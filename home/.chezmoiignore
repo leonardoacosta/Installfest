@@ -1,0 +1,11 @@
+# Files in home/ that should NOT be deployed to ~
+# (dirs outside home/ are invisible to chezmoi — no need to list them)
+projects.toml
+
+# Platform-specific ignores
+{{ if ne .chezmoi.os "darwin" }}
+# Skip macOS-only files on Linux
+dot_config/ghostty
+dot_config/karabiner
+Library
+{{ end }}

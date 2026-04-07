@@ -6,7 +6,7 @@ set -uo pipefail
 # Note: -e intentionally omitted — brew bundle may return non-zero
 # for already-installed casks or optional failures that shouldn't abort
 
-DOTFILES="{{ .chezmoi.sourceDir }}"
+DOTFILES="{{ .chezmoi.workingTree }}"
 export DOTFILES
 export CHEZMOI=1
 

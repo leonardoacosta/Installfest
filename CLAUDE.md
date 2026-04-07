@@ -9,36 +9,41 @@ Personal dotfiles and development environment configuration for macOS and Arch L
 ## Directory Structure
 
 ```
-if/                                    # chezmoi source directory (~/dev/if)
-├── .chezmoi.toml.tmpl                 # chezmoi config template (machine-specific data)
-├── .chezmoiignore                     # Files excluded from chezmoi management
-├── dot_zshenv.tmpl                    # -> ~/.zshenv (env vars, templated)
-├── dot_zshrc                          # -> ~/.zshrc (interactive shell entry)
-├── dot_zsh/                           # -> ~/.zsh/ (shell modules)
-│   ├── rc/
-│   │   ├── shared.zsh                 # Options + aliases (cross-platform)
-│   │   ├── darwin.zsh                 # macOS-specific (Homebrew, pnpm)
-│   │   └── linux.zsh                  # Arch-specific (pacman, docker)
-│   ├── functions/
-│   │   ├── setup-completions.zsh      # compinit, fpath
-│   │   ├── load-plugins.zsh           # syntax-hl, autosuggestions
-│   │   ├── load-tools.zsh            # zoxide, atuin, fzf, mise
-│   │   └── init-starship.zsh         # prompt (load last)
-│   └── completions/                   # Custom completion scripts
-├── dot_config/                        # -> ~/.config/
-│   ├── ghostty/config.tmpl            # Ghostty terminal (templated)
-│   ├── starship/starship.toml.tmpl    # Starship prompt (templated)
-│   ├── tmux/tmux.conf                 # Tmux config
-│   ├── tmux/one-hunter-vercel-theme.conf
-│   └── karabiner/assets/...           # Karabiner-Elements
-├── Library/LaunchAgents/              # -> ~/Library/LaunchAgents/ (macOS)
-├── run_once_install-packages.sh.tmpl  # One-time package installer
-├── homebrew/                          # Brewfile (repo-only, not deployed)
+if/                                    # repo root (~/dev/if)
+├── .chezmoiroot                       # points chezmoi at home/ subdirectory
+├── home/                              # chezmoi source root (all deployed files)
+│   ├── .chezmoi.toml.tmpl             # chezmoi config template (machine-specific data)
+│   ├── .chezmoiignore                 # Files excluded from chezmoi management
+│   ├── projects.toml                  # Project registry (used by templates + scripts)
+│   ├── dot_zshenv.tmpl                # -> ~/.zshenv (env vars, templated)
+│   ├── dot_zshrc                      # -> ~/.zshrc (interactive shell entry)
+│   ├── dot_zsh/                       # -> ~/.zsh/ (shell modules)
+│   │   ├── rc/
+│   │   │   ├── shared.zsh             # Options + aliases (cross-platform)
+│   │   │   ├── darwin.zsh             # macOS-specific (Homebrew, pnpm)
+│   │   │   └── linux.zsh             # Arch-specific (pacman, docker)
+│   │   ├── functions/
+│   │   │   ├── setup-completions.zsh  # compinit, fpath
+│   │   │   ├── load-plugins.zsh      # syntax-hl, autosuggestions
+│   │   │   ├── load-tools.zsh        # zoxide, atuin, fzf, mise
+│   │   │   └── init-starship.zsh     # prompt (load last)
+│   │   └── completions/               # Custom completion scripts
+│   ├── dot_config/                    # -> ~/.config/
+│   │   ├── ghostty/config.tmpl        # Ghostty terminal (templated)
+│   │   ├── starship/starship.toml.tmpl # Starship prompt (templated)
+│   │   ├── tmux/tmux.conf             # Tmux config
+│   │   └── karabiner/assets/...       # Karabiner-Elements
+│   ├── Library/LaunchAgents/          # -> ~/Library/LaunchAgents/ (macOS)
+│   ├── run_once_install-packages.sh.tmpl  # One-time package installer
+│   └── run_onchange_*.sh.tmpl         # Change-triggered scripts
+├── platform/                          # Platform-specific tooling (repo-only)
+│   ├── homebrew/                      # Brewfile
+│   ├── windows/                       # Windows/CloudPC setup scripts
+│   └── raycast-scripts/               # Raycast automation
 ├── scripts/                           # Utility scripts (repo-only)
 ├── ssh-mesh/                          # Multi-machine SSH setup (repo-only)
-├── raycast-scripts/                   # Raycast automation (repo-only)
-├── windows/                           # Windows/CloudPC setup scripts (repo-only)
-└── docs/                              # Documentation (repo-only)
+├── docs/                              # Documentation (repo-only)
+└── openspec/                          # Change specifications
 ```
 
 ## Key Concepts
@@ -102,7 +107,9 @@ source ~/.zshrc           # Reload config (or: reload)
 
 - **Platform-aware**: Check `uname -s` before platform-specific advice
 - **No duplicate inits**: Tool inits happen ONCE in `.zshrc`, never in `.zshenv`
-- **chezmoi managed**: All dotfiles are deployed via `chezmoi apply` from this source dir
+- **chezmoi managed**: All dotfiles are deployed via `chezmoi apply`. Source lives in `home/` (via `.chezmoiroot`)
 - **dot_ prefix**: `dot_foo` in source deploys to `~/.foo`; `.tmpl` suffix = Go template
-- **$DOTFILES**: Still set in `.zshenv`, points to `~/dev/if` (chezmoi source). Used for `scripts/` references only
-- **Deployed paths**: Shell config sources from `~/.zsh/` (deployed), not `$DOTFILES/dot_zsh/` (source)
+- **$DOTFILES**: Set in `.zshenv`, points to `~/dev/if` (repo root). Used for `scripts/` references
+- **.chezmoiroot**: Tells chezmoi to read source from `home/` — all chezmoi commands resolve transparently
+- **Deployed paths**: Shell config sources from `~/.zsh/` (deployed), not `$DOTFILES/home/dot_zsh/` (source)
+- **projects.toml**: Lives in `home/` (for chezmoi template `{{ include }}`), scripts reference via `$DOTFILES/home/projects.toml`

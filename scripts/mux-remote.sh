@@ -2,7 +2,7 @@
 # mux-remote.sh — Remote-invokable wrapper for cmux-workspaces
 # Called via Apple Shortcuts, NFC, or SSH
 # Uses zsh for Shortcuts compatibility (/bin/bash on macOS is 3.2)
-# Project data: ~/dev/if/projects.toml
+# Project data: ~/dev/if/home/projects.toml
 #
 # Usage:
 #   ~/dev/if/scripts/mux-remote.sh         # Interactive picker
@@ -15,7 +15,7 @@ set -euo pipefail
 
 export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 SCRIPT=~/dev/if/scripts/cmux-workspaces.sh
-TOML_FILE=~/dev/if/projects.toml
+TOML_FILE=~/dev/if/home/projects.toml
 
 # Verify cmux is running
 if ! cmux ping >/dev/null 2>&1; then

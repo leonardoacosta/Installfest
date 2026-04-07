@@ -27,50 +27,53 @@ All three machines share an ED25519 keypair over Tailscale. See `ssh-mesh/README
 
 | Tool | Purpose | Config |
 |------|---------|--------|
-| Ghostty | Terminal emulator | `dot_config/ghostty/config.tmpl` |
-| tmux | Terminal multiplexer | `dot_config/tmux/tmux.conf` |
-| Starship | Shell prompt | `dot_config/starship/starship.toml.tmpl` |
-| Zsh | Shell | `dot_zshrc`, `dot_zsh/` |
+| Ghostty | Terminal emulator | `home/dot_config/ghostty/config.tmpl` |
+| tmux | Terminal multiplexer | `home/dot_config/tmux/tmux.conf` |
+| Starship | Shell prompt | `home/dot_config/starship/starship.toml.tmpl` |
+| Zsh | Shell | `home/dot_zshrc`, `home/dot_zsh/` |
 | mise | Runtime version manager | `.mise.toml` |
 | Doppler | Secrets management | CLI with `~/.env` fallback |
-| Karabiner | Key remapping (macOS) | `dot_config/karabiner/` |
+| Karabiner | Key remapping (macOS) | `home/dot_config/karabiner/` |
 
 ## Directory Structure
 
 ```
-if/                                     # chezmoi source directory (~/dev/if)
-├── .chezmoi.toml.tmpl                  # Machine-specific config (hostname, theme, ssh user)
-├── .chezmoiignore                      # Files excluded from deployment
-├── dot_zshenv.tmpl                     # -> ~/.zshenv (env vars, templated)
-├── dot_zshrc                           # -> ~/.zshrc (interactive shell entry)
-├── dot_zsh/                            # -> ~/.zsh/
-│   ├── rc/                             #   shared.zsh, darwin.zsh, linux.zsh
-│   ├── functions/                      #   completions, plugins, tools, starship
-│   └── completions/                    #   Custom completion scripts
-├── dot_config/                         # -> ~/.config/
-│   ├── ghostty/config.tmpl             #   Ghostty terminal (templated)
-│   ├── starship/starship.toml.tmpl     #   Starship prompt (templated)
-│   ├── tmux/tmux.conf                  #   Tmux + theme
-│   └── karabiner/                      #   Karabiner-Elements
-├── Library/LaunchAgents/               # -> ~/Library/LaunchAgents/ (macOS only)
-├── run_once_install-packages.sh.tmpl   # One-time package installer (chezmoi run_once)
-├── projects.toml                       # Project registry (repo-only, not deployed)
-├── homebrew/Brewfile                   # Homebrew packages (repo-only)
+if/                                     # repo root (~/dev/if)
+├── .chezmoiroot                        # tells chezmoi: source lives in home/
+├── home/                               # chezmoi source root (all deployed files)
+│   ├── .chezmoi.toml.tmpl              #   Machine-specific config (hostname, theme, ssh user)
+│   ├── .chezmoiignore                  #   Files excluded from deployment
+│   ├── projects.toml                   #   Project registry (not deployed, used by templates)
+│   ├── dot_zshenv.tmpl                 #   -> ~/.zshenv (env vars, templated)
+│   ├── dot_zshrc                       #   -> ~/.zshrc (interactive shell entry)
+│   ├── dot_zsh/                        #   -> ~/.zsh/
+│   │   ├── rc/                         #     shared.zsh, darwin.zsh, linux.zsh
+│   │   ├── functions/                  #     completions, plugins, tools, starship
+│   │   └── completions/                #     Custom completion scripts
+│   ├── dot_config/                     #   -> ~/.config/
+│   │   ├── ghostty/config.tmpl         #     Ghostty terminal (templated)
+│   │   ├── starship/starship.toml.tmpl #     Starship prompt (templated)
+│   │   ├── tmux/tmux.conf              #     Tmux + theme
+│   │   └── karabiner/                  #     Karabiner-Elements
+│   ├── Library/LaunchAgents/           #   -> ~/Library/LaunchAgents/ (macOS only)
+│   └── run_once_install-packages.sh.tmpl #  One-time package installer
+├── platform/                           # Platform-specific tooling (repo-only)
+│   ├── homebrew/Brewfile               #   Homebrew packages
+│   ├── windows/                        #   Windows/CloudPC setup scripts
+│   └── raycast-scripts/                #   Generated Raycast shortcuts
 ├── scripts/                            # Utility scripts (repo-only)
 │   ├── generate-raycast.sh             #   Generate Raycast scripts from projects.toml
 │   ├── cmux-workspaces.sh              #   Generate cmux workspace launchers
 │   └── mux-remote.sh                   #   SSH remote tmux sessions
-├── raycast-scripts/                    # Generated Raycast shortcuts (repo-only)
 ├── ssh-mesh/                           # Multi-machine SSH setup (repo-only)
-├── windows/                            # Windows/CloudPC setup scripts (repo-only)
 └── docs/                               # Documentation (repo-only)
 ```
 
-**Naming convention:** `dot_foo` deploys to `~/.foo`. Files ending in `.tmpl` are Go templates processed by chezmoi.
+**Naming convention:** `dot_foo` deploys to `~/.foo`. Files ending in `.tmpl` are Go templates processed by chezmoi. The `.chezmoiroot` file redirects chezmoi to read source from `home/` — all chezmoi commands work transparently.
 
 ## How chezmoi Works Here
 
-chezmoi reads `.chezmoi.toml.tmpl` to detect which machine it is running on (by hostname), then deploys templated files with the correct values:
+chezmoi reads `home/.chezmoi.toml.tmpl` (via `.chezmoiroot`) to detect which machine it is running on (by hostname), then deploys templated files with the correct values:
 
 | Variable | Mac | Homelab |
 |----------|-----|---------|
@@ -82,7 +85,7 @@ Platform-specific files (Ghostty, Karabiner, Library/) are excluded on Linux via
 
 ## Project Registry
 
-`projects.toml` is the single source of truth for all projects. Scripts consume it to generate:
+`home/projects.toml` is the single source of truth for all projects. Scripts consume it to generate:
 
 - **Raycast scripts** -- keyboard shortcuts to open projects (`scripts/generate-raycast.sh`)
 - **cmux workspaces** -- tmux workspace launchers (`scripts/cmux-workspaces.sh`)
@@ -90,7 +93,7 @@ Platform-specific files (Ghostty, Karabiner, Library/) are excluded on Linux via
 
 ### Adding a Project
 
-1. Add an entry to `projects.toml`
+1. Add an entry to `home/projects.toml`
 2. Run `scripts/generate-raycast.sh` to regenerate Raycast scripts
 3. `chezmoi apply` if any deployed files changed
 

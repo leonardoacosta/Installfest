@@ -3,7 +3,7 @@
 # run_onchange_: re-runs whenever this file's content changes
 # {{ "scripts/hooks" }}
 
-DOTFILES="{{ .chezmoi.sourceDir }}"
+DOTFILES="{{ .chezmoi.workingTree }}"
 
 if [ -d "$DOTFILES/.git" ]; then
     git -C "$DOTFILES" config core.hooksPath scripts/hooks

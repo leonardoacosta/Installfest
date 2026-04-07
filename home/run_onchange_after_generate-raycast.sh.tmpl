@@ -3,5 +3,5 @@
 # Regenerate Raycast scripts when projects.toml changes
 # Hash: {{ include "projects.toml" | sha256sum }}
 
-SCRIPT_DIR="{{ .chezmoi.sourceDir }}/scripts"
+SCRIPT_DIR="{{ .chezmoi.workingTree }}/scripts"
 "$SCRIPT_DIR/generate-raycast.sh"
