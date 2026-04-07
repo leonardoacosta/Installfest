@@ -7,7 +7,7 @@ export DOTFILES="${DOTFILES:-$HOME/dev/if}"
 
 # Auto-attach tmux on SSH (prevents mouse escape leak from local tmux)
 if [[ -n "$SSH_CONNECTION" && -z "$TMUX" && -z "$VSCODE_TERMINAL" ]]; then
-  tmux new-session -A -s main
+  tmux new-session -A -s "${PWD##*/}"
 fi
 
 # Load secrets via Doppler (falls back to ~/.env if Doppler unavailable)
