@@ -97,6 +97,17 @@ az() {
   esac
 }
 
+# SSH — notify on connection failure via nexus TTS
+ssh() {
+  command ssh "$@"
+  local rc=$?
+  if [[ $rc -ne 0 ]]; then
+    echo "{\"event\":\"notification\",\"message\":\"SSH to $1 failed (exit $rc)\"}" \
+      | socat - UNIX-CONNECT:/tmp/nexus-agent.sock 2>/dev/null
+  fi
+  return $rc
+}
+
 # Vercel CLI — per-project token routing
 vercel() {
   case "$PWD" in

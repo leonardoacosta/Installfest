@@ -2,13 +2,7 @@
 # Machine: {{ .machine }} ({{ .chezmoi.hostname }})
 
 {{ if eq .machine "mac" -}}
-# Homelab - Smart routing: LAN first, Tailscale fallback
-# macOS nc -w doesn't timeout connections, use bash /dev/tcp with timeout
-Match host homelab exec "bash -c 'exec 3<>/dev/tcp/192.168.1.100/22' 2>/dev/null & pid=$!; sleep 0.5; kill $pid 2>/dev/null && exit 1; wait $pid 2>/dev/null"
-    HostName 192.168.1.100
-    User nyaptor
-    IdentityFile ~/.ssh/id_ed25519
-
+# Homelab via Tailscale (always-on, no LAN probe needed)
 Host homelab
     HostName homelab.tail296462.ts.net
     User nyaptor
