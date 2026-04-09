@@ -38,3 +38,14 @@ source "$HOME/.zsh/functions/setup-completions.zsh"  # compinit, fpath
 source "$HOME/.zsh/functions/load-plugins.zsh"       # syntax-hl, autosuggestions
 source "$HOME/.zsh/functions/load-tools.zsh"         # zoxide, atuin, fzf, etc.
 source "$HOME/.zsh/functions/init-starship.zsh"      # prompt (load last)
+
+# Neutralize Cursor/VS Code shell integration on SSH sessions
+# Cursor installs __vsc_precmd/__vsc_preexec hooks that emit \e]633;... sequences.
+# When CC takes over the terminal, Cursor stops seeing these markers and writes
+# "source .../shellIntegration-rc.zsh" directly to stdin — polluting CC's input.
+# Removing the hooks prevents the marker→re-inject cycle on remote sessions.
+# Local Cursor terminals (non-SSH) are unaffected.
+if [[ "$TERM_PROGRAM" == "vscode" && -n "$SSH_CONNECTION" ]]; then
+  precmd_functions=(${precmd_functions:#__vsc_*})
+  preexec_functions=(${preexec_functions:#__vsc_*})
+fi
