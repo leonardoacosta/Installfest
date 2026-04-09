@@ -1,0 +1,25 @@
+# One Hunter Vercel — custom Ghostty theme
+# Palette derived from https://github.com/Railly/one-hunter-vscode (Vercel variant)
+
+palette = 0=#000000
+palette = 1=#E61F44
+palette = 2=#98C379
+palette = 3=#FAC760
+palette = 4=#43AAF9
+palette = 5=#B267E6
+palette = 6=#5BD1B9
+palette = 7=#DCE3EA
+palette = 8=#454D54
+palette = 9=#F2637E
+palette = 10=#B5E890
+palette = 11=#FFDA8A
+palette = 12=#6FC1FF
+palette = 13=#C98EF5
+palette = 14=#80E3CF
+palette = 15=#FFFFFF
+background = #000000
+foreground = #DCE3EA
+cursor-color = #DD4F7D
+cursor-text = #000000
+selection-background = #43AAF9
+selection-foreground = #000000
