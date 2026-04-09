@@ -11,10 +11,8 @@ if [[ -n "$SSH_CONNECTION" && -z "$TMUX" && -z "$VSCODE_TERMINAL" ]]; then
 fi
 
 
-# Load secrets via Doppler (falls back to ~/.env if Doppler unavailable)
-if command -v doppler &>/dev/null; then
-  eval "$(doppler secrets download --no-file --format env 2>/dev/null)"
-elif [[ -f "$HOME/.env" ]]; then
+# Load local secrets (machine-specific tokens, API keys)
+if [[ -f "$HOME/.env" ]]; then
   set -a
   source "$HOME/.env"
   set +a

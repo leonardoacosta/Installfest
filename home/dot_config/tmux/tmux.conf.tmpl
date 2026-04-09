@@ -32,8 +32,11 @@ set -g focus-events on
 # Enable OSC 52 clipboard (cross-platform, fixes pbcopy on Linux)
 set -g set-clipboard on
 
-# Set terminal type for proper colors
-set -g default-terminal "tmux-256color"
+# Terminal type — use xterm-256color to preserve base terminal behavior.
+# tmux-256color introduces tmux-specific escape sequences (alternate cursor modes,
+# smcup/rmcup differences) that cause visible mode switching. xterm-256color is
+# universally supported and keeps the terminal feeling transparent.
+set -g default-terminal "xterm-256color"
 set -as terminal-features ',xterm-256color:RGB'
 set -as terminal-features ',xterm-ghostty:RGB'
 

@@ -2,7 +2,6 @@
 # Taps
 # ============================================================
 tap "azure/functions"
-tap "dopplerhq/cli"
 tap "dotenvx/brew"
 tap "manaflow-ai/cmux"
 tap "oven-sh/bun"
@@ -79,8 +78,6 @@ brew "zsh-syntax-highlighting"
 # ============================================================
 # Secrets & Environment
 # ============================================================
-# The official Doppler CLI for managing your secrets
-brew "dopplerhq/cli/doppler"
 # Secure dotenv - from the creator of `dotenv`
 brew "dotenvx/brew/dotenvx"
 
