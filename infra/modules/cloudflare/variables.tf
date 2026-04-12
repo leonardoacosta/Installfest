@@ -13,12 +13,7 @@ variable "tailscale_ip" {
   type        = string
 }
 
-variable "vercel_ips" {
-  description = "Vercel anycast IPs for root domain"
-  type        = list(string)
-}
-
 variable "vercel_cname" {
-  description = "Vercel CNAME target for www"
+  description = "Vercel CNAME target for apex and www"
   type        = string
 }

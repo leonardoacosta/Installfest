@@ -21,14 +21,8 @@ variable "tailscale_ip" {
   default     = "100.94.11.104"
 }
 
-variable "vercel_ips" {
-  description = "Vercel anycast IPs for root domain"
-  type        = list(string)
-  default     = ["216.150.16.1", "216.150.1.1"]
-}
-
 variable "vercel_cname" {
-  description = "Vercel CNAME target for www"
+  description = "Vercel CNAME target for apex and www"
   type        = string
   default     = "30eef0a6b09f641c.vercel-dns-017.com"
 }

@@ -23,6 +23,6 @@
 
 - [x] [3.1] [P-1] Run `pnpm tf init` — verify TF Cloud workspace connects [owner:infra-engineer] [beads:if-qup]
 - [x] [3.2] [P-1] Run `pnpm tf plan` dry run — confirm no errors before any import [owner:infra-engineer] [beads:if-t2s]
-- [ ] [3.3] [P-1] Import all existing Cloudflare DNS records via `terraform import` (zero destroys required) [owner:infra-engineer] [beads:if-5wp]
-- [ ] [3.4] [P-1] Run `pnpm tf apply prod` — verify plan shows 0 destroys, apply succeeds [owner:infra-engineer] [beads:if-2da]
-- [ ] [3.5] [P-2] Wire `infra/.tf-outputs.env` sourcing into the git post-receive deploy hook [owner:infra-engineer] [beads:if-yd6]
+- [x] [3.3] [P-1] Import all existing Cloudflare DNS records via `terraform import` (zero destroys required) [owner:infra-engineer] [beads:if-5wp]
+- [x] [3.4] [P-1] Run `pnpm tf apply prod` — verify plan shows 0 destroys, apply succeeds [owner:infra-engineer] [beads:if-2da]
+- [ ] [3.5] [P-2] Wire `infra/.tf-outputs.env` sourcing into the git post-receive deploy hook [owner:infra-engineer] [beads:if-yd6] [deferred]
