@@ -9,3 +9,8 @@ dot_config/ghostty
 dot_config/karabiner
 Library
 {{ end }}
+
+{{ if ne .chezmoi.os "linux" }}
+# Skip Linux-only files on macOS
+dot_config/Cursor
+{{ end }}

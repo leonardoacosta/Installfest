@@ -1,0 +1,20 @@
+#!/usr/bin/env zsh
+# Cursor remote CLI wrapper — finds the latest IPC socket and remote-cli binary
+# so `cursor .` works from any SSH terminal, not just Cursor's integrated terminal.
+
+# Find the latest remote-cli binary (newest cursor-server version)
+cursor_cli=("$HOME"/.cursor-server/bin/linux-x64/*/bin/remote-cli(Nom[1])) 2>/dev/null
+if [[ ! -x "$cursor_cli/cursor" ]]; then
+  echo "error: cursor-server not installed (no remote-cli found)" >&2
+  exit 1
+fi
+
+# Find the most recent IPC socket
+ipc_sock=$(/usr/bin/ls -t /run/user/$(id -u)/vscode-ipc-*.sock 2>/dev/null | head -1)
+if [[ -z "$ipc_sock" ]]; then
+  echo "error: no Cursor IPC socket found — is Cursor connected via SSH?" >&2
+  exit 1
+fi
+
+export VSCODE_IPC_HOOK_CLI="$ipc_sock"
+exec "$cursor_cli/cursor" "$@"

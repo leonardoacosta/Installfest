@@ -71,9 +71,6 @@ export PNPM_HOME="$HOME/Library/pnpm"
 # PATH (user binaries — no path_helper on Linux, safe to set early)
 export PATH="$HOME/.claude/bin:$HOME/.local/bin:$PATH"
 
-# Cursor Remote CLI (installed by Cursor SSH, not in PATH by default)
-[[ -d "$HOME/.cursor-server/bin/remote-cli" ]] && export PATH="$PATH:$HOME/.cursor-server/bin/remote-cli"
-
 # pnpm (Linux path)
 export PNPM_HOME="$HOME/.local/share/pnpm"
 
