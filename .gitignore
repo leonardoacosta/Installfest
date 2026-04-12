@@ -38,3 +38,12 @@ ssh-mesh/keys/
 .dolt/
 *.db
 .beads-credential-key
+
+# Terraform
+infra/.secrets.env
+infra/.tf-outputs.env
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfplan
+.terraform.lock.hcl

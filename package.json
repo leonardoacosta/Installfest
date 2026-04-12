@@ -1,0 +1,7 @@
+{
+  "name": "if",
+  "private": true,
+  "scripts": {
+    "tf": "./infra/scripts/tf.sh"
+  }
+}
