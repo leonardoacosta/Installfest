@@ -39,7 +39,7 @@ infra/
 ```
 
 ### Req-2: Terraform Cloud backend (`if-prod` workspace)
-`providers.tf` uses the `cloud {}` backend pointing to the `priceless-dev` Terraform Cloud org with workspace `if-prod`. Execution mode must be set to **Local** in the TF Cloud UI so state is stored remotely but apply runs locally.
+`providers.tf` uses the `cloud {}` backend pointing to the `leonardo-acosta` Terraform Cloud org with workspace `if-prod`. Execution mode must be set to **Local** in the TF Cloud UI so state is stored remotely but apply runs locally.
 
 ### Req-3: Cloudflare provider only
 `required_providers` declares only `cloudflare/cloudflare ~> 5.0`. No Vercel, no Tailscale, no Neon — this project has no managed compute to wire up.

@@ -1,3 +1,12 @@
+terraform {
+  required_providers {
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "~> 5.0"
+    }
+  }
+}
+
 # Cloudflare DNS records for leonardoacosta.dev
 #
 # All records declared here correspond to live DNS entries

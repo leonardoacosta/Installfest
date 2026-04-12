@@ -1,6 +1,6 @@
 terraform {
   cloud {
-    organization = "priceless-dev"
+    organization = "leonardo-acosta"
     workspaces {
       name = "if-prod"
     }
