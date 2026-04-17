@@ -1,3 +1,10 @@
+{{/* Colima (macOS container runtime) re-writes an Include line at the top of
+     ~/.ssh/config every time it starts. Template it here so chezmoi owns it
+     and drift stops blocking auto-deploy. */ -}}
+{{ if stat (joinPath .chezmoi.homeDir ".config/colima/ssh_config") -}}
+Include {{ joinPath .chezmoi.homeDir ".config/colima/ssh_config" }}
+
+{{ end -}}
 # SSH Config — managed by chezmoi
 # Machine: {{ .machine }} ({{ .chezmoi.hostname }})
 
