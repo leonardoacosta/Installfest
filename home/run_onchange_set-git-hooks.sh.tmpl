@@ -1,10 +1,71 @@
 #!/bin/bash
-# Set git hooks path for the dotfiles repo
-# run_onchange_: re-runs whenever this file's content changes
-# {{ "scripts/hooks" }}
+# Set git hooks path for the dotfiles repo + inject deploy hook into beads.
+#
+# run_onchange_: re-runs whenever this file's content changes.
+# {{ "scripts/hooks" }} {{ "if-deploy-v1" }}
+#
+# When beads is initialized in this repo, it installs its own hooks at
+# .beads/hooks/ and re-points core.hooksPath there. That silently orphans
+# scripts/hooks/pre-push (the remote-deploy trigger), so pushes from this
+# machine stop propagating to sibling machines via SSH.
+#
+# This script detects beads and idempotently appends a small delegation
+# block to .beads/hooks/pre-push AFTER beads' own integration markers. The
+# block invokes scripts/hooks/pre-push which still contains the canonical
+# deploy logic. Beads only rewrites content between its BEGIN/END markers,
+# so content below survives beads version bumps.
+
+set -e
 
 DOTFILES="{{ .chezmoi.workingTree }}"
 
-if [ -d "$DOTFILES/.git" ]; then
+if [ ! -d "$DOTFILES/.git" ]; then
+    exit 0
+fi
+
+BEADS_PREPUSH="$DOTFILES/.beads/hooks/pre-push"
+MARKER_BEGIN="# --- BEGIN IF-DEPLOY v1 ---"
+MARKER_END="# --- END IF-DEPLOY v1 ---"
+
+if [ -f "$BEADS_PREPUSH" ]; then
+    # Beads owns hooks — inject our deploy delegation idempotently.
+    if ! grep -Fq "$MARKER_BEGIN" "$BEADS_PREPUSH"; then
+        cat >> "$BEADS_PREPUSH" <<'HOOK'
+
+# --- BEGIN IF-DEPLOY v1 ---
+# Managed by chezmoi (home/run_onchange_set-git-hooks.sh.tmpl).
+# Delegates to scripts/hooks/pre-push for the cross-machine SSH deploy.
+_if_deploy_root=$(git rev-parse --show-toplevel 2>/dev/null)
+if [ -n "$_if_deploy_root" ] && [ -x "$_if_deploy_root/scripts/hooks/pre-push" ]; then
+    "$_if_deploy_root/scripts/hooks/pre-push" "$@" || true
+fi
+unset _if_deploy_root
+# --- END IF-DEPLOY v1 ---
+HOOK
+        echo "chezmoi: injected if-deploy v1 into $BEADS_PREPUSH"
+    fi
+
+    # Also inject into post-merge so chezmoi apply fires after `git pull`
+    # (mirrors the old scripts/hooks/post-commit behavior now that beads
+    # owns the hooks dir).
+    BEADS_POSTMERGE="$DOTFILES/.beads/hooks/post-merge"
+    POSTMERGE_BEGIN="# --- BEGIN IF-POSTMERGE v1 ---"
+    POSTMERGE_END="# --- END IF-POSTMERGE v1 ---"
+    if [ -f "$BEADS_POSTMERGE" ] && ! grep -Fq "$POSTMERGE_BEGIN" "$BEADS_POSTMERGE"; then
+        cat >> "$BEADS_POSTMERGE" <<'HOOK'
+
+# --- BEGIN IF-POSTMERGE v1 ---
+# Managed by chezmoi — runs chezmoi apply after successful merge/pull
+# so downstream dotfile changes deploy without manual intervention.
+if command -v chezmoi >/dev/null 2>&1; then
+    chezmoi apply --no-tty 2>/dev/null && echo "chezmoi: applied dotfiles" || \
+        echo "chezmoi: apply failed (run 'chezmoi apply' manually)" >&2
+fi
+# --- END IF-POSTMERGE v1 ---
+HOOK
+        echo "chezmoi: injected if-postmerge v1 into $BEADS_POSTMERGE"
+    fi
+else
+    # No beads in this clone — fall back to scripts/hooks as the hooks dir
     git -C "$DOTFILES" config core.hooksPath scripts/hooks
 fi
