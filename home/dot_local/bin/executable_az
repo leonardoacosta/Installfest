@@ -77,14 +77,10 @@ if [ "$USE_PROXY" = "false" ]; then
 fi
 
 # BB identities: route through CloudPC SOCKS5 tunnel
-PROXYCHAINS_CONF="$HOME/.config/proxychains/proxychains.conf"
-
-if [ -f "$PROXYCHAINS_CONF" ] && command -v proxychains4 >/dev/null 2>&1; then
-    # Linux: proxychains LD_PRELOAD intercept
-    exec proxychains4 -q -f "$PROXYCHAINS_CONF" "$REAL_AZ" $ARGS
-else
-    # macOS (or no proxychains): use HTTPS_PROXY env var
-    export HTTPS_PROXY="socks5h://127.0.0.1:1080"
-    export HTTP_PROXY="socks5h://127.0.0.1:1080"
-    exec "$REAL_AZ" $ARGS
-fi
+# Prefer HTTPS_PROXY env var — works with Python (az CLI) and avoids LD_PRELOAD
+# issues in sandboxed environments (Claude Code, containers). proxychains4 LD_PRELOAD
+# only needed for binaries that ignore proxy env vars (compiled C/Go), which az is not.
+export HTTPS_PROXY="socks5h://127.0.0.1:1080"
+export HTTP_PROXY="socks5h://127.0.0.1:1080"
+export NO_PROXY="localhost,127.0.0.1,::1"
+exec "$REAL_AZ" $ARGS
