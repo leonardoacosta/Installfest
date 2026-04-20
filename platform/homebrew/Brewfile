@@ -179,8 +179,8 @@ cask "cyberduck"
 cask "hammerspoon"
 # Keyboard customiser
 cask "karabiner-elements"
-# Menu bar usage monitor for Codex and Claude
-cask "steipete/tap/codexbar"
+# OpenAI Codex - terminal coding agent
+cask "codex"
 # Menu bar dashboard for GitHub repository health
 cask "steipete/tap/repobar"
 
