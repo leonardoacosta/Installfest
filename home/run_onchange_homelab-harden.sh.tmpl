@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# run_onchange_homelab-harden.sh - homelab (Arch + omarchy + btrfs + LUKS2) hardening
+#
+# Re-runs whenever the backing script or this wrapper changes.
+# Hash: {{ output "sh" "-c" (printf "sha256sum < %q | awk '{print $1}'" (joinPath .chezmoi.workingTree "scripts/homelab/harden.sh")) | trim }}
+#
+# Encodes the Apr 2026 post-rollback hardening:
+#   1. TPM2 auto-unlock for LUKS via sd-encrypt hook chain
+#   2. Snapper daily snapshots (7-day retention, root + home)
+#   3. snap-pac pre/post pacman snapshots
+#   4. Limine 5s menu timeout (with regeneration survival)
+#
+# Gated on .machine == "homelab" (see home/.chezmoi.toml.tmpl). On mac/cloudpc
+# this file expands to a no-op stub and exits immediately.
+#
+# The live logic lives in scripts/homelab/harden.sh so it's:
+#   - readable outside the template layer
+#   - runnable ad-hoc from the repo (e.g. for testing or manual re-apply)
+#   - consistent with scripts/install-arch.sh / scripts/brew-install.sh
+
+{{ if ne .machine "homelab" -}}
+# Non-homelab machine ({{ .machine }}) — nothing to do.
+exit 0
+{{- else -}}
+set -uo pipefail
+
+DOTFILES="{{ .chezmoi.workingTree }}"
+export DOTFILES
+
+# Only runs on Linux/Arch — double-check at runtime in case hostname was
+# resolved optimistically.
+if [[ ! -f /etc/arch-release ]]; then
+    echo "homelab-harden: /etc/arch-release missing, skipping (machine={{ .machine }})" >&2
+    exit 0
+fi
+
+HARDEN_SCRIPT="$DOTFILES/scripts/homelab/harden.sh"
+if [[ ! -x "$HARDEN_SCRIPT" ]]; then
+    if [[ -f "$HARDEN_SCRIPT" ]]; then
+        chmod +x "$HARDEN_SCRIPT"
+    else
+        echo "homelab-harden: $HARDEN_SCRIPT not found" >&2
+        exit 1
+    fi
+fi
+
+exec "$HARDEN_SCRIPT"
+{{- end }}

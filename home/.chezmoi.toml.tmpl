@@ -9,6 +9,11 @@
 {{- else if eq $hostname "omarchy" -}}
 {{-   $machine = "homelab" -}}
 {{-   $sshUser = "nyaptor" -}}
+{{- else if and (eq .chezmoi.os "linux") (stat "/etc/arch-release") -}}
+{{/* Transient hostnames (e.g. fresh install or post-rollback "archlinux")
+     still resolve to the homelab profile so hardening scripts fire. */}}
+{{-   $machine = "homelab" -}}
+{{-   $sshUser = .chezmoi.username -}}
 {{- end -}}
 
 sourceDir = "{{ .chezmoi.homeDir }}/dev/if"
