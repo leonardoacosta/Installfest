@@ -1,17 +1,22 @@
 #!/usr/bin/env bash
 # scripts/homelab/harden.sh - Arch/omarchy post-install hardening (idempotent).
 #
-# Encodes four recovery/hardening items from the Apr 2026 rollback:
+# Encodes recovery/hardening items from the Apr 2026 rollback:
 #
 #   1. TPM2 auto-unlock for LUKS  (sd-encrypt hook chain + kernel cmdline)
 #   2. Snapper daily snapshots    (7-day retention; /.snapshots subvol guard)
 #   3. snap-pac                   (pre/post pacman auto-snapshots)
 #   4. Limine menu timeout = 5s   (regeneration-proof via /etc/default/limine)
 #   5. Tailscale                  (install + enable tailscaled; optional auth-key)
+#   6. Bootstrap databases        (shared postgres + nexus DB + drizzle migrations)
 #
 # Optional env vars:
-#   TAILSCALE_AUTHKEY  Non-interactive auth for fresh-install flows.
-#                      If unset, `tailscale up` prints a login URL for manual approval.
+#   TAILSCALE_AUTHKEY       Non-interactive auth for fresh-install flows.
+#                           If unset, `tailscale up` prints a login URL for manual approval.
+#   CX_POSTGRES_PASSWORD    Password for the shared `cortex` postgres role.
+#                           Falls back to $POSTGRES_PASSWORD, then `cortexdev`.
+#   POSTGRES_PASSWORD       Alias read from ~/.env if CX_POSTGRES_PASSWORD unset.
+#   IMMICH_DB_PASSWORD      Password for the `immich` role (init script handles creation).
 #
 # Safety:
 #   - Detects LUKS UUID dynamically from /etc/crypttab / lsblk — never hardcoded.
@@ -355,6 +360,167 @@ setup_tailscale() {
 }
 
 # ---------------------------------------------------------------------------
+# Step 6: Bootstrap shared postgres + per-project databases + migrations
+# ---------------------------------------------------------------------------
+#
+# Motivation:
+#   The Apr 2026 rollback recovery showed that infrastructure hardening
+#   (TPM/snapper/tailscale) leaves the application data layer broken on fresh
+#   install — nexus-dashboard and other repos depending on the shared
+#   `homelab-postgres` container stay offline until a human creates databases
+#   and runs drizzle migrations by hand.
+#
+# Idempotency:
+#   - Skips entirely when docker / ~/dev/hl/homelab/docker-compose.yml absent.
+#   - `docker compose up -d homelab-postgres` is a no-op when the container
+#     is already healthy.
+#   - Database creation is gated on SELECT 1 FROM pg_database.
+#   - drizzle-kit push is idempotent against an already-synced schema.
+#
+# Failure isolation:
+#   - Every external call is `|| warning`; DB bootstrap failure does NOT
+#     abort the overall harden script.
+
+_hl_env_get() {
+    # Extract KEY=VALUE from ~/.env without sourcing (never execute user env).
+    local key="$1"
+    local env_file="${HOME}/.env"
+    [[ -f "$env_file" ]] || return 1
+    awk -F= -v k="$key" '
+        /^[[:space:]]*#/ { next }
+        {
+            line = $0
+            sub(/^[[:space:]]+/, "", line)
+            if (index(line, k "=") == 1) {
+                val = substr(line, length(k) + 2)
+                gsub(/^["'\'']|["'\'']$/, "", val)
+                print val
+                exit
+            }
+        }
+    ' "$env_file"
+}
+
+_hl_psql() {
+    # Run a SQL statement inside homelab-postgres as the cortex superuser.
+    local sql="$1"
+    docker exec -i homelab-postgres psql -U cortex -d cortex -tAc "$sql" 2>/dev/null
+}
+
+_hl_ensure_database() {
+    local dbname="$1"
+    local owner="${2:-cortex}"
+    local exists
+    exists=$(_hl_psql "SELECT 1 FROM pg_database WHERE datname='${dbname}'" || true)
+    if [[ "$exists" == "1" ]]; then
+        success "database '${dbname}' already exists"
+        return 0
+    fi
+
+    # For non-cortex owners, ensure the role exists first. The project's
+    # init-immich-db.sh handles immich role creation on first container boot;
+    # we skip creation when the role is missing and log a warning instead of
+    # guessing a password.
+    if [[ "$owner" != "cortex" ]]; then
+        local role_exists
+        role_exists=$(_hl_psql "SELECT 1 FROM pg_roles WHERE rolname='${owner}'" || true)
+        if [[ "$role_exists" != "1" ]]; then
+            warning "role '${owner}' missing — container init script should create it; skipping '${dbname}'"
+            return 0
+        fi
+    fi
+
+    info "creating database '${dbname}' owner=${owner}"
+    if _hl_psql "CREATE DATABASE \"${dbname}\" OWNER \"${owner}\"" >/dev/null; then
+        success "created database '${dbname}'"
+    else
+        warning "failed to create database '${dbname}' — inspect manually"
+    fi
+}
+
+_hl_run_nexus_migrations() {
+    local nx_root="${HOME}/dev/nx"
+    local drizzle_cfg="${nx_root}/packages/db/drizzle.config.ts"
+    [[ -f "$drizzle_cfg" ]] || { info "nexus repo not present — skipping drizzle push"; return 0; }
+
+    local pg_url
+    pg_url=$(_hl_env_get POSTGRES_URL || true)
+    if [[ -z "$pg_url" ]]; then
+        warning "POSTGRES_URL not set in ~/.env — skipping nexus migrations"
+        return 0
+    fi
+
+    # Pin pnpm/node onto PATH via mise shims without polluting the outer shell.
+    local -x PATH="${HOME}/.local/share/mise/shims:${HOME}/.local/share/pnpm:${PATH}"
+    if ! command -v pnpm &>/dev/null; then
+        warning "pnpm not on PATH (mise shims missing?) — skipping nexus migrations"
+        return 0
+    fi
+
+    info "running drizzle push for @nexus/db"
+    if ( cd "$nx_root" && POSTGRES_URL="$pg_url" pnpm --filter @nexus/db db:push ); then
+        success "nexus drizzle schema synced"
+    else
+        warning "nexus drizzle push failed — inspect manually"
+    fi
+}
+
+bootstrap_databases() {
+    # Gate: docker + compose file must exist.
+    if ! command -v docker &>/dev/null; then
+        info "docker not installed — skipping database bootstrap"
+        return 0
+    fi
+    if ! docker compose version &>/dev/null; then
+        info "docker compose plugin missing — skipping database bootstrap"
+        return 0
+    fi
+
+    local hl_root="${HOME}/dev/hl/homelab"
+    local compose_file="${hl_root}/docker-compose.yml"
+    if [[ ! -f "$compose_file" ]]; then
+        info "${compose_file} not found — skipping database bootstrap"
+        return 0
+    fi
+
+    # Resolve credentials (prefer env, then ~/.env, fallback dev default).
+    local cx_pw="${CX_POSTGRES_PASSWORD:-}"
+    [[ -z "$cx_pw" ]] && cx_pw=$(_hl_env_get CX_POSTGRES_PASSWORD || true)
+    [[ -z "$cx_pw" ]] && cx_pw=$(_hl_env_get POSTGRES_PASSWORD || true)
+    [[ -z "$cx_pw" ]] && cx_pw="cortexdev"
+
+    # Start homelab-postgres idempotently.
+    local env_file_arg=()
+    [[ -f "${HOME}/.env" ]] && env_file_arg=(--env-file "${HOME}/.env")
+
+    info "ensuring homelab-postgres is running"
+    if ! ( cd "$hl_root" && CX_POSTGRES_PASSWORD="$cx_pw" docker compose "${env_file_arg[@]}" up -d homelab-postgres ); then
+        warning "docker compose up homelab-postgres failed — skipping database bootstrap"
+        return 0
+    fi
+
+    # Wait up to 60s for pg_isready.
+    local attempt=0
+    local max_attempts=30
+    until docker exec homelab-postgres pg_isready -U cortex -d cortex &>/dev/null; do
+        attempt=$((attempt + 1))
+        if [[ $attempt -ge $max_attempts ]]; then
+            warning "homelab-postgres did not become ready within 60s — skipping DB steps"
+            return 0
+        fi
+        sleep 2
+    done
+    success "homelab-postgres is ready"
+
+    # Ensure per-project databases.
+    _hl_ensure_database nexus cortex
+    _hl_ensure_database immich immich
+
+    # Run drizzle migrations for repos that are present on this host.
+    _hl_run_nexus_migrations
+}
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -372,6 +538,7 @@ main() {
     configure_tpm2_unlock
     configure_snapper
     setup_tailscale
+    bootstrap_databases
 
     success "Homelab hardening complete"
 }
