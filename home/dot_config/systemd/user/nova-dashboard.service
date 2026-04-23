@@ -1,0 +1,36 @@
+[Unit]
+Description=Nova Dashboard (Next.js)
+StartLimitIntervalSec=600
+StartLimitBurst=10
+
+[Service]
+Type=simple
+WorkingDirectory=%h/.local/lib/nova-ts
+EnvironmentFile=%h/.config/nova/env
+ExecStart=/home/nyaptor/.local/share/mise/shims/node %h/.local/lib/nova-ts/apps/dashboard/server.js
+Environment=NODE_ENV=production
+Environment=PORT=3000
+Environment=HOSTNAME=0.0.0.0
+# Secrets (DATABASE_URL, BETTER_AUTH_SECRET, NV_API_TOKEN, etc.) come from .env.production.
+# Fleet services run on the host — no Docker bridge needed from systemd.
+Environment=TOOL_ROUTER_URL=http://127.0.0.1:4100
+Environment=MEMORY_SVC_URL=http://127.0.0.1:4101
+Environment=MESSAGES_SVC_URL=http://127.0.0.1:4102
+Environment=META_SVC_URL=http://127.0.0.1:4108
+Environment=DAEMON_URL=http://127.0.0.1:7700
+Environment=SENTRY_ENVIRONMENT=production
+Restart=always
+RestartSec=5
+TimeoutStopSec=30
+MemoryMax=512M
+TasksMax=256
+NoNewPrivileges=true
+# NOTE: PrivateTmp + ProtectSystem=strict + ReadWritePaths were disabled
+# after causing "Failed to set up mount namespacing" (status=226/NAMESPACE)
+# on this host. Same issue + fix as nova-ts.service (commit 562117f4).
+# Additionally, the prior ReadWritePaths= line used a colon separator which
+# systemd parses as a single invalid path, not two paths. Revisit once
+# user-scope mount namespacing is stable across systemd versions.
+
+[Install]
+WantedBy=default.target
