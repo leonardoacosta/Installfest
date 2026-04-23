@@ -109,6 +109,25 @@ bind-key -n User14 split-window -v -c "#{pane_current_path}"
 set -s user-keys[15] "\e[75;CMD~"
 bind-key -n User15 send-keys -R \; clear-history
 
+# -----------------------------------------------------------------------------
+# TRIAL: Scrollback-to-pager binding (started 2026-04-23)
+# -----------------------------------------------------------------------------
+# Problem: Claude Code's inline TUI repaints corrupt tmux scrollback when
+# scrolling via mouse wheel over SSH — history appears "chopped" because
+# tmux records CC's redraws instead of the actual transcript.
+#
+# Fix: Prefix + C-p captures the raw pane buffer (up to 50k lines) and opens
+# it in less in a new window. Pager renders cleanly, no repaint pollution.
+# Exit with `q` to return. Capture file scoped per session+window to avoid
+# clobbering parallel captures.
+#
+# Trial review: if still used after ~2 weeks, promote to permanent and drop
+# the TRIAL header. If unused/awkward, remove block and revert to default
+# wheel-scrolling workflow.
+# -----------------------------------------------------------------------------
+bind C-p capture-pane -pS -50000 \; save-buffer /tmp/tmux-capture-#S-#I \; \
+  new-window -n "scrollback" "less -R +G /tmp/tmux-capture-#S-#I"
+
 # Cmd+Shift+Left: Select to beginning of line
 set -s user-keys[16] "\e[60;CMS~"
 bind-key -n User16 copy-mode \; send-keys -X begin-selection \; send-keys -X start-of-line
