@@ -6,7 +6,7 @@
 {{- if eq $hostname "leonardoacostas-MacBook-Pro" -}}
 {{-   $machine = "mac" -}}
 {{-   $sshUser = "leonardoacosta" -}}
-{{- else if eq $hostname "omarchy" -}}
+{{- else if eq $hostname "homelab" -}}
 {{-   $machine = "homelab" -}}
 {{-   $sshUser = "nyaptor" -}}
 {{- else if and (eq .chezmoi.os "linux") (stat "/etc/arch-release") -}}

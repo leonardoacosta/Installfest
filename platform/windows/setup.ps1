@@ -337,7 +337,7 @@ Subsystem sftp sftp-server.exe
     $sshMeshConfig = @"
 # SSH Mesh Config (managed by setup.ps1)
 Host homelab
-    HostName 100.94.11.104
+    HostName 100.73.182.4
     User nyaptor
     IdentityFile ~/.ssh/id_ed25519
     ServerAliveInterval 60

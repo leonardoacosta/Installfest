@@ -16,13 +16,13 @@ A 3-machine SSH mesh allowing passwordless SSH between Mac, Homelab, and CloudPC
            ▼                                 ▼                                 ▼
 ┌─────────────────────────┐     ┌─────────────────────────┐     ┌─────────────────────────┐
 │        MAC              │     │       HOMELAB           │     │       CLOUDPC           │
-│    macbook-pro          │     │       omarchy           │     │    346-CPC-QJXVZ        │
+│    macbook-pro          │     │       homelab           │     │    346-CPC-QJXVZ        │
 ├─────────────────────────┤     ├─────────────────────────┤     ├─────────────────────────┤
 │ OS: macOS               │     │ OS: Arch Linux          │     │ OS: Windows 11          │
 │ User: leonardoacosta    │     │ User: nyaptor           │     │ User: leo               │
 ├─────────────────────────┤     ├─────────────────────────┤     ├─────────────────────────┤
 │ LAN: 192.168.1.50       │     │ LAN: 192.168.1.100      │     │ LAN: (remote only)      │
-│ TS:  100.91.88.16       │     │ TS:  100.94.11.104      │     │ TS:  100.83.148.5       │
+│ TS:  100.91.88.16       │     │ TS:  100.73.182.4       │     │ TS:  100.83.148.5       │
 └─────────────────────────┘     └─────────────────────────┘     └─────────────────────────┘
 ```
 
@@ -47,13 +47,13 @@ A 3-machine SSH mesh allowing passwordless SSH between Mac, Homelab, and CloudPC
 - **Tailscale IP:** `100.91.88.16`
 - **Special:** Smart routing (probes LAN before Tailscale fallback)
 
-### Homelab (omarchy)
+### Homelab (homelab)
 
 - **OS:** Arch Linux
 - **SSH User:** `nyaptor`
 - **Tailscale:** Docker container (host network mode)
 - **LAN IP:** `192.168.1.100`
-- **Tailscale IP:** `100.94.11.104`
+- **Tailscale IP:** `100.73.182.4`
 - **Special:** Advertises exit node, routes `172.20.0.0/16` and `172.21.0.0/16`
 
 ### CloudPC (346-CPC-QJXVZ)

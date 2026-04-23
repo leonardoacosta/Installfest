@@ -8,7 +8,7 @@
 
 ## 1. Current Setup
 
-A 3-machine mesh network connecting Mac (macbook-pro), Homelab (omarchy/Arch Linux), and CloudPC
+A 3-machine mesh network connecting Mac (macbook-pro), Homelab (homelab/Arch Linux), and CloudPC
 (346-CPC-QJXVZ/Windows 11) using a single shared ED25519 keypair distributed to all machines. All
 inter-machine traffic routes over Tailscale except Mac-to-Homelab which has smart LAN/Tailscale
 fallback routing.
@@ -309,7 +309,7 @@ These are unclear aspects that I flag without guessing at the answer.
 | **cmux-bridge deployment** | The Rust source is in `ssh-mesh/scripts/remote/` but the LaunchAgent plist references `~/.claude/scripts/bin/cmux-bridge`. How does the compiled binary get from the source directory to the deploy path? Cross-compilation for Homelab (Linux) is also unclear. | `ssh-mesh/scripts/remote/cmux-bridge/`, `launchd/com.leonardoacosta.cmux-bridge.plist` |
 | **cmux-bridge binding to 0.0.0.0** | The bridge binds to `0.0.0.0:10998` (all interfaces). This is partially mitigated by the IP allowlist (localhost + Tailscale CGNAT), but the bind address exposes the port on all network interfaces including LAN. Is this intentional? | `ssh-mesh/scripts/remote/cmux-bridge/src/main.rs` line 6 |
 | **authorized_keys on Mac** | If Mac "doesn't accept inbound," why do Homelab and CloudPC have outbound config pointing to it? Can they actually SSH in? | `ssh-mesh/configs/homelab.config` line 10, `ssh-mesh/configs/cloudpc.config` line 10 |
-| **Tailscale FQDN vs IP inconsistency** | Mac config uses `homelab.tail296462.ts.net` for the Tailscale fallback, but CloudPC config uses raw IP `100.94.11.104` for the same host. Why the inconsistency? FQDNs are more resilient to IP reassignment. | `ssh-mesh/configs/mac.config` line 13, `ssh-mesh/configs/cloudpc.config` line 5 |
+| **Tailscale FQDN vs IP inconsistency** | Mac config uses `homelab.tail296462.ts.net` for the Tailscale fallback, but CloudPC config uses raw IP `100.73.182.4` for the same host. Why the inconsistency? FQDNs are more resilient to IP reassignment. | `ssh-mesh/configs/mac.config` line 13, `ssh-mesh/configs/cloudpc.config` line 5 |
 | **fetch-all-cloudpc purpose** | These scripts fetch all git branches on CloudPC repos. When and why are they run? Are they triggered by SSH from Mac? Manually on CloudPC? Part of a sync workflow? | `ssh-mesh/scripts/fetch-all-cloudpc.sh`, `ssh-mesh/scripts/fetch-all-cloudpc.ps1` |
 
 ---
@@ -396,7 +396,7 @@ Change `setup-mac.sh` to install the mesh config as `~/.ssh/config.d/mesh.config
 ### Nice-to-Have
 
 **N1. Use Tailscale MagicDNS hostnames consistently.**
-Replace hardcoded Tailscale IPs (100.83.148.5, 100.94.11.104, 100.91.88.16) with MagicDNS
+Replace hardcoded Tailscale IPs (100.83.148.5, 100.73.182.4, 100.91.88.16) with MagicDNS
 hostnames (homelab, cloudpc, macbook-pro) or Tailscale FQDNs throughout all configs. IPs can
 change on re-authentication; hostnames are stable.
 

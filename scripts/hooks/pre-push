@@ -15,7 +15,7 @@ deploy_remote() {
 }
 
 case "$(hostname)" in
-    omarchy)
+    homelab)
         deploy_remote mac ;;
     leonardoacostas-MacBook-Pro)
         deploy_remote homelab ;;

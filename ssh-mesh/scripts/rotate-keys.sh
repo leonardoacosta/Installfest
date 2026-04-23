@@ -6,7 +6,7 @@ set -euo pipefail
 # Run from Mac. Uses existing (compromised) keys to deploy the new ones.
 
 HOMELAB_USER="nyaptor"
-HOMELAB_HOST="homelab"  # SSH alias or 100.94.11.104
+HOMELAB_HOST="homelab"  # SSH alias or 100.73.182.4
 CLOUDPC_USER="leo"
 CLOUDPC_HOST="100.83.148.5"  # Tailscale IP (no SSH alias assumed)
 KEY_COMMENT="leo-mesh-$(date +%Y%m%d)"

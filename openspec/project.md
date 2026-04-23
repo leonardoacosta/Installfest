@@ -27,4 +27,4 @@ Personal dotfiles and development environment configuration for macOS and Arch L
 | Hostname | OS | Role |
 |----------|-----|------|
 | leonardoacostas-MacBook-Pro | macOS | Primary dev |
-| omarchy | Arch Linux | Homelab |
+| homelab | Arch Linux | Homelab |

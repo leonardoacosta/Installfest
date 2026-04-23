@@ -18,7 +18,7 @@ chezmoi apply
 | Machine | OS | Hostname | User | Connectivity |
 |---------|------|----------|------|-------------|
 | Mac | macOS | macbook-pro | leonardoacosta | LAN + Tailscale |
-| Homelab | Arch Linux | omarchy | nyaptor | Tailscale |
+| Homelab | Arch Linux | homelab | nyaptor | Tailscale |
 | CloudPC | Windows 11 | 346-CPC-QJXVZ | leo | Tailscale |
 
 All three machines share an ED25519 keypair over Tailscale. See `ssh-mesh/README.md` for topology.

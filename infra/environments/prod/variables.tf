@@ -18,7 +18,7 @@ variable "domain" {
 variable "tailscale_ip" {
   description = "Tailscale IP for homelab services"
   type        = string
-  default     = "100.94.11.104"
+  default     = "100.73.182.4"
 }
 
 variable "vercel_cname" {
