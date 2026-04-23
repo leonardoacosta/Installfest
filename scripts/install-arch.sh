@@ -121,12 +121,25 @@ install_azure_cli() {
 }
 
 set_default_shell() {
-    if [[ "$SHELL" != *"zsh"* ]]; then
-        info "Setting zsh as default shell..."
-        chsh -s "$(which zsh)"
-        success "Default shell changed to zsh (will take effect on next login)"
-    else
+    local zsh_path
+    zsh_path="$(command -v zsh)" || { warning "zsh not installed"; return 0; }
+    local current_shell
+    current_shell="$(getent passwd "$USER" | cut -d: -f7)"
+    if [[ "$current_shell" == "$zsh_path" ]]; then
         success "zsh is already the default shell"
+        return 0
+    fi
+    info "Setting zsh as default shell (current: $current_shell)..."
+    if sudo -n usermod -s "$zsh_path" "$USER" 2>/dev/null; then
+        success "Default shell changed to zsh (effective next login)"
+    else
+        # Fallback to chsh if sudo unavailable (may prompt or fail in non-interactive contexts)
+        if chsh -s "$zsh_path" 2>/dev/null; then
+            success "Default shell changed to zsh via chsh"
+        else
+            warning "Could not change default shell (need passwordless sudo or interactive auth)"
+            return 0  # Non-fatal — don't abort the script
+        fi
     fi
 }
 
