@@ -1,6 +1,17 @@
 #!/usr/bin/env bash
 # install-arch.sh - Arch Linux specific installation
 # Sourced by install.sh on Linux
+#
+# ~/.env keys consumed by downstream tooling (harden.sh, services, drizzle):
+#   POSTGRES_URL=             # Postgres URL for nexus drizzle migrations (homelab)
+#   POSTGRES_PASSWORD=        # Shared postgres password (homelab cortex role)
+#   CX_POSTGRES_PASSWORD=     # Override for shared cortex role (optional)
+#   IMMICH_DB_PASSWORD=       # Immich DB role password (homelab)
+#   VECTOR_BS_TOKEN=          # Better Stack ingest token for Vector → telemetry pipeline (homelab)
+#   TAILSCALE_AUTHKEY=        # Optional non-interactive tailnet auth (any host)
+#
+# ~/.env is gitignored and machine-local. Populate manually after first install;
+# harden.sh and systemd units read it via _hl_env_get / EnvironmentFile.
 
 set -euo pipefail
 

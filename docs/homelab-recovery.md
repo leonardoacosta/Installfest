@@ -91,6 +91,36 @@ pm2 resurrect
 pm2 list                               # t3-code-server, guardian-web, etc.
 ```
 
+### 4.5. Observability stack — systemd-oomd + smartd + node_exporter + Vector
+
+`scripts/homelab/harden.sh` now bootstraps the telemetry stack alongside hardening:
+
+- **systemd-oomd** — OOM killer (system unit, ships with systemd)
+- **smartd** — SMART disk monitoring (`smartmontools` package)
+- **prometheus-node-exporter** — host metrics scraper
+- **vector** — journald → Better Stack ingest pipeline
+
+Vector ingest requires a token. Before running `chezmoi apply`, ensure `~/.env` contains:
+
+```
+VECTOR_BS_TOKEN=<better-stack-source-token>   # source 'homelab' (id 2396841)
+```
+
+If `VECTOR_BS_TOKEN` is missing, `harden.sh` logs a warning and skips Vector setup — the other three units still come up. Re-run `chezmoi apply` (or `scripts/homelab/harden.sh`) after populating the token to finish wiring Vector.
+
+Better Stack references (for sanity-checking that logs land):
+
+- Source: `homelab` (id `2396841`), ingest host `s2396841.us-east-9.betterstackdata.com`
+- Dashboard: `Homelab Health` (id `999906`) — <https://telemetry.betterstack.com/team/t532144/dashboards/999906>
+
+Verify locally:
+
+```
+systemctl is-active systemd-oomd smartd prometheus-node-exporter vector
+# expect 4× active
+sudo journalctl -u vector -n 30 --no-pager   # confirm ingest is happening, no auth errors
+```
+
 ### 5. Databases — the step most likely to trap you
 
 `scripts/homelab/harden.sh` now bootstraps these, but if you're running this manually:
@@ -130,6 +160,8 @@ All three dashboards should return 200/307. Any non-healthy container needs inve
 6. **`$SHELL` env var is stale** — it's set at login. Detect shell via `getent passwd $USER | cut -d: -f7`, not `$SHELL`.
 
 7. **`.pacnew` files are just warnings, not failures** — after big upgrades expect `/etc/pacman.d/mirrorlist.pacnew` etc. Resolve with `pacdiff` (from `pacman-contrib` package) or accept maintainer via `cp .pacnew → .`. Backups land at `*.bak-pre-pacdiff` if you use the pattern from this session.
+
+8. **Vector loads `/etc/vector/vector.yaml` by default, not `.toml`.** The Arch package ships a demo `vector.yaml` that conflicts. The harden script renames it to `.demo-disabled` and uses `/etc/default/vector` to set `VECTOR_CONFIG=/etc/vector/vector.toml`. If Vector won't start with `status=78/CONFIG`, check that `/etc/default/vector` exists and the daemon is reading it (`systemctl cat vector` should show `EnvironmentFile=/etc/default/vector`).
 
 ## Reference material
 
