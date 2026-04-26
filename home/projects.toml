@@ -251,6 +251,6 @@ tiers = ["remote", "local"]
 code = "xx"
 name = "XX"
 category = "personal"
-icon = "❌"
+icon = "📡"
 path = "dev/xx"
 tiers = ["remote", "local"]
