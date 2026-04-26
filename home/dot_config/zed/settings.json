@@ -1,0 +1,117 @@
+// Zed settings — managed by chezmoi
+// Mirrors the load-bearing parts of the previous Cursor settings:
+//   font, format-on-save, watcher excludes, prettier defaults.
+// Bicep support: auto-installed extension uses the `bicep` CLI from Homebrew.
+// Live-reload static dev: install `live-server` globally (see run_once_install-packages.sh.tmpl).
+{
+  "telemetry": {
+    "metrics": false,
+    "diagnostics": false
+  },
+
+  // === Editor ===
+  "buffer_font_family": "JetBrainsMono Nerd Font",
+  "buffer_font_size": 14,
+  "buffer_font_features": { "calt": true },
+  "ui_font_family": "JetBrainsMono Nerd Font",
+  "ui_font_size": 14,
+  "format_on_save": "on",
+  "formatter": "prettier",
+  "tab_size": 2,
+  "soft_wrap": "editor_width",
+  "show_whitespaces": "selection",
+  "preferred_line_length": 100,
+
+  // === Theme ===
+  // One Hunter Vercel ports to Zed live in the extension registry.
+  // Run `zed: extensions` and search "one hunter" if not present.
+  "theme": {
+    "mode": "dark",
+    "light": "One Light",
+    "dark": "One Dark"
+  },
+
+  // === Git ===
+  "git": {
+    "git_gutter": "tracked_files",
+    "inline_blame": { "enabled": true, "delay_ms": 600 }
+  },
+
+  // === Auto-install required extensions ===
+  // Bicep: ARM template authoring for Azure infra work.
+  // Requires `bicep` binary in PATH (installed via Homebrew).
+  "auto_install_extensions": {
+    "bicep": true
+  },
+
+  // === Per-language formatters / settings ===
+  "languages": {
+    "TypeScript": { "formatter": "prettier", "format_on_save": "on" },
+    "TSX": { "formatter": "prettier", "format_on_save": "on" },
+    "JavaScript": { "formatter": "prettier", "format_on_save": "on" },
+    "JSX": { "formatter": "prettier", "format_on_save": "on" },
+    "JSON": { "formatter": "prettier", "format_on_save": "on" },
+    "JSONC": { "formatter": "prettier", "format_on_save": "on" },
+    "YAML": { "formatter": "prettier", "format_on_save": "on" },
+    "Markdown": { "formatter": "prettier", "format_on_save": "on", "soft_wrap": "preferred_line_length" },
+    "HTML": { "formatter": "prettier", "format_on_save": "on" },
+    "CSS": { "formatter": "prettier", "format_on_save": "on" },
+    "Bicep": { "format_on_save": "on" }
+  },
+
+  // === Bicep LSP fallback ===
+  // The Bicep extension wires this automatically, but this block ensures
+  // the LSP works even if the extension fails to load.
+  "lsp": {
+    "bicep-langserver": {
+      "binary": {
+        "path": "bicep",
+        "arguments": ["langserver"]
+      }
+    }
+  },
+
+  // === File scan / search excludes ===
+  // Mirrors the Cursor watcher/search excludes — keeps file tree fast on T3 monorepos.
+  "file_scan_exclusions": [
+    "**/.git",
+    "**/.svn",
+    "**/.hg",
+    "**/CVS",
+    "**/.DS_Store",
+    "**/Thumbs.db",
+    "**/.classpath",
+    "**/.settings",
+    "**/node_modules",
+    "**/.next",
+    "**/.turbo",
+    "**/.cursor-server",
+    "**/.vscode-server",
+    "**/.zed-server",
+    "**/.cargo",
+    "**/.cache",
+    "**/.npm",
+    "**/.bun",
+    "**/.pnpm-store",
+    "**/dist",
+    "**/build",
+    "**/.expo"
+  ],
+
+  // === Terminal (integrated) ===
+  // Inherits zsh from login shell; keeps the same JetBrainsMono font as Ghostty.
+  "terminal": {
+    "shell": { "program": "zsh" },
+    "font_family": "JetBrainsMono Nerd Font",
+    "font_size": 14,
+    "working_directory": "current_project_directory"
+  },
+
+  // === Misc ===
+  "vim_mode": false,
+  "autosave": "off",
+  "restore_on_startup": "last_session",
+  "remove_trailing_whitespace_on_save": true,
+  "ensure_final_newline_on_save": true,
+  "tabs": { "git_status": true, "file_icons": true }
+}

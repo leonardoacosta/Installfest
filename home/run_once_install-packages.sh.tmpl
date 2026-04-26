@@ -34,6 +34,12 @@ install_xcode
 install_homebrew
 run_brew_bundle || warning "brew bundle had errors (some casks may need manual install)"
 
+# Global CLI tools installed via package manager (idempotent: pnpm add -g no-ops if installed)
+# live-server: Live Server replacement for static-file dev with auto-reload
+if command -v pnpm &>/dev/null; then
+    pnpm add -g live-server >/dev/null 2>&1 && success "live-server installed" || warning "live-server install failed (run: pnpm add -g live-server)"
+fi
+
 # macOS system defaults
 apply_osx_system_defaults || warning "Some macOS defaults failed (non-fatal)"
 

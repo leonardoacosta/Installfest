@@ -7,11 +7,17 @@
 #   bash scripts/generate-raycast.sh --dry-run # Show what would be generated
 #
 # Generates:
-#   raycast-scripts/{code}.sh          — Open project on homelab via Cursor SSH Remote
-#   raycast-scripts/local/{code}.sh    — Open project locally in Cursor
+#   raycast-scripts/{code}.sh          — Open project on homelab via Zed Remote SSH
+#   raycast-scripts/local/{code}.sh    — Open project locally in Zed
 #   raycast-scripts/cloudpc/{code}.sh  — Open project on CloudPC via Cursor SSH Remote
-#   raycast-scripts/open-project.sh    — Dropdown picker (remote)
-#   raycast-scripts/local/open-project.sh — Dropdown picker (local)
+#                                         (Cursor retained: Zed remote-SSH is weak on Windows hosts)
+#   raycast-scripts/open-project.sh    — Dropdown picker (remote, Zed)
+#   raycast-scripts/local/open-project.sh — Dropdown picker (local, Zed)
+#
+# Editor migration (2026-04-26): Mac/homelab editor switched from Cursor to Zed
+# for a one-week trial. To revert, swap `zed ssh://...` back to
+# `cursor --folder-uri "vscode-remote://ssh-remote+..."` in the generators below
+# and re-run this script.
 
 set -euo pipefail
 
@@ -68,13 +74,17 @@ def write_script(path, content):
 
 
 def resolve_remote_uri(project):
-    """Build the Cursor SSH Remote URI for homelab."""
+    """Build the Zed Remote SSH URI for homelab.
+
+    Zed remote SSH reads ~/.ssh/config for the host alias (`homelab`).
+    Form: zed ssh://[user@]host/absolute/path
+    """
     path = project["path"]
     if path.startswith("."):
         # Home-relative (e.g. .claude -> /home/nyaptor/.claude)
-        return f'vscode-remote://ssh-remote+{ssh_host}{ssh_base}/{path}'
+        return f'ssh://{ssh_host}{ssh_base}/{path}'
     else:
-        return f'vscode-remote://ssh-remote+{ssh_host}{ssh_base}/{path}/'
+        return f'ssh://{ssh_host}{ssh_base}/{path}/'
 
 
 def resolve_local_path(project):
@@ -99,7 +109,7 @@ def resolve_cloudpc_uri(project):
 
 
 def gen_remote_script(project):
-    """Generate a remote (homelab) Raycast script."""
+    """Generate a remote (homelab) Raycast script — opens project in Zed via SSH."""
     code = project["code"]
     name = project["name"]
     icon = project["icon"]
@@ -120,12 +130,12 @@ def gen_remote_script(project):
 # @raycast.author {AUTHOR}
 # @raycast.authorURL {AUTHOR_URL}
 
-cursor --folder-uri "{uri}"
+zed {uri}
 '''
 
 
 def gen_local_script(project):
-    """Generate a local Raycast script."""
+    """Generate a local Raycast script — opens project in Zed."""
     code = project["code"]
     name = project["name"]
     icon = project["icon"]
@@ -146,7 +156,7 @@ def gen_local_script(project):
 # @raycast.author {AUTHOR}
 # @raycast.authorURL {AUTHOR_URL}
 
-cursor {local_path}
+zed {local_path}
 '''
 
 
@@ -180,11 +190,11 @@ def gen_dropdown_script(tier):
     """Generate the open-project dropdown picker script."""
     if tier == "remote":
         title = "open project"
-        description = "Open project on homelab via Cursor SSH Remote"
+        description = "Open project on homelab via Zed Remote SSH"
         dir_name = ""
     elif tier == "local":
         title = "open project local"
-        description = "Open project locally in Cursor"
+        description = "Open project locally in Zed"
         dir_name = "local"
     else:
         return None
@@ -200,15 +210,15 @@ def gen_dropdown_script(tier):
 
     if tier == "remote":
         body = f'''if [ "$1" = "cc" ]; then
-  cursor --folder-uri "vscode-remote://ssh-remote+{ssh_host}{ssh_base}/.claude"
+  zed ssh://{ssh_host}{ssh_base}/.claude
 else
-  cursor --folder-uri "vscode-remote://ssh-remote+{ssh_host}{ssh_base}/dev/$1/"
+  zed ssh://{ssh_host}{ssh_base}/dev/$1/
 fi'''
     else:
         body = '''if [ "$1" = "cc" ]; then
-  cursor ~/.claude
+  zed ~/.claude
 else
-  cursor ~/dev/$1/
+  zed ~/dev/$1/
 fi'''
 
     return f'''#!/bin/bash

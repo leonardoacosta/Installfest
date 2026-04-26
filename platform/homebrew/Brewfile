@@ -106,6 +106,8 @@ brew "oven-sh/bun/bun"
 brew "azure-cli"
 # Azure Functions Core Tools 4.0
 brew "azure/functions/azure-functions-core-tools@4"
+# Bicep CLI — ARM template authoring; ships the language server used by Zed/VS Code
+brew "bicep"
 # Pack, ship and run any application as a lightweight container
 brew "docker"
 # Command-line tools for fly.io services
@@ -161,6 +163,8 @@ cask "tabby"
 cask "cursor"
 # Open-source code editor
 cask "visual-studio-code"
+# Native Rust editor with built-in LSP / remote SSH (trial period 2026-04-26 → 2026-05-03)
+cask "zed"
 # Git client focusing on productivity
 cask "gitkraken"
 # CLI for GitKraken
