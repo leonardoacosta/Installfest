@@ -4,6 +4,10 @@
 #
 # After push completes, SSH to the OTHER machine and pull + apply.
 # Background with sleep to let push finish first.
+#
+# Logs land on the REMOTE machine at ~/.local/state/if-deploy.log so silent
+# failures (like a bad Brewfile entry that aborts brew bundle) stop being
+# invisible. Tail with: ssh <peer> 'tail -50 ~/.local/state/if-deploy.log'
 
 # Guard: skip if triggered by remote deploy SSH
 [ "$IF_REMOTE_DEPLOY" = "1" ] && exit 0
@@ -11,7 +15,11 @@
 deploy_remote() {
     target="$1"
     (sleep 2 && IF_REMOTE_DEPLOY=1 ssh "$target" \
-        "cd ~/dev/if && git fetch origin main -q && git reset --hard origin/main -q && chezmoi apply --no-tty 2>/dev/null; true" &) 2>/dev/null
+        "mkdir -p ~/.local/state && \
+         { echo '=== if-deploy '\$(date -u +%FT%TZ)' ===' ; \
+           cd ~/dev/if && git fetch origin main -q && git reset --hard origin/main -q && \
+           chezmoi apply --no-tty ; \
+           echo '=== exit '\$? ' ===' ; } >> ~/.local/state/if-deploy.log 2>&1 ; true" &) 2>/dev/null
 }
 
 case "$(hostname)" in

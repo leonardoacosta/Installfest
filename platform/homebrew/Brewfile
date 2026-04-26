@@ -106,8 +106,9 @@ brew "oven-sh/bun/bun"
 brew "azure-cli"
 # Azure Functions Core Tools 4.0
 brew "azure/functions/azure-functions-core-tools@4"
-# Bicep CLI — ARM template authoring; ships the language server used by Zed/VS Code
-brew "bicep"
+# Bicep is NOT a Homebrew formula — installed via `az bicep install` in
+# run_once_install-packages.sh.tmpl (binary lands at ~/.azure/bin/bicep,
+# symlinked into ~/.local/bin so Zed's bicep langserver finds it).
 # Pack, ship and run any application as a lightweight container
 brew "docker"
 # Command-line tools for fly.io services

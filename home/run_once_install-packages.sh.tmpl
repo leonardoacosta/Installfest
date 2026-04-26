@@ -40,6 +40,19 @@ if command -v pnpm &>/dev/null; then
     pnpm add -g live-server >/dev/null 2>&1 && success "live-server installed" || warning "live-server install failed (run: pnpm add -g live-server)"
 fi
 
+# Bicep CLI — not a Homebrew formula; install via Azure CLI (binary downloader).
+# Lands at ~/.azure/bin/bicep; symlink into ~/.local/bin so Zed's langserver
+# finds it on PATH without needing to extend $PATH globally.
+if command -v az &>/dev/null; then
+    if [[ ! -x "$HOME/.azure/bin/bicep" ]]; then
+        az bicep install >/dev/null 2>&1 && success "Bicep CLI installed via az" || warning "az bicep install failed"
+    fi
+    if [[ -x "$HOME/.azure/bin/bicep" ]]; then
+        mkdir -p "$HOME/.local/bin"
+        ln -sf "$HOME/.azure/bin/bicep" "$HOME/.local/bin/bicep"
+    fi
+fi
+
 # macOS system defaults
 apply_osx_system_defaults || warning "Some macOS defaults failed (non-fatal)"
 
