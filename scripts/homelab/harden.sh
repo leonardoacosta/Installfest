@@ -375,7 +375,8 @@ setup_tailscale() {
 #   - `docker compose up -d homelab-postgres` is a no-op when the container
 #     is already healthy.
 #   - Database creation is gated on SELECT 1 FROM pg_database.
-#   - drizzle-kit push is idempotent against an already-synced schema.
+#   - drizzle migrate uses __drizzle_migrations to track applied migrations,
+#     so re-runs are no-ops when the journal is in sync with the DB.
 #
 # Failure isolation:
 #   - Every external call is `|| warning`; DB bootstrap failure does NOT
@@ -457,11 +458,11 @@ _hl_run_nexus_migrations() {
         return 0
     fi
 
-    info "running drizzle push for @nexus/db"
-    if ( cd "$nx_root" && POSTGRES_URL="$pg_url" pnpm --filter @nexus/db db:push ); then
-        success "nexus drizzle schema synced"
+    info "running drizzle migrate for @nexus/db"
+    if ( cd "$nx_root" && POSTGRES_URL="$pg_url" pnpm --filter @nexus/db db:migrate ); then
+        success "nexus drizzle migrations applied"
     else
-        warning "nexus drizzle push failed — inspect manually"
+        warning "nexus drizzle migrate failed — inspect manually"
     fi
 }
 
