@@ -246,3 +246,11 @@ category = "personal"
 icon = "🌐"
 path = "dev/nx"
 tiers = ["remote", "local"]
+
+[[projects]]
+code = "xx"
+name = "XX"
+category = "personal"
+icon = "❌"
+path = "dev/xx"
+tiers = ["remote", "local"]
