@@ -2,8 +2,34 @@
 #
 # pre-commit — runs before git commit
 #
-# Flush beads pending changes to JSONL before commit.
+# 1. Regenerate Raycast scripts when projects.toml or generator is staged
+#    (auto-stages output so commits always contain matching artifacts).
+# 2. Flush beads pending changes to JSONL.
 
+# === 1. Raycast script regeneration ===
+# Trigger only when the source-of-truth files are staged. Fail the commit
+# if generation errors so drift never lands in main.
+if git diff --cached --name-only 2>/dev/null | grep -qE '^(home/projects\.toml|scripts/generate-raycast\.sh)$'; then
+    REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
+    if [ -n "$REPO_ROOT" ] && [ -x "$REPO_ROOT/scripts/generate-raycast.sh" ]; then
+        if ! command -v python3 >/dev/null 2>&1; then
+            echo "Error: python3 required by generate-raycast.sh — install python3 to commit" >&2
+            exit 1
+        fi
+        if ! bash "$REPO_ROOT/scripts/generate-raycast.sh" >/dev/null 2>&1; then
+            echo "Error: generate-raycast.sh failed — fix before committing" >&2
+            echo "  Run manually: bash scripts/generate-raycast.sh" >&2
+            exit 1
+        fi
+        # Auto-stage regenerated scripts (only in regular repo, not worktrees,
+        # to avoid surprise stages in detached states).
+        if [ "$(git rev-parse --git-dir)" = "$(git rev-parse --git-common-dir)" ]; then
+            git add "$REPO_ROOT/platform/raycast-scripts/" 2>/dev/null || true
+        fi
+    fi
+fi
+
+# === 2. Beads JSONL flush ===
 if ! command -v bd >/dev/null 2>&1; then
     exit 0
 fi
