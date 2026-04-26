@@ -93,14 +93,33 @@
     "Bicep": { "format_on_save": "on" }
   },
 
-  // === Bicep LSP fallback ===
-  // The Bicep extension wires this automatically, but this block ensures
-  // the LSP works even if the extension fails to load.
+  // === LSP server config ===
   "lsp": {
+    // Bicep — extension wires this automatically; explicit fallback in case
+    // the extension fails to load. Binary lives at ~/.local/bin/bicep
+    // (symlinked from ~/.azure/bin/bicep, installed via az bicep install).
     "bicep-langserver": {
       "binary": {
         "path": "bicep",
         "arguments": ["langserver"]
+      }
+    },
+
+    // TypeScript — bound memory at 1.5 GB to keep remote-server resident set
+    // under control on t3 turbo monorepos. Without this, tsserver routinely
+    // balloons to 2-3 GB on projects with 10+ packages sharing types (oo,
+    // tc, etc.). Mirrors the prior Cursor setting (typescript.tsserver
+    // .maxTsServerMemory: 1536). includePackageJsonAutoImports is the most
+    // expensive auto-feature in tsserver — disabling it saves ~30% memory
+    // and removes auto-import suggestions from package.json scanning (Zed's
+    // own auto-import via tree-sitter still works for imports already in
+    // the project).
+    "typescript-language-server": {
+      "initialization_options": {
+        "maxTsServerMemory": 1536,
+        "preferences": {
+          "includePackageJsonAutoImports": "off"
+        }
       }
     }
   },

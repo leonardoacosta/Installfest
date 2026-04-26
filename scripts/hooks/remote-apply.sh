@@ -30,8 +30,14 @@ PRE_SHA="${1:-}"
     cd "$REPO_ROOT" || exit 0
 
     # --- chezmoi apply (deploys ~/.config, ~/.zshrc, etc.) ---
+    # --force overrides interactive conflict prompts. Required because some
+    # apps mutate their config files at runtime (e.g. Zed writing back
+    # extension-install state to settings.json), and an unattended deploy
+    # has no tty to answer "diff/overwrite/skip/quit?". Source-controlled
+    # config wins on every deploy; if you tweak via the app's own UI, run
+    # `chezmoi re-add <path>` to pull the change back into the dotfiles.
     if command -v chezmoi >/dev/null 2>&1; then
-        chezmoi apply --no-tty
+        chezmoi apply --no-tty --force
         rc=$?
         echo "chezmoi: exit $rc"
     else
