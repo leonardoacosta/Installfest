@@ -1,0 +1,43 @@
+// Zed global tasks — managed by chezmoi
+// Project-scoped tasks belong in <project>/.zed/tasks.json
+//
+// $ZED_WORKTREE_ROOT resolves to the current project's root.
+// Bind keybindings in keymap.json — search "task::Spawn" there.
+[
+  {
+    "label": "Live Server",
+    "command": "live-server",
+    "args": [],
+    "use_new_terminal": false,
+    "allow_concurrent_runs": false,
+    "reveal": "always",
+    "cwd": "$ZED_WORKTREE_ROOT"
+  },
+  {
+    "label": "Live Server (no browser)",
+    "command": "live-server",
+    "args": ["--no-browser"],
+    "use_new_terminal": false,
+    "allow_concurrent_runs": false,
+    "reveal": "always",
+    "cwd": "$ZED_WORKTREE_ROOT"
+  },
+  {
+    "label": "Live Server (port 3000)",
+    "command": "live-server",
+    "args": ["--port=3000"],
+    "use_new_terminal": false,
+    "allow_concurrent_runs": false,
+    "reveal": "always",
+    "cwd": "$ZED_WORKTREE_ROOT"
+  },
+  {
+    "label": "Live Server (current file dir)",
+    "command": "live-server",
+    "args": [],
+    "use_new_terminal": false,
+    "allow_concurrent_runs": false,
+    "reveal": "always",
+    "cwd": "$ZED_DIRNAME"
+  }
+]

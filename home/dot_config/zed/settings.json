@@ -44,6 +44,37 @@
     "bicep": true
   },
 
+  // === AI: Edit Predictions (Zed's native copilot) ===
+  // Free with a Zed account; sign in via Cmd+Shift+P → "zed: sign in".
+  // Set to "copilot" for GitHub Copilot, "supermaven" for Supermaven.
+  "features": {
+    "edit_predictions_provider": "zed"
+  },
+  "show_edit_predictions": true,
+
+  // === AI: Assistant panel + inline edits (Cmd+I) ===
+  // Anthropic enabled — same key you use for Claude Code.
+  // Zed prompts for ANTHROPIC_API_KEY on first use (or reads from env).
+  // Pick the active model from the assistant panel dropdown — Zed's known-
+  // models list updates per release, so we don't pin a default here.
+  "assistant": {
+    "version": "2",
+    "enabled": true,
+    "button": true
+  },
+  "language_models": {
+    "anthropic": {
+      "version": "1"
+    }
+  },
+
+  // === Context Servers (MCP) ===
+  // Zed connects to MCP servers the same way Claude Code does. To wire one,
+  // add an entry below — e.g. beads, github, sentry — using the same command
+  // and env you use in ~/.claude/mcp_servers.json. Left empty for now to
+  // avoid forcing a configuration; populate as needed.
+  "context_servers": {},
+
   // === Per-language formatters / settings ===
   "languages": {
     "TypeScript": { "formatter": "prettier", "format_on_save": "on" },

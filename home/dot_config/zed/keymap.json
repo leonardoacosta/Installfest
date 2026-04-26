@@ -1,0 +1,26 @@
+// Zed keymap — managed by chezmoi
+// Project-scoped overrides belong in <project>/.zed/keymap.json
+//
+// Reference: https://zed.dev/docs/key-bindings
+[
+  {
+    "context": "Workspace",
+    "bindings": {
+      // === Live Server (replaces VS Code's "Open with Live Server") ===
+      "cmd-shift-l": ["task::Spawn", { "task_name": "Live Server" }],
+      "cmd-shift-k": "task::Rerun",
+
+      // === Task picker (lists all tasks defined in tasks.json) ===
+      "cmd-shift-r": "task::Spawn"
+    }
+  },
+
+  {
+    "context": "Editor",
+    "bindings": {
+      // === Inline AI edit on selection (Zed Assistant) ===
+      // Cmd+I is the default; explicit binding here documents intent.
+      "cmd-i": "assistant::InlineAssist"
+    }
+  }
+]
