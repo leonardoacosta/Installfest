@@ -12,8 +12,14 @@ run_brew_bundle() {
     info "Apps"
     info "===================="
     
-    brewfile="$SCRIPT_DIR/../homebrew/Brewfile"
-    if [ -f $brewfile ]; then
+    # Brewfile lives under platform/homebrew/ (moved from homebrew/ during
+    # platform-tooling reorg). Keep the legacy path as a fallback so older
+    # clones or sibling repos that haven't pulled keep working.
+    brewfile="$SCRIPT_DIR/../platform/homebrew/Brewfile"
+    if [ ! -f "$brewfile" ]; then
+        brewfile="$SCRIPT_DIR/../homebrew/Brewfile"
+    fi
+    if [ -f "$brewfile" ]; then
         # Run `brew bundle check`
         local check_output
         check_output=$(brew bundle check --file="$brewfile" 2>&1)
