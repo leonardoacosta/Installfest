@@ -23,12 +23,14 @@
   "preferred_line_length": 100,
 
   // === Theme ===
-  // One Hunter Vercel ports to Zed live in the extension registry.
-  // Run `zed: extensions` and search "one hunter" if not present.
+  // One Hunter Vercel matches the Ghostty + tmux palette already in this
+  // dotfiles repo (home/dot_config/ghostty/themes/One-Hunter-Vercel).
+  // The "one-hunter" extension is auto-installed below; ships 6 variants:
+  //   One Hunter Light, Classic, Flexokit Light, Flexoki Dark, Material, Vercel.
   "theme": {
     "mode": "dark",
-    "light": "One Light",
-    "dark": "One Dark"
+    "light": "One Hunter Light",
+    "dark": "One Hunter Vercel"
   },
 
   // === Git ===
@@ -38,10 +40,11 @@
   },
 
   // === Auto-install required extensions ===
-  // Bicep: ARM template authoring for Azure infra work.
-  // Requires `bicep` binary in PATH (installed via Homebrew).
+  //   bicep      — ARM template authoring (binary at ~/.local/bin/bicep)
+  //   one-hunter — One Hunter theme family (incl. One Hunter Vercel)
   "auto_install_extensions": {
-    "bicep": true
+    "bicep": true,
+    "one-hunter": true
   },
 
   // === AI: Edit Predictions (Zed's native copilot) ===
