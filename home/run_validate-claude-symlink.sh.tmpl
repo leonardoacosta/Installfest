@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# run_validate-claude-symlink.sh - Validate ~/.claude symlink convention
+# Runs every `chezmoi apply` to catch drift between machines.
+#
+# Convention: ~/.claude must be a symlink to ~/dev/cc so the central-claude
+# repo lives alongside other dev work. Direct clones into ~/.claude break
+# the convention and hide the repo from normal dev workflows.
+
+set -uo pipefail
+
+DOTFILES="{{ .chezmoi.workingTree }}"
+. "$DOTFILES/scripts/utils.sh"
+
+CLAUDE_DIR="$HOME/.claude"
+CC_DIR="$HOME/dev/cc"
+
+# Case 1: ~/.claude is a symlink — verify target
+if [[ -L "$CLAUDE_DIR" ]]; then
+    target="$(readlink "$CLAUDE_DIR")"
+    if [[ "$target" == "$CC_DIR" || "$target" == "$HOME/dev/cc" ]]; then
+        success "~/.claude → ~/dev/cc (symlink convention OK)"
+    else
+        warning "~/.claude is a symlink but points to: $target (expected ~/dev/cc)"
+    fi
+    exit 0
+fi
+
+# Case 2: ~/.claude does not exist
+if [[ ! -e "$CLAUDE_DIR" ]]; then
+    warning "~/.claude does not exist — Claude Code not installed on this machine"
+    exit 0
+fi
+
+# Case 3: ~/.claude is a real directory — check if it's a git repo
+if [[ -d "$CLAUDE_DIR/.git" ]]; then
+    if [[ -e "$CC_DIR" ]]; then
+        warning "Both ~/.claude (real dir) and ~/dev/cc exist — manual reconciliation needed"
+        warning "  Inspect:  ls -la ~/.claude ~/dev/cc"
+    else
+        warning "~/.claude is a direct clone, not symlinked to ~/dev/cc (homelab convention)"
+        warning "  Fix:  mv ~/.claude ~/dev/cc && ln -s ~/dev/cc ~/.claude"
+        warning "  This preserves git history and uncommitted state losslessly."
+    fi
+    exit 0
+fi
+
+warning "~/.claude exists but is not a git repo or symlink — unexpected state"
