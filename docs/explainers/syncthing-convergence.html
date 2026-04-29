@@ -1,0 +1,1775 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Syncthing Convergence Window — ~/.claude sync</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Serif:ital,wght@1,500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #0a0d12;
+        --bg-elev: #11151c;
+        --bg-elev-2: #161b24;
+        --border: #1f2530;
+        --border-strong: #2a323f;
+        --text: #e8eaed;
+        --text-muted: #7a8290;
+        --text-faint: #4a525e;
+        --green: #5fb878;
+        --amber: #d4934a;
+        --amber-soft: #d4934a18;
+        --red: #c64545;
+        --blue: #6b9bd1;
+        --cyan: #7dd3c0;
+        --magenta: #b87aa8;
+        --grid: rgba(122, 130, 144, 0.06);
+
+        --mono: "IBM Plex Mono", ui-monospace, "Menlo", monospace;
+        --sans: "IBM Plex Sans", system-ui, sans-serif;
+        --serif: "IBM Plex Serif", "IBM Plex Mono", serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--mono);
+        font-size: 14px;
+        line-height: 1.55;
+        -webkit-font-smoothing: antialiased;
+        font-feature-settings: "ss01", "ss02", "zero", "calt";
+      }
+
+      body {
+        background-image:
+          linear-gradient(var(--grid) 1px, transparent 1px),
+          linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+          radial-gradient(ellipse 100% 60% at 50% 0%, rgba(107, 155, 209, 0.05), transparent 60%);
+        background-size: 32px 32px, 32px 32px, 100% 100%;
+        background-position: -1px -1px, -1px -1px, 0 0;
+        min-height: 100vh;
+      }
+
+      ::selection {
+        background: var(--amber);
+        color: var(--bg);
+      }
+
+      /* ---------- Header strip ---------- */
+      .strip {
+        border-bottom: 1px solid var(--border);
+        background: rgba(10, 13, 18, 0.85);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+
+      .strip-inner {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 14px 32px;
+        display: flex;
+        gap: 24px;
+        align-items: center;
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+      }
+
+      .strip-inner .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--green);
+        box-shadow: 0 0 12px var(--green);
+        animation: pulse 2.4s ease-in-out infinite;
+      }
+
+      .strip-inner .meta-key {
+        color: var(--text-faint);
+      }
+
+      .strip-inner .meta-val {
+        color: var(--text);
+      }
+
+      .strip-spacer {
+        flex: 1;
+      }
+
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.35; }
+      }
+
+      /* ---------- Layout ---------- */
+      main {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 56px 32px 80px;
+      }
+
+      section {
+        margin-bottom: 72px;
+      }
+
+      .section-label {
+        font-size: 10px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--text-faint);
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .section-label::before {
+        content: "";
+        width: 18px;
+        height: 1px;
+        background: var(--text-faint);
+      }
+
+      /* ---------- Hero ---------- */
+      .hero {
+        padding-top: 24px;
+        margin-bottom: 96px;
+      }
+
+      .hero h1 {
+        font-family: var(--mono);
+        font-weight: 500;
+        font-size: clamp(32px, 5vw, 56px);
+        line-height: 1.05;
+        letter-spacing: -0.02em;
+        margin: 0 0 28px 0;
+        max-width: 24ch;
+      }
+
+      .hero h1 .accent {
+        color: var(--amber);
+      }
+
+      .hero h1 .tilde {
+        font-family: var(--serif);
+        font-style: italic;
+        color: var(--cyan);
+        font-weight: 500;
+      }
+
+      .hero-def {
+        font-family: var(--sans);
+        font-size: 18px;
+        line-height: 1.55;
+        max-width: 64ch;
+        color: var(--text-muted);
+        margin: 0 0 20px 0;
+      }
+
+      .hero-def b {
+        color: var(--text);
+        font-weight: 500;
+      }
+
+      .hero-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 32px;
+        font-size: 12px;
+        color: var(--text-faint);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        padding-top: 24px;
+        border-top: 1px dashed var(--border);
+      }
+
+      .hero-meta div span:first-child {
+        color: var(--text-faint);
+        margin-right: 8px;
+      }
+
+      .hero-meta div span:last-child {
+        color: var(--text);
+      }
+
+      /* ---------- Timeline ---------- */
+      .timeline-frame {
+        background: var(--bg-elev);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        overflow: hidden;
+      }
+
+      .timeline-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 14px 20px;
+        border-bottom: 1px solid var(--border);
+        font-size: 11px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+      }
+
+      .timeline-header .controls {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+      }
+
+      .led {
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--cyan);
+        box-shadow: 0 0 8px var(--cyan);
+        animation: pulse 1s steps(2) infinite;
+      }
+
+      .timeline {
+        position: relative;
+        padding: 32px 20px 16px 20px;
+      }
+
+      /* lanes container */
+      .lanes {
+        position: relative;
+        display: grid;
+        grid-template-rows: auto 32px auto;
+        gap: 0;
+      }
+
+      .lane {
+        position: relative;
+        height: 56px;
+        background:
+          linear-gradient(90deg, transparent 0%, transparent 100%),
+          repeating-linear-gradient(90deg, var(--border) 0 1px, transparent 1px 10%);
+        border: 1px solid var(--border);
+        border-radius: 2px;
+      }
+
+      .lane-label {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 10px;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: var(--text-faint);
+        z-index: 2;
+        pointer-events: none;
+        background: var(--bg-elev);
+        padding: 2px 6px;
+        border-radius: 2px;
+      }
+
+      .axis {
+        position: relative;
+        height: 32px;
+      }
+
+      .axis-tick {
+        position: absolute;
+        top: 0;
+        height: 100%;
+        width: 1px;
+        background: var(--border);
+      }
+
+      .axis-tick::before {
+        content: attr(data-label);
+        position: absolute;
+        top: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 10px;
+        color: var(--text-faint);
+        letter-spacing: 0.05em;
+      }
+
+      /* phase blocks (positioned absolutely within lane) */
+      .phase {
+        position: absolute;
+        top: 8px;
+        bottom: 8px;
+        border-radius: 2px;
+        padding: 6px 10px;
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        overflow: hidden;
+        white-space: nowrap;
+        border: 1px solid;
+      }
+
+      .phase .phase-num {
+        color: var(--text-faint);
+        font-weight: 500;
+      }
+
+      .phase.write {
+        background: rgba(95, 184, 120, 0.12);
+        border-color: rgba(95, 184, 120, 0.4);
+        color: var(--green);
+      }
+
+      .phase.detect {
+        background: rgba(122, 130, 144, 0.08);
+        border-color: var(--border-strong);
+        color: var(--text-muted);
+      }
+
+      .phase.hash {
+        background: rgba(107, 155, 209, 0.1);
+        border-color: rgba(107, 155, 209, 0.35);
+        color: var(--blue);
+      }
+
+      .phase.pull {
+        background: rgba(125, 211, 192, 0.1);
+        border-color: rgba(125, 211, 192, 0.35);
+        color: var(--cyan);
+      }
+
+      .phase.rename {
+        background: rgba(184, 122, 168, 0.1);
+        border-color: rgba(184, 122, 168, 0.35);
+        color: var(--magenta);
+      }
+
+      /* danger zone band */
+      .danger-band {
+        position: absolute;
+        top: 0;
+        bottom: 32px;
+        left: 0;
+        right: 0;
+        background: linear-gradient(180deg, var(--amber-soft), transparent 80%);
+        border-left: 1px dashed rgba(212, 147, 74, 0.3);
+        border-right: 1px dashed rgba(212, 147, 74, 0.3);
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      .danger-label {
+        position: absolute;
+        top: 6px;
+        right: 8px;
+        font-size: 9px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--amber);
+        opacity: 0.8;
+      }
+
+      /* the scrubber */
+      .scrubber {
+        position: absolute;
+        top: -8px;
+        bottom: 24px;
+        width: 1px;
+        background: var(--text);
+        z-index: 5;
+        pointer-events: none;
+        animation: scrub 10s linear infinite;
+      }
+
+      .scrubber::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(45deg);
+        width: 8px;
+        height: 8px;
+        background: var(--text);
+      }
+
+      .scrubber::after {
+        content: attr(data-time);
+        position: absolute;
+        top: -22px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 10px;
+        color: var(--text);
+        background: var(--bg-elev-2);
+        border: 1px solid var(--border-strong);
+        padding: 2px 6px;
+        border-radius: 2px;
+        white-space: nowrap;
+        animation: scrub-label 10s linear infinite;
+      }
+
+      @keyframes scrub {
+        0% { left: 0%; }
+        100% { left: 100%; }
+      }
+
+      @keyframes scrub-label {
+        0% { content: "t=0.0s"; }
+        10% { content: "t=1.0s"; }
+        20% { content: "t=2.0s"; }
+        30% { content: "t=3.0s"; }
+        40% { content: "t=4.0s"; }
+        50% { content: "t=5.0s"; }
+        60% { content: "t=6.0s"; }
+        70% { content: "t=7.0s"; }
+        80% { content: "t=8.0s"; }
+        90% { content: "t=9.0s"; }
+        100% { content: "t=10.0s"; }
+      }
+
+      /* phase legend below */
+      .legend {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 1px;
+        background: var(--border);
+        border-top: 1px solid var(--border);
+      }
+
+      .legend-item {
+        background: var(--bg-elev);
+        padding: 14px 16px;
+        font-size: 11px;
+      }
+
+      .legend-item .lh {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 6px;
+      }
+
+      .legend-item .num {
+        color: var(--text-faint);
+      }
+
+      .legend-item .range {
+        color: var(--text-muted);
+      }
+
+      .legend-item .name {
+        color: var(--text);
+        margin-bottom: 4px;
+        font-weight: 500;
+      }
+
+      .legend-item .desc {
+        color: var(--text-muted);
+        font-size: 10px;
+        line-height: 1.4;
+      }
+
+      .legend-item.k-write .name { color: var(--green); }
+      .legend-item.k-detect .name { color: var(--text); }
+      .legend-item.k-hash .name { color: var(--blue); }
+      .legend-item.k-pull .name { color: var(--cyan); }
+      .legend-item.k-rename .name { color: var(--magenta); }
+
+      /* ---------- Scenario cards ---------- */
+      .scenarios {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+      }
+
+      .scenario {
+        background: var(--bg-elev);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 24px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .scenario::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--border-strong);
+      }
+
+      .scenario.s-early::before { background: var(--amber); }
+      .scenario.s-late::before { background: var(--green); }
+      .scenario.s-rename::before { background: var(--magenta); }
+
+      .scenario-time {
+        font-size: 11px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--text-faint);
+        margin-bottom: 8px;
+      }
+
+      .scenario-time b {
+        color: var(--text);
+        font-weight: 500;
+      }
+
+      .scenario h3 {
+        font-family: var(--mono);
+        font-size: 16px;
+        font-weight: 500;
+        margin: 0 0 12px 0;
+        letter-spacing: -0.01em;
+      }
+
+      .scenario p {
+        font-family: var(--sans);
+        font-size: 13px;
+        color: var(--text-muted);
+        margin: 0 0 16px 0;
+        line-height: 1.55;
+      }
+
+      .verdict {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        padding: 6px 10px;
+        border-radius: 2px;
+        border: 1px solid;
+      }
+
+      .verdict.ok {
+        color: var(--green);
+        border-color: rgba(95, 184, 120, 0.3);
+        background: rgba(95, 184, 120, 0.06);
+      }
+
+      .verdict.fine {
+        color: var(--amber);
+        border-color: rgba(212, 147, 74, 0.3);
+        background: rgba(212, 147, 74, 0.06);
+      }
+
+      .verdict::before {
+        content: "";
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: currentColor;
+      }
+
+      /* ---------- Tunable knob ---------- */
+      .knob-frame {
+        background: var(--bg-elev);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 32px;
+        display: grid;
+        grid-template-columns: 1fr 1.4fr;
+        gap: 48px;
+        align-items: center;
+      }
+
+      .knob-config code {
+        display: block;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 2px;
+        padding: 16px;
+        font-family: var(--mono);
+        font-size: 13px;
+        color: var(--cyan);
+        margin-bottom: 16px;
+      }
+
+      .knob-config code .key {
+        color: var(--text);
+      }
+
+      .knob-config code .num {
+        color: var(--amber);
+      }
+
+      .knob-config code .comment {
+        color: var(--text-faint);
+      }
+
+      .knob-config p {
+        font-family: var(--sans);
+        font-size: 13px;
+        color: var(--text-muted);
+        margin: 0;
+        line-height: 1.55;
+      }
+
+      .knob-axis {
+        position: relative;
+        padding: 32px 0;
+      }
+
+      .knob-line {
+        height: 1px;
+        background: var(--border-strong);
+        position: relative;
+      }
+
+      .knob-mark {
+        position: absolute;
+        top: -6px;
+        width: 1px;
+        height: 13px;
+        background: var(--text-faint);
+      }
+
+      .knob-mark[data-pos="0"] { left: 0%; }
+      .knob-mark[data-pos="1"] { left: 16%; }
+      .knob-mark[data-pos="2"] { left: 50%; }
+      .knob-mark[data-pos="3"] { left: 100%; }
+
+      .knob-tag {
+        position: absolute;
+        top: 14px;
+        font-size: 10px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--text-faint);
+        white-space: nowrap;
+        transform: translateX(-50%);
+      }
+
+      .knob-tag.value {
+        color: var(--text);
+        font-weight: 500;
+        top: -32px;
+      }
+
+      .knob-tag.value.default {
+        color: var(--amber);
+      }
+
+      .knob-tradeoff {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 56px;
+        font-size: 10px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--text-faint);
+      }
+
+      .knob-tradeoff div b {
+        color: var(--text);
+        font-weight: 500;
+      }
+
+      /* ---------- Scope panel ---------- */
+      .scope-frame {
+        background: var(--bg-elev);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        overflow: hidden;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .scope-col {
+        padding: 24px 28px 28px;
+      }
+
+      .scope-col.in {
+        border-right: 1px solid var(--border);
+      }
+
+      .scope-col.out {
+        background: var(--bg-elev-2);
+      }
+
+      .scope-head {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 10px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--text-faint);
+        margin-bottom: 18px;
+      }
+
+      .scope-head .tag {
+        padding: 3px 8px;
+        border: 1px solid;
+        border-radius: 2px;
+        font-size: 10px;
+        letter-spacing: 0.12em;
+      }
+
+      .scope-head.in .tag {
+        color: var(--green);
+        border-color: rgba(95, 184, 120, 0.35);
+        background: rgba(95, 184, 120, 0.06);
+      }
+
+      .scope-head.out .tag {
+        color: var(--amber);
+        border-color: rgba(212, 147, 74, 0.35);
+        background: rgba(212, 147, 74, 0.06);
+      }
+
+      .scope-head .lh {
+        flex: 1;
+      }
+
+      .scope-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .scope-list li {
+        display: grid;
+        grid-template-columns: minmax(160px, max-content) 1fr;
+        gap: 16px;
+        padding: 10px 0;
+        border-top: 1px dashed var(--border);
+        align-items: baseline;
+      }
+
+      .scope-list li:first-child {
+        border-top: none;
+        padding-top: 0;
+      }
+
+      .scope-list code.path {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--text);
+        background: var(--bg);
+        padding: 4px 8px;
+        border-radius: 2px;
+        border: 1px solid var(--border);
+        white-space: nowrap;
+      }
+
+      .scope-col.in .scope-list code.path {
+        color: var(--green);
+        border-color: rgba(95, 184, 120, 0.25);
+      }
+
+      .scope-col.out .scope-list code.path {
+        color: var(--amber);
+        border-color: rgba(212, 147, 74, 0.22);
+      }
+
+      .scope-list .why {
+        font-family: var(--sans);
+        font-size: 12px;
+        color: var(--text-muted);
+        line-height: 1.5;
+      }
+
+      .scope-list .why b {
+        color: var(--text);
+        font-weight: 500;
+      }
+
+      .scope-principle {
+        margin-top: 18px;
+        padding: 14px 16px;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-left: 2px solid var(--cyan);
+        border-radius: 2px;
+        font-family: var(--sans);
+        font-size: 12px;
+        color: var(--text-muted);
+        line-height: 1.5;
+      }
+
+      .scope-principle b {
+        color: var(--cyan);
+        font-family: var(--mono);
+        font-weight: 500;
+        letter-spacing: 0.02em;
+      }
+
+      @media (max-width: 900px) {
+        .scope-frame {
+          grid-template-columns: 1fr;
+        }
+        .scope-col.in {
+          border-right: none;
+          border-bottom: 1px solid var(--border);
+        }
+        .scope-list li {
+          grid-template-columns: 1fr;
+          gap: 6px;
+        }
+      }
+
+      /* ---------- Two-channel diagram ---------- */
+      .channels-frame {
+        background: var(--bg-elev);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 32px 28px;
+      }
+
+      .channels {
+        display: grid;
+        grid-template-columns: 1fr 200px 1fr;
+        align-items: stretch;
+        gap: 0;
+        position: relative;
+      }
+
+      .machine {
+        background: var(--bg);
+        border: 1px solid var(--border-strong);
+        border-radius: 3px;
+        padding: 18px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .machine .m-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 10px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--text-faint);
+      }
+
+      .machine .m-head b {
+        font-size: 14px;
+        letter-spacing: -0.01em;
+        text-transform: none;
+        color: var(--text);
+        font-weight: 500;
+      }
+
+      .machine .m-head .role {
+        padding: 3px 8px;
+        border-radius: 2px;
+        border: 1px solid;
+        font-size: 9px;
+      }
+
+      .machine.m-mac .m-head .role {
+        color: var(--green);
+        border-color: rgba(95, 184, 120, 0.3);
+        background: rgba(95, 184, 120, 0.06);
+      }
+
+      .machine.m-homelab .m-head .role {
+        color: var(--blue);
+        border-color: rgba(107, 155, 209, 0.3);
+        background: rgba(107, 155, 209, 0.06);
+      }
+
+      .layer {
+        background: var(--bg-elev-2);
+        border: 1px solid var(--border);
+        border-left: 2px solid;
+        border-radius: 2px;
+        padding: 10px 12px;
+        font-size: 11px;
+      }
+
+      .layer.l-tree { border-left-color: var(--cyan); }
+      .layer.l-git { border-left-color: var(--magenta); }
+
+      .layer .l-name {
+        color: var(--text);
+        font-weight: 500;
+        margin-bottom: 2px;
+        font-size: 11px;
+        letter-spacing: 0.04em;
+      }
+
+      .layer .l-path {
+        color: var(--text-muted);
+        font-size: 10px;
+      }
+
+      .layer.l-tree .l-name { color: var(--cyan); }
+      .layer.l-git .l-name { color: var(--magenta); }
+
+      .channel-bus {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+      }
+
+      .channel {
+        flex: 1;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 18px 0;
+      }
+
+      .channel-line {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 50%;
+        height: 1px;
+        background: repeating-linear-gradient(
+          90deg,
+          var(--text-faint) 0 6px,
+          transparent 6px 12px
+        );
+      }
+
+      .channel-tag {
+        position: relative;
+        background: var(--bg-elev);
+        padding: 4px 10px;
+        border: 1px solid var(--border-strong);
+        border-radius: 2px;
+        font-size: 10px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--text);
+        z-index: 2;
+      }
+
+      .channel-cadence {
+        position: relative;
+        background: var(--bg-elev);
+        font-size: 9px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--text-faint);
+        z-index: 2;
+      }
+
+      .channel.c-syncthing .channel-line {
+        background: repeating-linear-gradient(
+          90deg,
+          var(--cyan) 0 8px,
+          transparent 8px 14px
+        );
+        opacity: 0.6;
+      }
+
+      .channel.c-syncthing .channel-tag {
+        color: var(--cyan);
+        border-color: rgba(125, 211, 192, 0.4);
+      }
+
+      .channel.c-git .channel-line {
+        background: repeating-linear-gradient(
+          90deg,
+          var(--magenta) 0 8px,
+          transparent 8px 14px
+        );
+        opacity: 0.5;
+      }
+
+      .channel.c-git .channel-tag {
+        color: var(--magenta);
+        border-color: rgba(184, 122, 168, 0.4);
+      }
+
+      .channel-arrows {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        align-items: center;
+        z-index: 1;
+      }
+
+      .channel-divider {
+        height: 1px;
+        background: var(--border);
+        margin: 0 8px;
+      }
+
+      .github-badge {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: var(--bg-elev);
+        border: 1px solid rgba(184, 122, 168, 0.4);
+        border-radius: 2px;
+        padding: 4px 10px;
+        font-size: 10px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--magenta);
+        z-index: 3;
+      }
+
+      /* timing walkthrough */
+      .walkthrough {
+        margin-top: 32px;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 3px;
+        overflow: hidden;
+      }
+
+      .walk-row {
+        display: grid;
+        grid-template-columns: 80px 1fr 1fr;
+        border-bottom: 1px solid var(--border);
+        font-size: 12px;
+      }
+
+      .walk-row:last-child {
+        border-bottom: none;
+      }
+
+      .walk-row.head {
+        background: var(--bg-elev-2);
+        font-size: 9px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--text-faint);
+      }
+
+      .walk-row > div {
+        padding: 12px 16px;
+        border-right: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .walk-row > div:last-child {
+        border-right: none;
+      }
+
+      .walk-row .t {
+        font-family: var(--mono);
+        color: var(--amber);
+        font-weight: 500;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .walk-row .actor {
+        font-family: var(--sans);
+        color: var(--text-muted);
+        font-size: 12px;
+      }
+
+      .walk-row .actor b {
+        font-family: var(--mono);
+        color: var(--text);
+        font-weight: 500;
+        font-size: 11px;
+      }
+
+      .walk-row .verdict {
+        font-family: var(--sans);
+        font-size: 11px;
+        color: var(--text-muted);
+      }
+
+      .walk-row .verdict.ok {
+        color: var(--green);
+      }
+
+      .walk-row .verdict.ok::before {
+        content: "✓";
+        margin-right: 6px;
+        font-weight: bold;
+      }
+
+      @media (max-width: 900px) {
+        .channels {
+          grid-template-columns: 1fr;
+          gap: 12px;
+        }
+        .channel-bus {
+          padding: 24px 0;
+        }
+        .channel {
+          padding: 12px 0;
+        }
+        .channel-line {
+          left: 50%;
+          top: 0;
+          bottom: 0;
+          width: 1px;
+          height: auto;
+          right: auto;
+          background: repeating-linear-gradient(
+            180deg,
+            var(--text-faint) 0 6px,
+            transparent 6px 12px
+          ) !important;
+        }
+        .channel.c-syncthing .channel-line {
+          background: repeating-linear-gradient(
+            180deg,
+            var(--cyan) 0 8px,
+            transparent 8px 14px
+          ) !important;
+        }
+        .channel.c-git .channel-line {
+          background: repeating-linear-gradient(
+            180deg,
+            var(--magenta) 0 8px,
+            transparent 8px 14px
+          ) !important;
+        }
+        .walk-row {
+          grid-template-columns: 60px 1fr;
+          font-size: 11px;
+        }
+        .walk-row > div:nth-child(3) {
+          grid-column: span 2;
+          border-top: 1px dashed var(--border);
+        }
+      }
+
+      /* ---------- Comparison table ---------- */
+      .compare {
+        background: var(--bg-elev);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        overflow: hidden;
+      }
+
+      .compare-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr 2fr 1fr;
+        border-bottom: 1px solid var(--border);
+        font-size: 13px;
+      }
+
+      .compare-row:last-child {
+        border-bottom: none;
+      }
+
+      .compare-row > div {
+        padding: 16px 20px;
+        border-right: 1px solid var(--border);
+      }
+
+      .compare-row > div:last-child {
+        border-right: none;
+      }
+
+      .compare-row.head {
+        background: var(--bg-elev-2);
+        font-size: 10px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--text-faint);
+      }
+
+      .compare-row .tool {
+        color: var(--text);
+        font-weight: 500;
+      }
+
+      .compare-row .latency-good { color: var(--green); }
+      .compare-row .latency-mid { color: var(--amber); }
+      .compare-row .latency-bad { color: var(--red); }
+
+      .compare-row .verdict-cell {
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .compare-row .verdict-cell.pick { color: var(--green); }
+      .compare-row .verdict-cell.skip { color: var(--red); }
+      .compare-row .verdict-cell.aux { color: var(--amber); }
+
+      .compare-note {
+        font-family: var(--sans);
+        font-size: 12px;
+        color: var(--text-muted);
+        line-height: 1.5;
+      }
+
+      /* ---------- Footer ---------- */
+      footer {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 32px;
+        border-top: 1px dashed var(--border);
+        font-size: 10px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--text-faint);
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 16px;
+      }
+
+      footer a {
+        color: var(--text-muted);
+        text-decoration: none;
+        border-bottom: 1px dashed var(--text-faint);
+      }
+
+      footer a:hover {
+        color: var(--text);
+        border-color: var(--text);
+      }
+
+      /* ---------- Responsive ---------- */
+      @media (max-width: 900px) {
+        main {
+          padding: 32px 20px 56px;
+        }
+        .hero h1 {
+          font-size: clamp(28px, 8vw, 40px);
+        }
+        .hero-def {
+          font-size: 16px;
+        }
+        .legend {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .scenarios {
+          grid-template-columns: 1fr;
+        }
+        .knob-frame {
+          grid-template-columns: 1fr;
+          gap: 32px;
+        }
+        .compare-row {
+          grid-template-columns: 1fr 1fr;
+          font-size: 12px;
+        }
+        .compare-row > div:nth-child(3),
+        .compare-row > div:nth-child(4) {
+          grid-column: span 2;
+          border-top: 1px dashed var(--border);
+        }
+        .lane-label {
+          font-size: 9px;
+        }
+        .phase {
+          padding: 4px 6px;
+          font-size: 9px;
+        }
+        .phase span:not(.phase-num) {
+          display: none;
+        }
+        .strip-inner {
+          padding: 12px 20px;
+          gap: 14px;
+          font-size: 10px;
+        }
+        .strip-inner .meta {
+          display: none;
+        }
+        .strip-inner .meta-keep {
+          display: inline-flex;
+          gap: 8px;
+        }
+      }
+
+      /* ---------- Print ---------- */
+      @media print {
+        body {
+          background: white;
+          color: black;
+        }
+        :root {
+          --bg: white;
+          --bg-elev: white;
+          --bg-elev-2: #f5f5f5;
+          --border: #cccccc;
+          --border-strong: #888;
+          --text: black;
+          --text-muted: #444;
+          --text-faint: #777;
+        }
+        .scrubber, .led, .strip {
+          display: none !important;
+        }
+        section {
+          page-break-inside: avoid;
+        }
+      }
+
+      /* ---------- Reduced motion ---------- */
+      @media (prefers-reduced-motion: reduce) {
+        .scrubber,
+        .scrubber::after,
+        .led,
+        .strip-inner .dot {
+          animation: none !important;
+        }
+        .scrubber {
+          left: 50%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="strip">
+      <div class="strip-inner">
+        <span class="dot"></span>
+        <span class="meta-keep"><span class="meta-key">DOC</span><span class="meta-val">001</span></span>
+        <span class="meta"><span class="meta-key">SUBJ</span><span class="meta-val">syncthing</span></span>
+        <span class="meta"><span class="meta-key">TOPIC</span><span class="meta-val">convergence-window</span></span>
+        <span class="strip-spacer"></span>
+        <span class="meta"><span class="meta-key">~/.claude</span><span class="meta-val">→ mac canonical</span></span>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <h1>
+          What does <span class="tilde">~</span><span class="accent">10s</span><br />
+          convergence mean?
+        </h1>
+        <p class="hero-def">
+          <b>Convergence</b> is the time from <i>"file changes on machine A"</i> to <i>"machine B
+          has the same byte-identical file."</i> With Syncthing this is not instant — there's a
+          deterministic five-step pipeline. Most of the time, it completes in roughly ten seconds
+          on a LAN.
+        </p>
+        <div class="hero-meta">
+          <div><span>Source of truth</span><span>Mac (always-on)</span></div>
+          <div><span>Compute</span><span>Homelab (ephemeral)</span></div>
+          <div><span>Transport</span><span>Tailscale mesh</span></div>
+          <div><span>Tolerance</span><span>≤ 1–2 messages</span></div>
+        </div>
+      </section>
+
+      <section>
+        <div class="section-label">01 / Pipeline trace</div>
+        <div class="timeline-frame">
+          <div class="timeline-header">
+            <span>WRITE → REPLICATE → RENAME &nbsp;·&nbsp; t=0.0s → t=10.0s</span>
+            <div class="controls">
+              <span><span class="led"></span>&nbsp;&nbsp;LIVE</span>
+              <span>LOOP 10s</span>
+            </div>
+          </div>
+          <div class="timeline">
+            <div class="lanes">
+              <!-- HOMELAB lane -->
+              <div class="lane" aria-label="homelab">
+                <span class="lane-label">homelab</span>
+                <!-- t=0: WRITE event marker -->
+                <div class="phase write" style="left: 0%; width: 4%;">
+                  <span class="phase-num">01</span><span>WRITE</span>
+                </div>
+                <!-- t=0–1: FS WATCH -->
+                <div class="phase detect" style="left: 4%; width: 6%;">
+                  <span class="phase-num">02</span><span>FSNOTIFY</span>
+                </div>
+                <!-- t=1–3: HASH + ANNOUNCE -->
+                <div class="phase hash" style="left: 10%; width: 20%;">
+                  <span class="phase-num">03</span><span>HASH · ANNOUNCE</span>
+                </div>
+              </div>
+
+              <!-- AXIS -->
+              <div class="axis">
+                <div class="axis-tick" data-label="0s" style="left: 0%;"></div>
+                <div class="axis-tick" data-label="1s" style="left: 10%;"></div>
+                <div class="axis-tick" data-label="2s" style="left: 20%;"></div>
+                <div class="axis-tick" data-label="3s" style="left: 30%;"></div>
+                <div class="axis-tick" data-label="4s" style="left: 40%;"></div>
+                <div class="axis-tick" data-label="5s" style="left: 50%;"></div>
+                <div class="axis-tick" data-label="6s" style="left: 60%;"></div>
+                <div class="axis-tick" data-label="7s" style="left: 70%;"></div>
+                <div class="axis-tick" data-label="8s" style="left: 80%;"></div>
+                <div class="axis-tick" data-label="9s" style="left: 90%;"></div>
+                <div class="axis-tick" data-label="10s" style="left: 100%;"></div>
+              </div>
+
+              <!-- MAC lane -->
+              <div class="lane" aria-label="mac">
+                <span class="lane-label">mac</span>
+                <!-- t=3–8: PULL -->
+                <div class="phase pull" style="left: 30%; width: 50%;">
+                  <span class="phase-num">04</span><span>PULL BLOCKS · ~/syncthing~tmp</span>
+                </div>
+                <!-- t=8–10: RENAME -->
+                <div class="phase rename" style="left: 80%; width: 20%;">
+                  <span class="phase-num">05</span><span>rename(2)</span>
+                </div>
+              </div>
+
+              <!-- danger band overlay -->
+              <div class="danger-band">
+                <span class="danger-label">convergence window · data at risk on homelab</span>
+              </div>
+
+              <!-- the scrubber -->
+              <div class="scrubber" data-time="t=0.0s"></div>
+            </div>
+          </div>
+
+          <div class="legend">
+            <div class="legend-item k-write">
+              <div class="lh"><span class="num">01</span><span class="range">t=0.0s</span></div>
+              <div class="name">WRITE</div>
+              <div class="desc">Claude appends a JSONL record. fsync flushes the page cache. The byte-on-disk truth lives only here.</div>
+            </div>
+            <div class="legend-item k-detect">
+              <div class="lh"><span class="num">02</span><span class="range">t=0.0–1.0s</span></div>
+              <div class="name">FSNOTIFY</div>
+              <div class="desc">fsnotify (Linux) batches events for ~1s. Avoids storms during heavy writes. Tunable via fsWatcherDelayS.</div>
+            </div>
+            <div class="legend-item k-hash">
+              <div class="lh"><span class="num">03</span><span class="range">t=1.0–3.0s</span></div>
+              <div class="name">HASH · ANNOUNCE</div>
+              <div class="desc">Block hashes computed (1MB blocks default). New version announced over Block Exchange Protocol via Tailscale.</div>
+            </div>
+            <div class="legend-item k-pull">
+              <div class="lh"><span class="num">04</span><span class="range">t=3.0–8.0s</span></div>
+              <div class="name">PULL BLOCKS</div>
+              <div class="desc">Mac pulls only changed blocks. Writes to a hidden ~syncthing~tmp file. Original file is untouched.</div>
+            </div>
+            <div class="legend-item k-rename">
+              <div class="lh"><span class="num">05</span><span class="range">t=8.0–10.0s</span></div>
+              <div class="name">rename(2)</div>
+              <div class="desc">POSIX-atomic rename. Old file is replaced in a single instant. Mac never sees a half-written state.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div class="section-label">02 / Power-loss scenarios</div>
+        <div class="scenarios">
+          <div class="scenario s-early">
+            <div class="scenario-time">cut at <b>t = 0.5s</b></div>
+            <h3>Early cut</h3>
+            <p>
+              Homelab fsync'd the JSONL but Mac hasn't seen the announce yet. Message is stranded
+              on a dead box. When power returns, Syncthing resumes and the lost interval syncs.
+              Until then, you resume from the Mac's last-converged state.
+            </p>
+            <span class="verdict fine">Lose 1 in-flight msg</span>
+          </div>
+          <div class="scenario s-late">
+            <div class="scenario-time">cut at <b>t = 8.0s</b></div>
+            <h3>Late cut</h3>
+            <p>
+              Mac has already pulled all blocks and may have completed rename. The new version
+              exists on the source-of-truth machine. Resume on Mac is exact: the conversation
+              continues with zero data loss.
+            </p>
+            <span class="verdict ok">No data lost</span>
+          </div>
+          <div class="scenario s-rename">
+            <div class="scenario-time">cut <b>mid-rename(2)</b></div>
+            <h3>Atomic guarantee</h3>
+            <p>
+              rename(2) on POSIX is atomic by spec. Either the old inode survives or the new one
+              does — never a half-overwritten file. Worst case is a brief revert to version N
+              followed by a re-pull. Corruption is structurally excluded.
+            </p>
+            <span class="verdict ok">N or N+1, never broken</span>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div class="section-label">03 / What syncs · what doesn't</div>
+        <div class="scope-frame">
+          <div class="scope-col in">
+            <div class="scope-head in">
+              <span class="tag">IN SCOPE</span>
+              <span class="lh">replicated by syncthing</span>
+            </div>
+            <ul class="scope-list">
+              <li>
+                <code class="path">projects/**/*.jsonl</code>
+                <span class="why">Conversation transcripts. <b>Append-only</b> — atomic appends sync cleanly without race.</span>
+              </li>
+              <li>
+                <code class="path">memory/**/*.md</code>
+                <span class="why">Persistent memory files. Single-file atomic writes — exactly Syncthing's strength.</span>
+              </li>
+              <li>
+                <code class="path">settings*.json</code>
+                <span class="why">User + local config. Small, infrequent edits. Conflict files are easy to resolve.</span>
+              </li>
+              <li>
+                <code class="path">commands/ skills/ agents/</code>
+                <span class="why">Custom workflow surface. Already in git — Syncthing keeps the working tree fresh between commits.</span>
+              </li>
+              <li>
+                <code class="path">handoffs/ output-styles/</code>
+                <span class="why">Session metadata. Small, append-style. Both machines benefit from current state.</span>
+              </li>
+            </ul>
+          </div>
+          <div class="scope-col out">
+            <div class="scope-head out">
+              <span class="tag">EXCLUDED</span>
+              <span class="lh">managed by another tool</span>
+            </div>
+            <ul class="scope-list">
+              <li>
+                <code class="path">*.db-wal · *.db-shm</code>
+                <span class="why">SQLite write-ahead-log + shared memory. Mutates continuously even when "idle." File-level sync produces <b>torn pages</b>.</span>
+              </li>
+              <li>
+                <code class="path">beads/beads.db</code>
+                <span class="why">SQLite db itself. Already replicated by <b>Dolt MVCC</b> via <code style="font-family:var(--mono);font-size:11px;">bd dolt push/pull</code> — that's its safe sync primitive.</span>
+              </li>
+              <li>
+                <code class="path">.git/</code>
+                <span class="why">Git's internal refs/index/packs are mid-mutation during commits. Replicated authoritatively via <b>git push</b> to GitHub.</span>
+              </li>
+              <li>
+                <code class="path">logs/</code>
+                <span class="why">High-frequency churn during active sessions. Saturates Syncthing's rescan budget — would never reach "converged."</span>
+              </li>
+              <li>
+                <code class="path">cache/ · image-cache/</code>
+                <span class="why">Derived data. Machine-specific paths. Regenerable on demand. Bandwidth waste with zero correctness benefit.</span>
+              </li>
+              <li>
+                <code class="path">*.tmp · ~syncthing~tmp</code>
+                <span class="why">Sync staging files and editor scratch. Including them creates a <b>sync-of-sync</b> loop.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="scope-principle">
+          <b>PRINCIPLE</b> &nbsp;·&nbsp; Don't double-manage state. Anything that has its own
+          consistency protocol — SQLite WAL+checkpoint, Git refs+packs, build caches — gets
+          excluded from file-level sync. The actively-synced surface is exclusively append-only
+          logs and atomic single-file writes. That's the surface Syncthing handles flawlessly.
+        </div>
+      </section>
+
+      <section>
+        <div class="section-label">04 / How diffs stay consistent</div>
+        <div class="channels-frame">
+          <div class="channels">
+            <div class="machine m-homelab">
+              <div class="m-head">
+                <b>homelab</b>
+                <span class="role">compute</span>
+              </div>
+              <div class="layer l-tree">
+                <div class="l-name">working tree</div>
+                <div class="l-path">~/.claude/projects · memory · settings</div>
+              </div>
+              <div class="layer l-git">
+                <div class="l-name">.git/ — local index</div>
+                <div class="l-path">objects · refs · HEAD · index</div>
+              </div>
+            </div>
+
+            <div class="channel-bus">
+              <div class="channel c-syncthing">
+                <div class="channel-line"></div>
+                <div class="channel-tag">SYNCTHING</div>
+                <div class="channel-cadence">~10s · bidirectional</div>
+              </div>
+              <div class="channel c-git">
+                <div class="channel-line"></div>
+                <div class="github-badge">GITHUB</div>
+                <div class="channel-cadence" style="margin-top: 30px;">push 90s · fetch on demand</div>
+              </div>
+            </div>
+
+            <div class="machine m-mac">
+              <div class="m-head">
+                <b>mac</b>
+                <span class="role">canonical</span>
+              </div>
+              <div class="layer l-tree">
+                <div class="l-name">working tree</div>
+                <div class="l-path">~/.claude/projects · memory · settings</div>
+              </div>
+              <div class="layer l-git">
+                <div class="l-name">.git/ — local index</div>
+                <div class="l-path">objects · refs · HEAD · index</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="scope-principle" style="margin-top: 28px;">
+            <b>WHY IT WORKS</b> &nbsp;·&nbsp; <code style="font-family:var(--mono);font-size:12px;color:var(--text);">git status</code>
+            doesn't ask <i>"what changed?"</i> — it computes <code style="font-family:var(--mono);font-size:12px;color:var(--text);">sha1(working_tree_file)</code>
+            and compares to the index's last-committed blob hash. As long as both inputs are
+            synchronized — Syncthing for the working tree, GitHub for the committed state — both
+            machines independently arrive at the <b>same diff</b>. The two channels run in parallel;
+            neither needs to know the other exists.
+          </div>
+
+          <div class="walkthrough">
+            <div class="walk-row head">
+              <div>t</div>
+              <div>action</div>
+              <div>state</div>
+            </div>
+            <div class="walk-row">
+              <div class="t">0.0s</div>
+              <div class="actor">homelab edits <b>memory/notes.md</b></div>
+              <div class="verdict ok">homelab git status: modified</div>
+            </div>
+            <div class="walk-row">
+              <div class="t">~10s</div>
+              <div class="actor">syncthing converges working tree to mac</div>
+              <div class="verdict ok">mac git status: modified · same answer</div>
+            </div>
+            <div class="walk-row">
+              <div class="t">90s</div>
+              <div class="actor">mac auto-commit cron: <b>git commit + push</b></div>
+              <div class="verdict ok">github now holds the committed snapshot</div>
+            </div>
+            <div class="walk-row">
+              <div class="t">180s</div>
+              <div class="actor">homelab runs <b>git fetch</b></div>
+              <div class="verdict ok">homelab git status: clean · diffs resolved</div>
+            </div>
+          </div>
+
+          <div style="margin-top: 24px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+            <div style="background: var(--bg); border: 1px solid var(--border); border-radius: 2px; padding: 14px 16px;">
+              <div style="font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--green); margin-bottom: 6px;">SAFE</div>
+              <div style="font-family: var(--sans); font-size: 12px; color: var(--text-muted); line-height: 1.5;">
+                Edit different files on each machine. Both commit. Push/pull merges cleanly.
+              </div>
+            </div>
+            <div style="background: var(--bg); border: 1px solid var(--border); border-radius: 2px; padding: 14px 16px;">
+              <div style="font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--amber); margin-bottom: 6px;">CAREFUL</div>
+              <div style="font-family: var(--sans); font-size: 12px; color: var(--text-muted); line-height: 1.5;">
+                Same file edited on both before sync. Standard git merge / rebase resolves.
+              </div>
+            </div>
+            <div style="background: var(--bg); border: 1px solid var(--border); border-radius: 2px; padding: 14px 16px;">
+              <div style="font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--red); margin-bottom: 6px;">DON'T</div>
+              <div style="font-family: var(--sans); font-size: 12px; color: var(--text-muted); line-height: 1.5;">
+                Switch branches by editing files. Branch ops go through git push / pull, not syncthing.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div class="section-label">05 / The tunable knob</div>
+        <div class="knob-frame">
+          <div class="knob-config">
+            <code>
+              <span class="comment"># ~/.config/syncthing/config.xml</span><br />
+              <span class="key">fsWatcherEnabled</span> = true<br />
+              <span class="key">fsWatcherDelayS</span> = <span class="num">10</span>
+            </code>
+            <p>
+              The default <code style="display:inline; padding:0; border:none; background:transparent; color:var(--cyan);">fsWatcherDelayS = 10</code>
+              is what gives you the ten-second window. Drop it to 1 for lower latency, raise it to
+              60 to coalesce noisy projects. The trade is purely latency vs CPU/network churn.
+            </p>
+          </div>
+          <div class="knob-axis">
+            <div class="knob-line">
+              <div class="knob-mark" data-pos="0">
+                <span class="knob-tag value">1s</span>
+                <span class="knob-tag">aggressive</span>
+              </div>
+              <div class="knob-mark" data-pos="1">
+                <span class="knob-tag value">3s</span>
+                <span class="knob-tag">snappy</span>
+              </div>
+              <div class="knob-mark" data-pos="2">
+                <span class="knob-tag value default">10s · DEFAULT</span>
+                <span class="knob-tag">balanced</span>
+              </div>
+              <div class="knob-mark" data-pos="3">
+                <span class="knob-tag value">60s</span>
+                <span class="knob-tag">quiet</span>
+              </div>
+            </div>
+            <div class="knob-tradeoff">
+              <div><b>↑</b>&nbsp;cpu · network</div>
+              <div>convergence latency&nbsp;<b>→</b></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div class="section-label">06 / Why "instant" isn't always better</div>
+        <div class="compare">
+          <div class="compare-row head">
+            <div>tool</div>
+            <div>convergence</div>
+            <div>failure mode under power loss</div>
+            <div>verdict</div>
+          </div>
+          <div class="compare-row">
+            <div class="tool">Syncthing</div>
+            <div class="latency-good">~10s</div>
+            <div class="compare-note">Atomic rename. File is byte-coherent at every moment. Lose at most one in-flight message.</div>
+            <div class="verdict-cell pick">PRIMARY</div>
+          </div>
+          <div class="compare-row">
+            <div class="tool">NFS / SMB mount</div>
+            <div class="latency-bad">~0s</div>
+            <div class="compare-note">Direct writes to remote. Half-written file on power cut. No local fallback on compute side.</div>
+            <div class="verdict-cell skip">SKIP</div>
+          </div>
+          <div class="compare-row">
+            <div class="tool">git auto-commit</div>
+            <div class="latency-mid">~90s</div>
+            <div class="compare-note">Coarse but durable. GitHub as DR layer. Useful as audit trail under Syncthing.</div>
+            <div class="verdict-cell aux">AUDIT</div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <span>~/.claude / sync-architecture / convergence-window</span>
+      <span>
+        REF&nbsp;·&nbsp;
+        <a href="https://docs.syncthing.net/users/syncing.html">syncthing.net/syncing</a>
+        &nbsp;·&nbsp;
+        <a href="https://docs.syncthing.net/advanced/folder-versioning.html">folder-versioning</a>
+      </span>
+    </footer>
+  </body>
+</html>
