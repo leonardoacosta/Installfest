@@ -1,10 +1,12 @@
 format = """
-$fill\
-$line_break\
+[](fg:#5278C4)\
 $os\
+[](fg:#5278C4 bg:#5099C4)\
 $directory\
+[](fg:#5099C4 bg:#2A2D44)\
 $git_branch\
 $git_status\
+[](fg:#2A2D44 bg:#1A1B26)\
 $python\
 $lua\
 $nodejs\
@@ -18,6 +20,7 @@ $aws\
 $docker_context\
 $jobs\
 $cmd_duration\
+[](fg:#1A1B26)\
 $line_break\
 $character"""
 
@@ -26,13 +29,13 @@ palette = "{{ .theme }}"
 
 [os]
 disabled = false
-style = 'bold white'
-format = '[$symbol ]($style)'
+style = 'bg:#5278C4 fg:#0D0E15'
+format = '[ $symbol ]($style)'
 
 [os.symbols]
-Macos = ""
-Linux = ""
-Arch = ""
+Macos = ""
+Linux = ""
+Arch = ""
 
 [hostname]
 ssh_only = true
@@ -40,87 +43,105 @@ format = "[@$hostname]($style) "
 style = "bold dimmed white"
 
 [directory]
-style = 'bold fg:dark_blue'
-format = '[$path ]($style)'
+style = 'fg:#0D0E15 bg:#5099C4'
+format = '[ $path ]($style)'
 truncation_length = 3
 truncation_symbol = '…/'
 truncate_to_repo = false
 
 [directory.substitutions]
 'Documents' = '󰈙'
-'Downloads' = ' '
-'Music' = ' '
-'Pictures' = ' '
+'Downloads' = ' '
+'Music' = ' '
+'Pictures' = ' '
 
 [git_branch]
-style = 'fg:green'
-symbol = ' '
-format = '[on](white) [$symbol$branch ]($style)'
+symbol = ''
+style = 'bg:#2A2D44'
+format = '[[ $symbol $branch ](fg:#9AA3C4 bg:#2A2D44)]($style)'
 
 [git_status]
-style = 'fg:red'
-format = '([$all_status$ahead_behind]($style) )'
+style = 'bg:#2A2D44'
+format = '[[($all_status$ahead_behind )](fg:#C4546E bg:#2A2D44)]($style)'
 
 [fill]
-symbol = '─'
-style = 'fg:#3A3F59'
+symbol = ' '
 
 [python]
-style = 'teal'
-symbol = ' '
-format = '[${symbol}${pyenv_prefix}(${version} )(\($virtualenv\) )]($style)'
+symbol = ''
+style = 'bg:#1A1B26'
+format = '[[ $symbol ${pyenv_prefix}(${version} )(\($virtualenv\) )](fg:#4EA596 bg:#1A1B26)]($style)'
 pyenv_version_name = true
 pyenv_prefix = ''
 
 [lua]
-format = '[$symbol($version )]($style)'
-symbol = ' '
+symbol = ''
+style = 'bg:#1A1B26'
+format = '[[ $symbol ($version) ](fg:#5278C4 bg:#1A1B26)]($style)'
 
 [nodejs]
-style = 'blue'
-symbol = ' '
+symbol = ''
+style = 'bg:#1A1B26'
+format = '[[ $symbol ($version) ](fg:#5278C4 bg:#1A1B26)]($style)'
+
+[dotnet]
+symbol = ''
+style = 'bg:#1A1B26'
+format = '[[ $symbol ($version) ](fg:#8E6DC4 bg:#1A1B26)]($style)'
 
 [golang]
-style = 'blue'
-symbol = ' '
+symbol = ''
+style = 'bg:#1A1B26'
+format = '[[ $symbol ($version) ](fg:#5099C4 bg:#1A1B26)]($style)'
 
 [haskell]
-style = 'blue'
-symbol = ' '
+symbol = ''
+style = 'bg:#1A1B26'
+format = '[[ $symbol ($version) ](fg:#8E6DC4 bg:#1A1B26)]($style)'
 
 [rust]
-style = 'orange'
-symbol = ' '
+symbol = ''
+style = 'bg:#1A1B26'
+format = '[[ $symbol ($version) ](fg:#C97A4A bg:#1A1B26)]($style)'
 
 [ruby]
-style = 'blue'
-symbol = ' '
+symbol = ''
+style = 'bg:#1A1B26'
+format = '[[ $symbol ($version) ](fg:#C4546E bg:#1A1B26)]($style)'
 
 [package]
 symbol = '󰏗 '
 
+[azure]
+style = 'bg:#1A1B26'
+format = '[[ $symbol ($subscription) ](fg:#5278C4 bg:#1A1B26)]($style)'
+
 [aws]
-symbol = ' '
-style = 'yellow'
-format = '[$symbol($profile )(\[$duration\] )]($style)'
+symbol = ''
+style = 'bg:#1A1B26'
+format = '[[ $symbol ($profile )(\[$duration\] )](fg:#A87F4A bg:#1A1B26)]($style)'
 
 [docker_context]
-symbol = ' '
-style = 'fg:#06969A'
-format = '[$symbol]($style) $context'
+symbol = ''
+style = 'bg:#1A1B26'
+format = '[[ $symbol $context ](fg:#4EA596 bg:#1A1B26)]($style)'
 detect_files = ['docker-compose.yml', 'docker-compose.yaml', 'Dockerfile', 'compose.yml', 'compose.yaml']
 detect_extensions = []
 
 [jobs]
-symbol = ' '
-style = 'red'
+symbol = ''
+style = 'bg:#1A1B26'
 number_threshold = 1
-format = '[$symbol]($style)'
+format = '[[ $symbol ](fg:#C4546E bg:#1A1B26)]($style)'
 
 [cmd_duration]
 min_time = 500
-style = 'fg:gray'
-format = '[$duration]($style)'
+style = 'bg:#1A1B26'
+format = '[[  $duration ](fg:#A87F4A bg:#1A1B26)]($style)'
+
+[character]
+success_symbol = '[❯](fg:#729947)'
+error_symbol = '[❯](fg:#C4546E)'
 
 [palettes.nord]
 dark_blue = '#5E81AC'
@@ -173,4 +194,3 @@ purple = '#8E6DC4'
 gray = '#3A3F59'
 black = '#0D0E15'
 white = '#9AA3C4'
-
