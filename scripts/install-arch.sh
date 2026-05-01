@@ -46,6 +46,12 @@ install_arch_packages() {
         # Languages & runtimes (node/pnpm managed by mise)
         go
         rust
+        # .NET — SDKs install side-by-side; pin per-project via global.json.
+        # Each dotnet-sdk-X pulls its matching dotnet-runtime-X automatically.
+        dotnet-sdk        # latest (currently 10)
+        dotnet-sdk-9.0
+        aspnet-runtime    # ASP.NET Core 10 (Web API templates)
+        aspnet-runtime-9.0
         # Build tools (for compiling C tools like youtube_transcript)
         curl
         base-devel

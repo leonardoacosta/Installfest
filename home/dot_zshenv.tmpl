@@ -61,9 +61,6 @@ fi
 # pnpm (macOS path)
 export PNPM_HOME="$HOME/Library/pnpm"
 
-# .NET tools
-[[ -d "$HOME/.dotnet/tools" ]] && export PATH="$PATH:$HOME/.dotnet/tools"
-
 # Maestro (mobile testing)
 [[ -d "$HOME/.maestro/bin" ]] && export PATH="$PATH:$HOME/.maestro/bin"
 
@@ -88,6 +85,15 @@ export PNPM_HOME="$HOME/.local/share/pnpm"
 # Go
 [[ -d "/usr/local/go/bin" ]] && export PATH="$PATH:/usr/local/go/bin"
 [[ -d "$HOME/go/bin" ]] && export PATH="$PATH:$HOME/go/bin"
+
+# .NET (DOTNET_ROOT lets the host resolve SDKs/runtimes; tools dir hosts `dotnet tool install -g`)
+{{ if eq .chezmoi.os "darwin" -}}
+[[ -d "/usr/local/share/dotnet" ]] && export DOTNET_ROOT="/usr/local/share/dotnet"
+[[ -z "$DOTNET_ROOT" && -n "$HOMEBREW_PREFIX" && -d "$HOMEBREW_PREFIX/opt/dotnet/libexec" ]] && export DOTNET_ROOT="$HOMEBREW_PREFIX/opt/dotnet/libexec"
+{{ else if eq .chezmoi.os "linux" -}}
+[[ -d "/usr/share/dotnet" ]] && export DOTNET_ROOT="/usr/share/dotnet"
+{{ end -}}
+[[ -d "$HOME/.dotnet/tools" ]] && export PATH="$PATH:$HOME/.dotnet/tools"
 
 # ============================================================
 # Local overrides (secrets, machine-specific tokens)

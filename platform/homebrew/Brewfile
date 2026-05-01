@@ -88,8 +88,10 @@ brew "dotenvx/brew/dotenvx"
 brew "mise"
 # Fast, disk space efficient package manager
 brew "pnpm"
-# .NET Core
+# .NET Core (latest stable, currently SDK 10)
 brew "dotnet"
+# .NET 9 SDK side-by-side (versioned formula; resolves under $HOMEBREW_PREFIX/opt/dotnet@9)
+brew "dotnet@9"
 # Interpreted, interactive, object-oriented programming language
 brew "python@3.13"
 # Extremely fast Python package installer and resolver, written in Rust
