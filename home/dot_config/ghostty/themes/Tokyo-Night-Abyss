@@ -1,0 +1,26 @@
+# Tokyo Night Abyss — custom Ghostty theme
+# Palette: ~22% lower HSL lightness vs Tokyo Night Night
+# See: home/dot_config/starship/starship.toml.tmpl § palettes.tokyo-night-abyss
+
+palette = 0=#0D0E15
+palette = 1=#C4546E
+palette = 2=#729947
+palette = 3=#A87F4A
+palette = 4=#5278C4
+palette = 5=#8E6DC4
+palette = 6=#4EA596
+palette = 7=#9AA3C4
+palette = 8=#2A2D44
+palette = 9=#D6677F
+palette = 10=#84AC58
+palette = 11=#BC925C
+palette = 12=#6489D5
+palette = 13=#9F7ED5
+palette = 14=#5FB6A7
+palette = 15=#B0B9D5
+background = #0D0E15
+foreground = #9AA3C4
+cursor-color = #5099C4
+cursor-text = #0D0E15
+selection-background = #2A2D44
+selection-foreground = #C0CAF5

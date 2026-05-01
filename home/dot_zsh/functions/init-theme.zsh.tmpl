@@ -1,0 +1,77 @@
+# functions/init-theme.zsh - Apply chezmoi theme to base shell tools
+# Sourced AFTER load-plugins.zsh and load-tools.zsh so we can override
+# their defaults (ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE, FZF_DEFAULT_OPTS).
+#
+# Theme: {{ .theme }}
+
+{{ if eq .theme "tokyo-night-abyss" -}}
+# ── Tokyo Night Abyss palette (mirrors starship.toml.tmpl § palettes.tokyo-night-abyss) ──
+# bg=#0D0E15  fg=#9AA3C4  blue=#5278C4  cyan=#5099C4  teal=#4EA596
+# red=#C4546E  orange=#C97A4A  green=#729947  yellow=#A87F4A  purple=#8E6DC4
+# off-black1=#1A1B26  gray=#2A2D44  dim-fg=#3A3F59
+
+# zsh-autosuggestions — dim ghost text (override load-plugins.zsh:45)
+ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="fg=#3A3F59"
+
+# zsh-syntax-highlighting — command line tokens
+typeset -gA ZSH_HIGHLIGHT_STYLES
+ZSH_HIGHLIGHT_STYLES[default]="fg=#9AA3C4"
+ZSH_HIGHLIGHT_STYLES[unknown-token]="fg=#C4546E,bold"
+ZSH_HIGHLIGHT_STYLES[reserved-word]="fg=#8E6DC4"
+ZSH_HIGHLIGHT_STYLES[alias]="fg=#5099C4"
+ZSH_HIGHLIGHT_STYLES[suffix-alias]="fg=#5099C4"
+ZSH_HIGHLIGHT_STYLES[global-alias]="fg=#5099C4"
+ZSH_HIGHLIGHT_STYLES[builtin]="fg=#5278C4"
+ZSH_HIGHLIGHT_STYLES[function]="fg=#5099C4"
+ZSH_HIGHLIGHT_STYLES[command]="fg=#5278C4"
+ZSH_HIGHLIGHT_STYLES[precommand]="fg=#5278C4,italic"
+ZSH_HIGHLIGHT_STYLES[hashed-command]="fg=#5278C4"
+ZSH_HIGHLIGHT_STYLES[autodirectory]="fg=#C97A4A,underline"
+ZSH_HIGHLIGHT_STYLES[path]="fg=#9AA3C4,underline"
+ZSH_HIGHLIGHT_STYLES[path_pathseparator]="fg=#3A3F59,underline"
+ZSH_HIGHLIGHT_STYLES[path_prefix]="fg=#9AA3C4,underline"
+ZSH_HIGHLIGHT_STYLES[globbing]="fg=#A87F4A"
+ZSH_HIGHLIGHT_STYLES[history-expansion]="fg=#8E6DC4"
+ZSH_HIGHLIGHT_STYLES[command-substitution]="fg=#5099C4"
+ZSH_HIGHLIGHT_STYLES[command-substitution-delimiter]="fg=#3A3F59"
+ZSH_HIGHLIGHT_STYLES[process-substitution]="fg=#5099C4"
+ZSH_HIGHLIGHT_STYLES[single-hyphen-option]="fg=#A87F4A"
+ZSH_HIGHLIGHT_STYLES[double-hyphen-option]="fg=#A87F4A"
+ZSH_HIGHLIGHT_STYLES[back-quoted-argument]="fg=#5099C4"
+ZSH_HIGHLIGHT_STYLES[single-quoted-argument]="fg=#729947"
+ZSH_HIGHLIGHT_STYLES[double-quoted-argument]="fg=#729947"
+ZSH_HIGHLIGHT_STYLES[dollar-quoted-argument]="fg=#729947"
+ZSH_HIGHLIGHT_STYLES[dollar-double-quoted-argument]="fg=#A87F4A"
+ZSH_HIGHLIGHT_STYLES[back-double-quoted-argument]="fg=#A87F4A"
+ZSH_HIGHLIGHT_STYLES[back-dollar-quoted-argument]="fg=#A87F4A"
+ZSH_HIGHLIGHT_STYLES[assign]="fg=#9AA3C4"
+ZSH_HIGHLIGHT_STYLES[redirection]="fg=#C97A4A,bold"
+ZSH_HIGHLIGHT_STYLES[comment]="fg=#3A3F59,italic"
+ZSH_HIGHLIGHT_STYLES[named-fd]="fg=#9AA3C4"
+ZSH_HIGHLIGHT_STYLES[numeric-fd]="fg=#9AA3C4"
+ZSH_HIGHLIGHT_STYLES[arg0]="fg=#5278C4"
+ZSH_HIGHLIGHT_STYLES[bracket-error]="fg=#C4546E"
+ZSH_HIGHLIGHT_STYLES[bracket-level-1]="fg=#5278C4,bold"
+ZSH_HIGHLIGHT_STYLES[bracket-level-2]="fg=#8E6DC4,bold"
+ZSH_HIGHLIGHT_STYLES[bracket-level-3]="fg=#4EA596,bold"
+ZSH_HIGHLIGHT_STYLES[bracket-level-4]="fg=#A87F4A,bold"
+ZSH_HIGHLIGHT_STYLES[cursor-matchingbracket]="standout"
+
+# fzf — append abyss colors to whatever load-tools.zsh already set
+if command -v fzf &>/dev/null; then
+  export FZF_DEFAULT_OPTS="${FZF_DEFAULT_OPTS} \
+    --color=bg+:#1A1B26,bg:#0D0E15,spinner:#5099C4,hl:#5278C4 \
+    --color=fg:#9AA3C4,header:#5278C4,info:#A87F4A,pointer:#5099C4 \
+    --color=marker:#729947,fg+:#9AA3C4,prompt:#5099C4,hl+:#5099C4 \
+    --color=border:#2A2D44,gutter:#0D0E15,label:#9AA3C4"
+fi
+
+# bat — uncomment to apply (requires `bat --list-themes` match; install Tokyo Night via `bat cache --build`)
+# export BAT_THEME="tokyo-night"
+
+# eza — uncomment + tune; lc=link/cd, di=directory, fi=file, etc.
+# export EZA_COLORS="di=38;2;82;120;196:fi=38;2;154;163;196:ln=38;2;78;165;150"
+
+# LS_COLORS — uncomment to set; vivid generates these from a theme yaml
+# command -v vivid &>/dev/null && export LS_COLORS="$(vivid generate tokyonight-night)"
+{{- end }}

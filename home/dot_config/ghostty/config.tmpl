@@ -10,14 +10,20 @@ font-thicken = true
 # === Theme / Appearance ===
 {{ if eq .theme "nord" -}}
 theme = Nord
+background = 2E3440
 {{- else if eq .theme "one-hunter-vercel" -}}
 theme = One-Hunter-Vercel
+background = 000000
 {{- else if eq .theme "vercel" -}}
 theme = Vercel
+background = 000000
+{{- else if eq .theme "tokyo-night-abyss" -}}
+theme = Tokyo-Night-Abyss
+{{- else if eq .theme "tokyo-night" -}}
+theme = Tokyo-Night
 {{- else -}}
 theme = {{ .theme | title }}
 {{- end }}
-background = 000000
 background-opacity = 0.80
 background-blur-radius = 20
 window-decoration = true
