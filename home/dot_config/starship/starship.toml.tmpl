@@ -1,12 +1,18 @@
 format = """
 [](fg:#5278C4)\
 $os\
-[](fg:#5278C4 bg:#5099C4)\
+[](fg:#5278C4)\
+ \
+[](fg:#476FBF)\
 $directory\
-[](fg:#5099C4 bg:#2A2D44)\
+[](fg:#476FBF)\
+ \
+[](fg:#3A5DA8)\
 $git_branch\
 $git_status\
-[](fg:#2A2D44 bg:#1A1B26)\
+[](fg:#3A5DA8)\
+ \
+[](fg:#2A4078)\
 $python\
 $lua\
 $nodejs\
@@ -20,7 +26,7 @@ $aws\
 $docker_context\
 $jobs\
 $cmd_duration\
-[](fg:#1A1B26)\
+[](fg:#2A4078)\
 $line_break\
 $character"""
 
@@ -43,7 +49,7 @@ format = "[@$hostname]($style) "
 style = "bold dimmed white"
 
 [directory]
-style = 'fg:#0D0E15 bg:#5099C4'
+style = 'fg:#0D0E15 bg:#476FBF'
 format = '[ $path ]($style)'
 truncation_length = 3
 truncation_symbol = '…/'
@@ -57,87 +63,87 @@ truncate_to_repo = false
 
 [git_branch]
 symbol = ''
-style = 'bg:#2A2D44'
-format = '[[ $symbol $branch ](fg:#9AA3C4 bg:#2A2D44)]($style)'
+style = 'bg:#3A5DA8'
+format = '[[ $symbol $branch ](fg:#C0CAF5 bg:#3A5DA8)]($style)'
 
 [git_status]
-style = 'bg:#2A2D44'
-format = '[[($all_status$ahead_behind )](fg:#C4546E bg:#2A2D44)]($style)'
+style = 'bg:#3A5DA8'
+format = '[[($all_status$ahead_behind )](fg:#FFB6C1 bg:#3A5DA8)]($style)'
 
 [fill]
 symbol = ' '
 
 [python]
 symbol = ''
-style = 'bg:#1A1B26'
-format = '[[ $symbol ${pyenv_prefix}(${version} )(\($virtualenv\) )](fg:#4EA596 bg:#1A1B26)]($style)'
+style = 'bg:#2A4078'
+format = '[[ $symbol ${pyenv_prefix}(${version} )(\($virtualenv\) )](fg:#4EA596 bg:#2A4078)]($style)'
 pyenv_version_name = true
 pyenv_prefix = ''
 
 [lua]
 symbol = ''
-style = 'bg:#1A1B26'
-format = '[[ $symbol ($version) ](fg:#5278C4 bg:#1A1B26)]($style)'
+style = 'bg:#2A4078'
+format = '[[ $symbol ($version) ](fg:#5278C4 bg:#2A4078)]($style)'
 
 [nodejs]
 symbol = ''
-style = 'bg:#1A1B26'
-format = '[[ $symbol ($version) ](fg:#5278C4 bg:#1A1B26)]($style)'
+style = 'bg:#2A4078'
+format = '[[ $symbol ($version) ](fg:#5278C4 bg:#2A4078)]($style)'
 
 [dotnet]
 symbol = ''
-style = 'bg:#1A1B26'
-format = '[[ $symbol ($version) ](fg:#8E6DC4 bg:#1A1B26)]($style)'
+style = 'bg:#2A4078'
+format = '[[ $symbol ($version) ](fg:#8E6DC4 bg:#2A4078)]($style)'
 
 [golang]
 symbol = ''
-style = 'bg:#1A1B26'
-format = '[[ $symbol ($version) ](fg:#5099C4 bg:#1A1B26)]($style)'
+style = 'bg:#2A4078'
+format = '[[ $symbol ($version) ](fg:#5099C4 bg:#2A4078)]($style)'
 
 [haskell]
 symbol = ''
-style = 'bg:#1A1B26'
-format = '[[ $symbol ($version) ](fg:#8E6DC4 bg:#1A1B26)]($style)'
+style = 'bg:#2A4078'
+format = '[[ $symbol ($version) ](fg:#8E6DC4 bg:#2A4078)]($style)'
 
 [rust]
 symbol = ''
-style = 'bg:#1A1B26'
-format = '[[ $symbol ($version) ](fg:#C97A4A bg:#1A1B26)]($style)'
+style = 'bg:#2A4078'
+format = '[[ $symbol ($version) ](fg:#C97A4A bg:#2A4078)]($style)'
 
 [ruby]
 symbol = ''
-style = 'bg:#1A1B26'
-format = '[[ $symbol ($version) ](fg:#C4546E bg:#1A1B26)]($style)'
+style = 'bg:#2A4078'
+format = '[[ $symbol ($version) ](fg:#C4546E bg:#2A4078)]($style)'
 
 [package]
 symbol = '󰏗 '
 
 [azure]
-style = 'bg:#1A1B26'
-format = '[[ $symbol ($subscription) ](fg:#5278C4 bg:#1A1B26)]($style)'
+style = 'bg:#2A4078'
+format = '[[ $symbol ($subscription) ](fg:#5278C4 bg:#2A4078)]($style)'
 
 [aws]
 symbol = ''
-style = 'bg:#1A1B26'
-format = '[[ $symbol ($profile )(\[$duration\] )](fg:#A87F4A bg:#1A1B26)]($style)'
+style = 'bg:#2A4078'
+format = '[[ $symbol ($profile )(\[$duration\] )](fg:#A87F4A bg:#2A4078)]($style)'
 
 [docker_context]
 symbol = ''
-style = 'bg:#1A1B26'
-format = '[[ $symbol $context ](fg:#4EA596 bg:#1A1B26)]($style)'
+style = 'bg:#2A4078'
+format = '[[ $symbol $context ](fg:#4EA596 bg:#2A4078)]($style)'
 detect_files = ['docker-compose.yml', 'docker-compose.yaml', 'Dockerfile', 'compose.yml', 'compose.yaml']
 detect_extensions = []
 
 [jobs]
 symbol = ''
-style = 'bg:#1A1B26'
+style = 'bg:#2A4078'
 number_threshold = 1
-format = '[[ $symbol ](fg:#C4546E bg:#1A1B26)]($style)'
+format = '[[ $symbol ](fg:#C4546E bg:#2A4078)]($style)'
 
 [cmd_duration]
 min_time = 500
-style = 'bg:#1A1B26'
-format = '[[  $duration ](fg:#A87F4A bg:#1A1B26)]($style)'
+style = 'bg:#2A4078'
+format = '[[  $duration ](fg:#A87F4A bg:#2A4078)]($style)'
 
 [character]
 success_symbol = '[❯](fg:#729947)'
