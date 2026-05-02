@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.leonardoacosta.nexus-listener</string>
+
+    <!--
+      Bun-based replacement for the bash `nexus-notifier.sh listen`. The
+      bash version stalls on macOS 3.2 process-substitution races; this
+      uses native fetch streaming so there's no pipe-handling involved.
+      See ~/dev/if/home/dot_local/share/nexus-listener.ts for the source.
+    -->
+    <key>ProgramArguments</key>
+    <array>
+        <string>/opt/homebrew/bin/bun</string>
+        <string>run</string>
+        <string>/Users/leonardoacosta/.local/share/nexus-listener.ts</string>
+    </array>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>HOME</key>
+        <string>/Users/leonardoacosta</string>
+        <!-- Same agent endpoint the bash listener used (Tailscale IP for the
+             local nexus-agent). -->
+        <key>NEXUS_URL</key>
+        <string>http://100.91.88.16:7400</string>
+        <!-- Pre-bootstrap defaults — bootstrapSettings() in the listener
+             overrides these with values from /notifications/settings on
+             startup. Match the bash plist defaults for parity. -->
+        <key>TTS_ENABLED</key>
+        <string>1</string>
+        <key>BANNER_ENABLED</key>
+        <string>1</string>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/Users/leonardoacosta/.local/state/nexus-listener.stdout.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/leonardoacosta/.local/state/nexus-listener.stderr.log</string>
+
+    <!-- ThrottleInterval prevents launchd from respawn-storming if the
+         listener exits immediately (e.g., bun missing or syntax error). -->
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+</dict>
+</plist>

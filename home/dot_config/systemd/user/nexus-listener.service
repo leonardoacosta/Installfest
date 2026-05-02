@@ -1,0 +1,19 @@
+[Unit]
+Description=Nexus SSE listener (Bun TypeScript replacement for the broken bash listener)
+Documentation=file:%h/.local/share/nexus-listener.ts
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/bun run %h/.local/share/nexus-listener.ts
+Restart=on-failure
+RestartSec=10
+# Mirror the macOS plist defaults so behaviour is identical across OSes.
+Environment=NEXUS_URL=http://100.91.88.16:7400
+Environment=TTS_ENABLED=1
+Environment=BANNER_ENABLED=1
+StandardOutput=append:%h/.local/state/nexus-listener.stdout.log
+StandardError=append:%h/.local/state/nexus-listener.stderr.log
+
+[Install]
+WantedBy=default.target

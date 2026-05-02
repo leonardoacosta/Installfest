@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+# Bootstrap user-scope schedulers and daemons on the current OS.
+# Re-runs whenever any referenced file changes — embedded sha256sums force
+# chezmoi to re-render the template when source content shifts.
+#
+#   weekly-cleanup script:    {{ include "dot_local/bin/executable_weekly-cleanup" | sha256sum }}
+#   nexus-listener script:    {{ include "dot_local/share/nexus-listener.ts" | sha256sum }}
+{{- if eq .chezmoi.os "darwin" }}
+#   weekly-cleanup plist:     {{ include "Library/LaunchAgents/com.leonardoacosta.weekly-cleanup.plist" | sha256sum }}
+#   nexus-listener plist:     {{ include "Library/LaunchAgents/com.leonardoacosta.nexus-listener.plist" | sha256sum }}
+{{- else if eq .chezmoi.os "linux" }}
+#   weekly-cleanup service:   {{ include "dot_config/systemd/user/weekly-cleanup.service" | sha256sum }}
+#   weekly-cleanup timer:     {{ include "dot_config/systemd/user/weekly-cleanup.timer" | sha256sum }}
+#   nexus-listener service:   {{ include "dot_config/systemd/user/nexus-listener.service" | sha256sum }}
+{{- end }}
+
+set -euo pipefail
+
+mkdir -p "$HOME/.local/state"
+
+case "$(uname -s)" in
+  Darwin)
+    UID_=$(id -u)
+
+    # ── Disable obsolete bash listener ─────────────────────────────────
+    # The legacy `com.nexus.notifier` is the bash SSE listener that has
+    # the FIFO-write blocking bug (see docs/notifier-investigation.html).
+    # We unconditionally bootout on every chezmoi apply because the
+    # upstream nexus install reloads it on login. Idempotent — silent
+    # if not loaded.
+    launchctl bootout "gui/${UID_}/com.nexus.notifier" 2>/dev/null || true
+
+    bootstrap_plist() {
+      local label="$1" plist
+      plist="$HOME/Library/LaunchAgents/${label}.plist"
+      if [[ ! -f "$plist" ]]; then
+        echo "scheduler: ${label} plist not yet deployed; skipping"
+        return 0
+      fi
+      # bootout drops the previous instance before re-bootstrapping with
+      # new content. kickstart -k alone doesn't pick up plist edits
+      # because launchd caches the schedule.
+      launchctl bootout "gui/${UID_}/${label}" 2>/dev/null || true
+      launchctl bootstrap "gui/${UID_}" "$plist"
+      echo "scheduler: launchd loaded gui/${UID_}/${label}"
+    }
+    bootstrap_plist com.leonardoacosta.weekly-cleanup
+    bootstrap_plist com.leonardoacosta.nexus-listener
+    ;;
+
+  Linux)
+    if ! command -v systemctl >/dev/null 2>&1; then
+      echo "scheduler: systemctl not available; skipping"
+      exit 0
+    fi
+    if ! command -v bun >/dev/null 2>&1; then
+      echo "scheduler: bun not available; skipping nexus-listener (install bun first)"
+    fi
+    systemctl --user daemon-reload
+    # Stop/disable the legacy bash notifier service if it's installed.
+    systemctl --user stop nexus-notifier.service 2>/dev/null || true
+    systemctl --user disable nexus-notifier.service 2>/dev/null || true
+    # Enable our managed units.
+    for unit in weekly-cleanup.timer nexus-listener.service; do
+      systemctl --user enable --now "$unit"
+      echo "scheduler: enabled ${unit}"
+    done
+    systemctl --user list-timers weekly-cleanup.timer --no-pager 2>/dev/null || true
+    systemctl --user status nexus-listener.service --no-pager 2>/dev/null | head -5 || true
+    ;;
+
+  *)
+    echo "scheduler: unsupported OS $(uname -s); skipping"
+    ;;
+esac
