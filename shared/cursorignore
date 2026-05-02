@@ -1,0 +1,56 @@
+# Cursor home-workspace ignore.
+# This file IS the deployed ignore via a chezmoi symlink at
+#   ~/.cursorignore -> ~/dev/if/shared/cursorignore
+#
+# Gitignore-style. Applies when Cursor (or its AI features) walks ~ as a
+# workspace. Mirrors vscode-workspace-settings.json files.exclude semantics
+# but covers Cursor's AI indexer too.
+#
+# Cross-platform: harmless to list dirs that don't exist on the current OS.
+
+# Block all hidden entries by default
+.*
+
+# Re-allow dev/work paths Leo opens routinely
+!.claude/
+
+# macOS personal dirs
+Applications/
+Desktop/
+Documents/
+Downloads/
+Library/
+Movies/
+Music/
+Pictures/
+Public/
+
+# Linux/XDG personal dirs
+Templates/
+Videos/
+snap/
+
+# Caches, package managers, runtime
+.Trash/
+.cache/
+.local/
+.npm/
+.nvm/
+.bun/
+.pnpm-store/
+.docker/
+.cargo/
+.config/
+.agents/
+.cursor-server/
+.vscode-server/
+.turbo/
+
+# SSH/keys — never index
+.ssh/
+.gnupg/
+
+# Shell history
+.zsh_history
+.zcompdump*
+.bash_history

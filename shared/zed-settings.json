@@ -4,6 +4,10 @@
 // Bicep support: auto-installed extension uses the `bicep` CLI from Homebrew.
 // Live-reload static dev: install `live-server` globally (see run_once_install-packages.sh.tmpl).
 {
+  "project_panel": {
+    "dock": "left"
+  },
+  "cli_default_open_behavior": "new_window",
   "telemetry": {
     "metrics": false,
     "diagnostics": false

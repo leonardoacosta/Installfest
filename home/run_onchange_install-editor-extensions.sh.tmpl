@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# Re-runs whenever the extension list below changes.
+# Installs editor extensions referenced by chezmoi-managed user settings so
+# Mac and Arch share the same baseline. Idempotent — `--install-extension`
+# is a no-op if the extension is already at the correct version.
+#
+# Hash of extensions for chezmoi change detection:
+#   markdown-preview-enhanced: shd101wyy.markdown-preview-enhanced
+#   prettier:                  esbenp.prettier-vscode
+#   yaml:                      redhat.vscode-yaml
+
+set -euo pipefail
+
+EXTENSIONS=(
+  shd101wyy.markdown-preview-enhanced
+  esbenp.prettier-vscode
+  redhat.vscode-yaml
+)
+
+install_for() {
+  local cli="$1"
+  if ! command -v "$cli" >/dev/null 2>&1; then
+    return 0
+  fi
+  for ext in "${EXTENSIONS[@]}"; do
+    "$cli" --install-extension "$ext" --force >/dev/null 2>&1 || true
+  done
+  echo "[$cli] extensions ensured: ${EXTENSIONS[*]}"
+}
+
+install_for code
+install_for cursor

@@ -1,0 +1,93 @@
+{
+  // VS Code / Cursor workspace settings for $HOME.
+  // This file IS the deployed workspace settings via a chezmoi symlink at
+  //   ~/.vscode/settings.json -> ~/dev/if/shared/vscode-workspace-settings.json
+  //
+  // Applies ONLY when ~ is opened as a workspace folder. Subprojects under
+  // ~/dev/* override these via their own .vscode/settings.json. The intent is
+  // to neutralize indexing/git-detection so opening ~ stays usable on both
+  // macOS and Arch Linux instead of triggering a multi-GB index of $HOME.
+  //
+  // Cross-platform: VS Code silently ignores files.exclude entries that
+  // don't exist, so Mac-only dirs (Library, Movies, …) and Linux-only dirs
+  // (Templates, Videos, snap) coexist safely in one shared list below.
+
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit",
+  },
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "[typescript,typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+  },
+  "editor.formatOnSave": true,
+  "eslint.rules.customizations": [{ "rule": "*", "severity": "warn" }],
+  "eslint.runtime": "node",
+  "eslint.workingDirectories": [
+    {
+      "mode": "auto",
+    },
+  ],
+  "prettier.ignorePath": ".gitignore",
+  "tailwindCSS.classFunctions": ["cva", "cx", "cn"],
+  "tailwindCSS.experimental.configFile": "./tooling/tailwind/web.ts",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "typescript.preferences.autoImportFileExcludePatterns": [
+    "zod/dist/types/index.d.ts",
+    "next/router.d.ts",
+    "next/dist/client/router.d.ts",
+  ],
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "cSpell.words": ["HMAC", "POSTHOG", "Vercel", "homelab", "Workgroups"],
+
+  // Performance: only care about dev/ and .claude/ — ignore everything else
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/.git/**": true,
+    "**/dist/**": true,
+    "**/.next/**": true,
+    "**/.turbo/**": true,
+  },
+  "search.exclude": {
+    "**/node_modules/**": true,
+    "**/.git/**": true,
+  },
+  "files.exclude": {
+    // macOS user dirs
+    "Applications": true,
+    "Desktop": true,
+    "Documents": true,
+    "Downloads": true,
+    "Library": true,
+    "Movies": true,
+    "Music": true,
+    "Pictures": true,
+    "Public": true,
+    // Linux/XDG user dirs (harmless on Mac, ignored if absent)
+    "Templates": true,
+    "Videos": true,
+    "snap": true,
+    // Cross-platform: caches, dotdirs, runtime
+    ".Trash": true,
+    ".npm": true,
+    ".nvm": true,
+    ".pnpm-store": true,
+    ".local": true,
+    ".config": true,
+    ".cache": true,
+    ".docker": true,
+    ".bun": true,
+    ".turbo": true,
+    ".agents": true,
+    ".vscode": true,
+    ".cursor": true,
+    ".cursor-server": true,
+    ".vscode-server": true,
+    ".zsh_history": true,
+    ".zshrc": true,
+    ".zprofile": true,
+    ".gitconfig": true,
+  },
+  "typescript.disableAutomaticTypeAcquisition": true,
+  "git.enabled": false,
+  "git.autoRepositoryDetection": false,
+}

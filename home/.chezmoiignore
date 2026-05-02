@@ -4,13 +4,13 @@ projects.toml
 
 # Platform-specific ignores
 {{ if ne .chezmoi.os "darwin" }}
-# Skip macOS-only files on Linux
-dot_config/ghostty
-dot_config/karabiner
+# Skip macOS-only files on Linux (patterns match TARGET paths, not source)
+.config/ghostty
+.config/karabiner
 Library
 {{ end }}
 
 {{ if ne .chezmoi.os "linux" }}
-# Skip Linux-only files on macOS
-dot_config/Cursor
+# Skip Linux-only files on macOS (patterns match TARGET paths, not source)
+.config/Cursor
 {{ end }}
