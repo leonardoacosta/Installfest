@@ -1,0 +1,14 @@
+[Unit]
+Description=Run weekly-cleanup.service every Sunday at 03:00
+
+[Timer]
+# Sundays 03:00 local time. RandomizedDelaySec spreads load if multiple
+# user units are scheduled at the same hour. Persistent=true catches up
+# if the machine was off when the timer should have fired.
+OnCalendar=Sun *-*-* 03:00:00
+RandomizedDelaySec=10m
+Persistent=true
+Unit=weekly-cleanup.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,11 @@
+[Unit]
+Description=Weekly cache cleanup (XDG, npm, pnpm, bun, yarn, cargo)
+Documentation=file:%h/.local/bin/weekly-cleanup
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/weekly-cleanup
+StandardOutput=append:%h/.local/state/weekly-cleanup.systemd.log
+StandardError=append:%h/.local/state/weekly-cleanup.systemd.log
+# Don't restart on failure — the timer will retry next week.
+Restart=no

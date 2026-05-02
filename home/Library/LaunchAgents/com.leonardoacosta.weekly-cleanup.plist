@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.leonardoacosta.weekly-cleanup</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/leonardoacosta/.local/bin/weekly-cleanup</string>
+    </array>
+
+    <!--
+      Sundays at 03:00 local time. launchd's StartCalendarInterval Weekday=0
+      means Sunday (per Apple's launchd.plist(5)). RunAtLoad=false so apply
+      doesn't kick a cleanup mid-session — only the scheduled time triggers.
+      If the Mac is asleep at 03:00, launchd fires it on next wake.
+    -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Weekday</key>
+        <integer>0</integer>
+        <key>Hour</key>
+        <integer>3</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/Users/leonardoacosta/.local/bin:/Users/leonardoacosta/.bun/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/sbin:/usr/sbin</string>
+        <key>HOME</key>
+        <string>/Users/leonardoacosta</string>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/Users/leonardoacosta/.local/state/weekly-cleanup.launchd.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/leonardoacosta/.local/state/weekly-cleanup.launchd.log</string>
+</dict>
+</plist>
