@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>nexus-notifier · stall investigation · 2026-05-02</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..900,0..100,0..1;1,9..144,300..900,0..100,0..1&family=JetBrains+Mono:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #0a0e1a;
+  --ink-2: #0f1422;
+  --grid: rgba(96, 156, 200, 0.08);
+  --grid-strong: rgba(96, 156, 200, 0.18);
+  --paper: #f4ede4;
+  --paper-dim: rgba(244, 237, 228, 0.62);
+  --paper-faint: rgba(244, 237, 228, 0.28);
+  --rule: rgba(244, 237, 228, 0.14);
+  --good: #7fa896;
+  --warn: #e8a44c;
+  --bad: #ff6e5c;
+  --link: #69b6c8;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--ink);
+  color: var(--paper);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  line-height: 1.55;
+  font-feature-settings: "ss01", "ss02", "calt", "liga";
+  min-height: 100vh;
+}
+
+body {
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 32px 32px;
+  background-position: -1px -1px;
+  padding: 48px clamp(24px, 4vw, 64px) 96px;
+  position: relative;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(127, 168, 150, 0.06), transparent 60%),
+    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(232, 164, 76, 0.04), transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.shell { position: relative; z-index: 1; max-width: 1280px; margin: 0 auto; }
+
+/* ── Header ───────────────────────────────────────────────── */
+.masthead {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 24px;
+  align-items: end;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 48px;
+}
+
+.eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--paper-dim);
+  margin-bottom: 12px;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.eyebrow .dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--bad);
+  box-shadow: 0 0 8px var(--bad);
+  animation: pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+h1 {
+  font-family: 'Fraunces', serif;
+  font-weight: 300;
+  font-style: italic;
+  font-size: clamp(40px, 6vw, 72px);
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  font-variation-settings: "SOFT" 50, "WONK" 1;
+  color: var(--paper);
+  max-width: 14ch;
+}
+
+h1 em {
+  font-style: normal;
+  color: var(--warn);
+  font-weight: 500;
+  font-variation-settings: "SOFT" 100, "WONK" 0;
+}
+
+.meta {
+  font-size: 11px;
+  color: var(--paper-dim);
+  text-align: right;
+  letter-spacing: 0.05em;
+}
+
+.meta dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; text-align: left; }
+.meta dt { color: var(--paper-faint); text-transform: uppercase; font-size: 10px; letter-spacing: 0.15em; }
+.meta dd { color: var(--paper); }
+
+/* ── Section wrapper ──────────────────────────────────────── */
+.section {
+  margin-bottom: 72px;
+  position: relative;
+}
+
+.section-header {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 20px;
+  align-items: baseline;
+  margin-bottom: 28px;
+}
+
+.section-num {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 200;
+  font-size: 56px;
+  line-height: 0.85;
+  color: var(--paper-faint);
+  font-variation-settings: "SOFT" 100;
+  width: 84px;
+}
+
+.section-title {
+  font-family: 'Fraunces', serif;
+  font-weight: 400;
+  font-size: 28px;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: var(--paper);
+}
+
+.section-title small {
+  display: block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--paper-dim);
+  margin-bottom: 8px;
+}
+
+/* ── Diagram canvas ───────────────────────────────────────── */
+.diagram {
+  background: var(--ink-2);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  padding: 32px;
+  position: relative;
+  overflow: hidden;
+}
+
+.diagram::before {
+  content: attr(data-label);
+  position: absolute;
+  top: 12px;
+  left: 16px;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--paper-faint);
+}
+
+.diagram-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0;
+  align-items: center;
+  min-height: 280px;
+}
+
+.node {
+  border: 1px solid var(--paper-faint);
+  background: var(--ink);
+  padding: 14px 16px;
+  position: relative;
+  text-align: center;
+  font-size: 11px;
+}
+
+.node--good { border-color: var(--good); color: var(--good); box-shadow: inset 0 0 0 1px var(--good); }
+.node--warn { border-color: var(--warn); color: var(--warn); }
+.node--bad  { border-color: var(--bad);  color: var(--bad); }
+.node--ghost { border-style: dashed; opacity: 0.45; }
+
+.node strong {
+  display: block;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--paper);
+  margin-bottom: 4px;
+}
+.node--good strong { color: var(--good); }
+.node--warn strong { color: var(--warn); }
+.node--bad strong  { color: var(--bad); }
+
+.node-meta {
+  font-size: 10px;
+  color: var(--paper-dim);
+  letter-spacing: 0.05em;
+}
+
+.arrow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  height: 100%;
+}
+
+.arrow svg { width: 100%; height: 24px; }
+.arrow-label {
+  font-size: 10px;
+  color: var(--paper-dim);
+  letter-spacing: 0.1em;
+  margin-top: 6px;
+}
+
+.arrow--broken svg path { stroke-dasharray: 4 4; }
+
+/* ── Annotation callouts ──────────────────────────────────── */
+.callout {
+  margin-top: 24px;
+  padding: 16px 20px;
+  border-left: 2px solid var(--warn);
+  background: rgba(232, 164, 76, 0.04);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.callout--good { border-color: var(--good); background: rgba(127, 168, 150, 0.04); }
+.callout strong { font-weight: 600; color: var(--paper); }
+.callout code { color: var(--warn); background: rgba(232, 164, 76, 0.1); padding: 1px 6px; border-radius: 2px; }
+.callout--good code { color: var(--good); background: rgba(127, 168, 150, 0.1); }
+
+/* ── Two-column compare ───────────────────────────────────── */
+.compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  margin-top: 32px;
+}
+
+.option {
+  border: 1px solid var(--rule);
+  background: var(--ink-2);
+  padding: 32px;
+  position: relative;
+}
+
+.option-tag {
+  display: inline-block;
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--paper-dim);
+  border: 1px solid var(--rule);
+  padding: 4px 10px;
+  margin-bottom: 16px;
+}
+
+.option h3 {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 300;
+  font-size: 32px;
+  line-height: 1.05;
+  margin-bottom: 8px;
+  font-variation-settings: "SOFT" 50, "WONK" 1;
+}
+
+.option--A h3 { color: var(--good); }
+.option--B h3 { color: var(--link); }
+
+.option .tagline {
+  font-size: 13px;
+  color: var(--paper-dim);
+  margin-bottom: 24px;
+  font-style: italic;
+}
+
+.option-section { margin-top: 20px; }
+.option-section h4 {
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--paper-faint);
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.code-block {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  background: var(--ink);
+  border: 1px solid var(--rule);
+  padding: 12px 14px;
+  white-space: pre;
+  overflow-x: auto;
+  color: var(--paper);
+  line-height: 1.5;
+}
+
+.code-block .ck { color: var(--warn); }
+.code-block .cm { color: var(--paper-faint); font-style: italic; }
+.code-block .cs { color: var(--good); }
+.code-block .cr { color: var(--bad); }
+.code-block .cl { color: var(--link); }
+
+.option ul {
+  list-style: none;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.option ul li {
+  padding-left: 18px;
+  position: relative;
+  color: var(--paper-dim);
+}
+.option ul li::before {
+  content: "→";
+  position: absolute;
+  left: 0;
+  color: var(--paper-faint);
+}
+.option ul li strong { color: var(--paper); font-weight: 500; }
+
+/* ── Delta matrix ─────────────────────────────────────────── */
+.matrix {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin-top: 24px;
+}
+
+.matrix th, .matrix td {
+  padding: 14px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+}
+
+.matrix th {
+  font-weight: 500;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--paper-faint);
+  border-bottom: 1px solid var(--paper-faint);
+}
+
+.matrix th:first-child { width: 28%; }
+
+.matrix td:first-child {
+  color: var(--paper);
+  font-weight: 500;
+}
+
+.matrix .col-A { background: rgba(127, 168, 150, 0.03); }
+.matrix .col-B { background: rgba(105, 182, 200, 0.03); }
+
+.score {
+  display: inline-block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  padding: 2px 6px;
+  border: 1px solid currentColor;
+  margin-right: 6px;
+  letter-spacing: 0.05em;
+  vertical-align: 1px;
+}
+.score--good { color: var(--good); }
+.score--mid  { color: var(--warn); }
+.score--bad  { color: var(--bad); }
+
+/* ── Verdict strip ────────────────────────────────────────── */
+.verdict {
+  margin-top: 64px;
+  padding: 32px;
+  border: 1px solid var(--rule);
+  background:
+    linear-gradient(135deg, rgba(127, 168, 150, 0.08), rgba(232, 164, 76, 0.04)),
+    var(--ink-2);
+  position: relative;
+}
+
+.verdict::before {
+  content: "VERDICT";
+  position: absolute;
+  top: 12px;
+  left: 16px;
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  color: var(--paper-faint);
+}
+
+.verdict-text {
+  font-family: 'Fraunces', serif;
+  font-weight: 300;
+  font-size: 22px;
+  line-height: 1.4;
+  margin: 16px 0 0;
+  letter-spacing: -0.005em;
+  color: var(--paper);
+}
+
+.verdict-text em {
+  font-style: italic;
+  color: var(--good);
+  font-weight: 400;
+}
+
+.verdict-text mark {
+  background: transparent;
+  color: var(--warn);
+  font-weight: 500;
+}
+
+.verdict-foot {
+  margin-top: 20px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--paper-dim);
+  letter-spacing: 0.05em;
+}
+
+/* ── Symptom grid ─────────────────────────────────────────── */
+.symptoms {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+  margin-top: 24px;
+}
+
+.symptom {
+  border-top: 1px solid var(--rule);
+  padding-top: 16px;
+  position: relative;
+}
+
+.symptom-num {
+  position: absolute;
+  top: -1px;
+  left: 0;
+  width: 32px;
+  height: 1px;
+  background: var(--good);
+}
+
+.symptom-num::after {
+  content: attr(data-num);
+  position: absolute;
+  bottom: 4px;
+  left: 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--good);
+  letter-spacing: 0.1em;
+}
+
+.symptom h4 {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 300;
+  font-size: 18px;
+  margin-bottom: 6px;
+  color: var(--paper);
+}
+
+.symptom p {
+  font-size: 12px;
+  color: var(--paper-dim);
+  line-height: 1.6;
+}
+
+.symptom code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--warn);
+}
+
+/* ── Footer ───────────────────────────────────────────────── */
+.colophon {
+  margin-top: 96px;
+  padding-top: 24px;
+  border-top: 1px solid var(--rule);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: var(--paper-faint);
+  text-transform: uppercase;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+
+@media (max-width: 900px) {
+  .compare { grid-template-columns: 1fr; }
+  .matrix th:first-child { width: auto; }
+  h1 { font-size: 40px; }
+}
+
+/* ── Page-load reveal ─────────────────────────────────────── */
+.section, .masthead { animation: rise 0.8s cubic-bezier(.2,.6,.2,1) backwards; }
+.masthead { animation-delay: 0.05s; }
+.section:nth-of-type(1) { animation-delay: 0.18s; }
+.section:nth-of-type(2) { animation-delay: 0.32s; }
+.section:nth-of-type(3) { animation-delay: 0.46s; }
+.section:nth-of-type(4) { animation-delay: 0.60s; }
+.verdict { animation: rise 0.8s cubic-bezier(.2,.6,.2,1) 0.74s backwards; }
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ───────────────── MASTHEAD ───────────────── -->
+<header class="masthead">
+  <div>
+    <div class="eyebrow">
+      <span class="dot"></span>
+      Field Report · Process Forensics · 2026-05-02
+    </div>
+    <h1>The silent <em>listener</em></h1>
+  </div>
+  <div class="meta">
+    <dl>
+      <dt>Subject</dt><dd>com.nexus.notifier</dd>
+      <dt>Pid</dt><dd>3571 / 3603 / 3604</dd>
+      <dt>Host</dt><dd>macbook-pro · darwin 26.3</dd>
+      <dt>Bash</dt><dd>3.2.57(1)-release · 2007</dd>
+      <dt>Symptom age</dt><dd>≥ 6h continuous</dd>
+    </dl>
+  </div>
+</header>
+
+<!-- ───────────────── SECTION 1 — SYMPTOMS ───────────────── -->
+<section class="section">
+  <div class="section-header">
+    <div class="section-num">01</div>
+    <div class="section-title">
+      <small>What we observe</small>
+      Symptoms in the wild
+    </div>
+  </div>
+
+  <div class="symptoms">
+    <div class="symptom">
+      <div class="symptom-num" data-num="A"></div>
+      <h4>Cold start works once</h4>
+      <p>Each fresh notifier processes <em>exactly one</em> event after launch, then goes silent. The very first <code>tts+banner</code> entry is logged within ~5s of the listener's start line — and nothing follows.</p>
+    </div>
+    <div class="symptom">
+      <div class="symptom-num" data-num="B"></div>
+      <h4>Bytes flow but stay buffered</h4>
+      <p><code>netstat</code> shows the listener's curl received <code>4559+ bytes</code> over its lifetime — roughly eleven events worth of SSE traffic — none of which ever reach <code>_process_event</code>.</p>
+    </div>
+    <div class="symptom">
+      <div class="symptom-num" data-num="C"></div>
+      <h4>Fresh subscribers see everything</h4>
+      <p>A parallel curl spawned from the shell receives every event in real time, while the long-lived listener's curl receives the same bytes but its bash <code>read</code> never advances.</p>
+    </div>
+    <div class="symptom">
+      <div class="symptom-num" data-num="D"></div>
+      <h4>No errors, no dedup, no skip</h4>
+      <p>No <code>dedup skipped</code>, no <code>unknown channel</code>, no stack trace. Pure silence — which is the most diagnostic signal of all.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────── SECTION 2 — MECHANISM ───────────────── -->
+<section class="section">
+  <div class="section-header">
+    <div class="section-num">02</div>
+    <div class="section-title">
+      <small>Why it happens</small>
+      The bash 3.2 process-substitution race
+    </div>
+  </div>
+
+  <div class="diagram" data-label="dataflow · current implementation">
+    <div class="diagram-grid">
+      <div class="node node--good">
+        <strong>nexus-agent</strong>
+        <span class="node-meta">SSE @ :7400</span>
+      </div>
+
+      <div class="arrow">
+        <svg viewBox="0 0 100 24" preserveAspectRatio="none">
+          <path d="M0 12 L92 12" stroke="#7fa896" stroke-width="1" fill="none"/>
+          <path d="M88 8 L96 12 L88 16" stroke="#7fa896" stroke-width="1" fill="none"/>
+        </svg>
+        <div class="arrow-label">tcp · 4559 b</div>
+      </div>
+
+      <div class="node node--good">
+        <strong>curl --no-buffer</strong>
+        <span class="node-meta">child pid 3604</span>
+      </div>
+
+      <div class="arrow arrow--broken">
+        <svg viewBox="0 0 100 24" preserveAspectRatio="none">
+          <path d="M0 12 L92 12" stroke="#e8a44c" stroke-width="1" fill="none"/>
+          <path d="M88 8 L96 12 L88 16" stroke="#e8a44c" stroke-width="1" fill="none"/>
+        </svg>
+        <div class="arrow-label">pipe · 16 KiB</div>
+      </div>
+
+      <div class="node node--bad">
+        <strong>bash 3.2 · while read</strong>
+        <span class="node-meta">stalled after evt #1</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>Mechanism (high confidence).</strong> The script's listener uses <code>done &lt; &lt;(curl ...)</code> — a process substitution. Each iteration calls <code>_dispatch_banner</code>, which spawns <code>terminal-notifier</code> or <code>osascript</code> as a child. In bash 3.2 (shipped 2007, the last GPL-2 release before Apple froze it), spawned children inherit the curl pipe's read FD. Until that child fully exits and bash reaps it, the kernel keeps the FD open with two readers — and bash's outer <code>read</code> can deadlock against it. The pipe fills, curl blocks on write, the listener appears alive but processes nothing.
+  </div>
+</section>
+
+<!-- ───────────────── SECTION 3 — OPTIONS ───────────────── -->
+<section class="section">
+  <div class="section-header">
+    <div class="section-num">03</div>
+    <div class="section-title">
+      <small>Two ways out</small>
+      Option A vs Option B
+    </div>
+  </div>
+
+  <div class="compare">
+
+    <!-- ─────── OPTION A ─────── -->
+    <article class="option option--A">
+      <span class="option-tag">Option A · root</span>
+      <h3>Replace the shell.</h3>
+      <p class="tagline">Same script. Modern bash. The race goes away.</p>
+
+      <div class="option-section">
+        <h4>The change</h4>
+        <pre class="code-block"><span class="cm">// ~/Library/LaunchAgents/com.nexus.notifier.plist</span>
+&lt;key&gt;ProgramArguments&lt;/key&gt;
+&lt;array&gt;
+<span class="cr">- &lt;string&gt;/bin/bash&lt;/string&gt;</span>
+<span class="cs">+ &lt;string&gt;/opt/homebrew/bin/bash&lt;/string&gt;</span>
+  &lt;string&gt;-c&lt;/string&gt;
+  &lt;string&gt;~/bin/nexus-notifier.sh listen&lt;/string&gt;
+&lt;/array&gt;</pre>
+      </div>
+
+      <div class="option-section">
+        <h4>Why it works</h4>
+        <ul>
+          <li><strong>FD inheritance fixed.</strong> bash 5.x propagates close-on-exec correctly to children — no more shared read end on the curl pipe.</li>
+          <li><strong>Untouched logic.</strong> The 646-line listener script is unchanged. No risk of breaking other invariants.</li>
+          <li><strong>One-line plist edit.</strong> Reverts in 30 seconds if it misbehaves.</li>
+        </ul>
+      </div>
+
+      <div class="option-section">
+        <h4>What it costs</h4>
+        <ul>
+          <li>Local-only. <strong>The fix lives on this Mac</strong>; a fresh checkout on the homelab still uses /bin/bash.</li>
+          <li>Adds an implicit dependency on Homebrew bash being installed at <code>/opt/homebrew/bin/bash</code>.</li>
+          <li>Doesn't help if the upstream script ever picks up its own <code>#!/bin/bash</code> shebang from another caller.</li>
+        </ul>
+      </div>
+
+      <div class="option-section">
+        <h4>Effort</h4>
+        <ul>
+          <li><strong>~2 minutes.</strong> Edit plist, <code>launchctl bootout / bootstrap</code>, fire test event, watch the log.</li>
+        </ul>
+      </div>
+    </article>
+
+    <!-- ─────── OPTION B ─────── -->
+    <article class="option option--B">
+      <span class="option-tag">Option B · safety-net</span>
+      <h3>Watch the watcher.</h3>
+      <p class="tagline">Accept the bug. Detect stalls. Recycle the pipe.</p>
+
+      <div class="option-section">
+        <h4>The change</h4>
+        <pre class="code-block"><span class="cm">// new — managed by chezmoi</span>
+~/.local/bin/<span class="cl">nexus-notifier-watchdog</span>
+
+<span class="cm"># every 90s, if no log entry in 5 min →</span>
+<span class="cm"># SIGTERM the curl child; outer loop reconnects.</span>
+
+<span class="cs">find $LOG -mmin -5 -size +0c | grep -q .</span> \
+  || pkill -f <span class="ck">'curl.*events/stream'</span></pre>
+      </div>
+
+      <div class="option-section">
+        <h4>Why it works</h4>
+        <ul>
+          <li><strong>Self-healing.</strong> The notifier's outer <code>while true; _run_stream; sleep 5; done</code> reconnects after curl dies — restoring service within ~5 min of any stall.</li>
+          <li><strong>Lives in the dotfiles repo.</strong> Same fix on Mac (launchd) and Arch (systemd timer). Reproducible across both machines.</li>
+          <li><strong>Handles other stall modes too.</strong> Network drops, half-closed sockets, future bash bugs — anything that produces "log goes quiet" gets healed.</li>
+        </ul>
+      </div>
+
+      <div class="option-section">
+        <h4>What it costs</h4>
+        <ul>
+          <li>Up to <strong>5 minutes of dropped notifications</strong> per stall — the detection window.</li>
+          <li>Adds a third moving piece (watchdog) on top of agent + listener.</li>
+          <li>Treats the symptom, not the cause. The race is still there.</li>
+        </ul>
+      </div>
+
+      <div class="option-section">
+        <h4>Effort</h4>
+        <ul>
+          <li><strong>~30 minutes.</strong> Script, plist/timer, chezmoi onchange hook, soak test on both OSes.</li>
+        </ul>
+      </div>
+    </article>
+
+  </div>
+</section>
+
+<!-- ───────────────── SECTION 4 — DELTA ───────────────── -->
+<section class="section">
+  <div class="section-header">
+    <div class="section-num">04</div>
+    <div class="section-title">
+      <small>Side-by-side</small>
+      The delta, by axis
+    </div>
+  </div>
+
+  <table class="matrix">
+    <thead>
+      <tr>
+        <th>Axis</th>
+        <th class="col-A">A · replace bash</th>
+        <th class="col-B">B · watchdog</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Fixes the actual bug?</td>
+        <td class="col-A"><span class="score score--good">YES</span> race eliminated by FD-inheritance fix in bash 5</td>
+        <td class="col-B"><span class="score score--bad">NO</span> race still fires; symptom is recycled away</td>
+      </tr>
+      <tr>
+        <td>Mean time to recovery</td>
+        <td class="col-A"><span class="score score--good">0 s</span> bug doesn't manifest</td>
+        <td class="col-B"><span class="score score--mid">≤ 5 min</span> per stall, capped by detection window</td>
+      </tr>
+      <tr>
+        <td>Lives in dotfiles repo?</td>
+        <td class="col-A"><span class="score score--bad">NO</span> only the plist; script is upstream-managed</td>
+        <td class="col-B"><span class="score score--good">YES</span> watchdog + scheduler, both OSes</td>
+      </tr>
+      <tr>
+        <td>Cross-platform?</td>
+        <td class="col-A"><span class="score score--mid">PARTIAL</span> Mac-only — Arch already has bash 5</td>
+        <td class="col-B"><span class="score score--good">FULL</span> launchd on Mac, systemd on Arch</td>
+      </tr>
+      <tr>
+        <td>Effort</td>
+        <td class="col-A"><span class="score score--good">~2 min</span> one plist line + bootstrap</td>
+        <td class="col-B"><span class="score score--mid">~30 min</span> script + scheduler + onchange + soak</td>
+      </tr>
+      <tr>
+        <td>Failure mode</td>
+        <td class="col-A"><span class="score score--mid">SOFT</span> if Homebrew bash missing, falls back to /bin/bash and bug returns</td>
+        <td class="col-B"><span class="score score--mid">SOFT</span> if watchdog dies, listener can stall forever</td>
+      </tr>
+      <tr>
+        <td>Surface area added</td>
+        <td class="col-A"><span class="score score--good">≈ 0</span> still one daemon</td>
+        <td class="col-B"><span class="score score--bad">+1</span> third moving piece to maintain</td>
+      </tr>
+      <tr>
+        <td>Helps unrelated stall modes (NAT, half-close)?</td>
+        <td class="col-A"><span class="score score--bad">NO</span></td>
+        <td class="col-B"><span class="score score--good">YES</span> — anything that silences the log gets healed</td>
+      </tr>
+      <tr>
+        <td>Risk of upstream regression</td>
+        <td class="col-A"><span class="score score--mid">MEDIUM</span> if the script ever picks up a new shebang or adds bash-3.2-isms</td>
+        <td class="col-B"><span class="score score--good">LOW</span> orthogonal mechanism</td>
+      </tr>
+      <tr>
+        <td>Reverts cleanly?</td>
+        <td class="col-A"><span class="score score--good">INSTANT</span> revert plist line</td>
+        <td class="col-B"><span class="score score--good">CLEAN</span> chezmoi remove</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout--good" style="margin-top:32px">
+    <strong>The honest summary.</strong> Option A is a <em>fix</em>: cheap, durable, and surgical, but parochial — it lives only on this Mac and depends on the upstream script not regressing. Option B is a <em>policy</em>: it doesn't fix the bug, but it institutionalizes recovery from any stall (this one and others), and it ships through the same chezmoi pipeline that already governs both machines. They're not mutually exclusive — A on its own is the highest leverage; A+B is the bulletproof posture.
+  </div>
+</section>
+
+<!-- ───────────────── VERDICT ───────────────── -->
+<section class="verdict">
+  <p class="verdict-text">
+    Right now the cleanup banners fire <em>natively</em> via osascript and don't depend on this listener at all. That means <mark>the question is no longer "does cleanup work"</mark>. It's <em>"do you want every other tool that posts to nexus to recover automatically when the listener stalls?"</em>
+  </p>
+  <p class="verdict-foot">
+    if yes → option B (chezmoi-managed) · if "fix it for me on this mac and we'll deal with arch later" → option A (one plist line)
+  </p>
+</section>
+
+<!-- ───────────────── COLOPHON ───────────────── -->
+<footer class="colophon">
+  <span>Investigation · macbook-pro · 2026-05-02 · 13:54 CDT</span>
+  <span>Set in <em style="font-style:italic; font-family:'Fraunces',serif">Fraunces</em> &amp; JetBrains Mono</span>
+  <span>~/dev/if · forensics</span>
+</footer>
+
+</div>
+</body>
+</html>
