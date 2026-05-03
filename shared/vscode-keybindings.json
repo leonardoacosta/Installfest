@@ -1,0 +1,14 @@
+// VS Code / Cursor keybindings — shared source-of-truth.
+// Deployed via chezmoi symlinks to:
+//   macOS  ~/Library/Application Support/{Code,Cursor}/User/keybindings.json
+//          ~/.config/{Code,Cursor}/User/keybindings.json   (symmetric alias)
+//   Linux  ~/.config/{Code,Cursor}/User/keybindings.json
+[
+  {
+    // Shift+Enter in terminal sends ESC+CR — needed for Claude Code multiline.
+    "key": "shift+enter",
+    "command": "workbench.action.terminal.sendSequence",
+    "args": { "text": "\u001b\r" },
+    "when": "terminalFocus"
+  }
+]

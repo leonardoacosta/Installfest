@@ -1,7 +1,26 @@
-// Zed settings — managed by chezmoi
-// Mirrors the load-bearing parts of the previous Cursor settings:
-//   font, format-on-save, watcher excludes, prettier defaults.
-// Bicep support: auto-installed extension uses the `bicep` CLI from Homebrew.
+// Zed settings — managed by chezmoi. Source of truth for ~/.config/zed/settings.json.
+// Sister file: ~/dev/if/shared/vscode-user-settings.json (VS Code + Cursor).
+//
+// === Parity goal: Zed mirrors VS Code/Cursor wherever the schema permits ===
+// Translatable keys (font, format_on_save, autosave, language formatters, watcher
+// excludes, terminal, theme, tsserver memory) are kept in sync.
+//
+// Items present in vscode-user-settings.json with NO Zed equivalent — owned by
+// VS Code only, not a parity gap:
+//   • editor.bracketPairColorization / editor.guides.bracketPairs (Zed: theme-driven)
+//   • editor.suggestSelection / editor.accessibilitySupport
+//   • diffEditor.ignoreTrimWhitespace / editor.unicodeHighlight.*
+//   • files.trimFinalNewlines / files.eol / explorer.confirm*
+//   • eslint.run / eslint.format.enable / prettier.requireConfig (Zed: LSP-driven)
+//   • typescript.tsdk / *.updateImportsOnFileMove.enabled (Zed: tsserver auto-resolved)
+//   • git.confirmSync / git.autofetch / git.enableSmartCommit (Zed: minimal git config)
+//   • All extension settings — gitlens.*, cursor.*, claudeCode.*, viraTheme.*,
+//     markdown-preview-enhanced.*, liveServer.*, hediet.*
+//   • terminal.integrated.shellArgs.osx / .env.{linux,osx} (Zed: inherits parent env)
+//   • terminal.integrated.gpuAcceleration (Zed: GPU rendering is default)
+//   • remote.SSH.* / chat.viewSessions.* / window.commandCenter
+//
+// Bicep: auto-installed extension uses the `bicep` CLI from Homebrew.
 // Live-reload static dev: install `live-server` globally (see run_once_install-packages.sh.tmpl).
 {
   "project_panel": {
@@ -20,11 +39,14 @@
   "ui_font_family": "JetBrainsMono Nerd Font",
   "ui_font_size": 14,
   "format_on_save": "on",
+  "format_on_paste": false,
   "formatter": "prettier",
   "tab_size": 2,
   "soft_wrap": "editor_width",
   "show_whitespaces": "selection",
   "preferred_line_length": 100,
+  "wrap_guides": [100],
+  "show_wrap_guides": true,
 
   // === Theme ===
   // One Hunter Vercel matches the Ghostty + tmux palette already in this
@@ -59,20 +81,19 @@
   },
   "show_edit_predictions": true,
 
-  // === AI: Assistant panel + inline edits (Cmd+I) ===
+  // === AI: Agent panel + inline edits (Cmd+I) ===
+  // (Renamed from `assistant` → `agent` in Zed 0.158+; `assistant.version` and
+  // `language_models.anthropic.version` were deprecated and removed.)
   // Anthropic enabled — same key you use for Claude Code.
   // Zed prompts for ANTHROPIC_API_KEY on first use (or reads from env).
-  // Pick the active model from the assistant panel dropdown — Zed's known-
+  // Pick the active model from the agent panel dropdown — Zed's known-
   // models list updates per release, so we don't pin a default here.
-  "assistant": {
-    "version": "2",
+  "agent": {
     "enabled": true,
     "button": true
   },
   "language_models": {
-    "anthropic": {
-      "version": "1"
-    }
+    "anthropic": {}
   },
 
   // === Context Servers (MCP) ===
@@ -156,17 +177,29 @@
   ],
 
   // === Terminal (integrated) ===
-  // Inherits zsh from login shell; keeps the same JetBrainsMono font as Ghostty.
+  // Mirrors VS Code's terminal.integrated.* settings where Zed has equivalents.
+  // Inherits zsh + env from login shell ("system" picks up parent shell).
   "terminal": {
-    "shell": { "program": "zsh" },
+    "shell": "system",
     "font_family": "JetBrainsMono Nerd Font",
-    "font_size": 14,
-    "working_directory": "current_project_directory"
+    "font_size": 13,
+    "working_directory": "current_project_directory",
+    "copy_on_select": true,
+    "blinking": "off",
+    "button": true
+  },
+
+  // === ESLint fix-on-save (parity with VS Code editor.codeActionsOnSave) ====
+  "code_actions_on_format": {
+    "source.fixAll.eslint": true
   },
 
   // === Misc ===
   "vim_mode": false,
-  "autosave": "off",
+  // Mirrors VS Code files.autoSave: "afterDelay". The bare-string form
+  // `"after_delay"` was deprecated — now must be an object with milliseconds.
+  // Use `"off"` if you want explicit Cmd+S only.
+  "autosave": { "after_delay": { "milliseconds": 1000 } },
   "restore_on_startup": "last_session",
   "remove_trailing_whitespace_on_save": true,
   "ensure_final_newline_on_save": true,

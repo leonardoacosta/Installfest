@@ -11,7 +11,13 @@
       "cmd-shift-k": "task::Rerun",
 
       // === Task picker (lists all tasks defined in tasks.json) ===
-      "cmd-shift-r": "task::Spawn"
+      "cmd-shift-r": "task::Spawn",
+
+      // === Terminal opens as editor-pane tab, not dock panel ===
+      // Default `terminal::NewTerminal` opens in the dock; the `workspace::NewCenterTerminal`
+      // action puts it next to your editor tabs. Same keybinding, different surface.
+      "cmd-`":  "workspace::NewCenterTerminal",
+      "ctrl-`": "workspace::NewCenterTerminal"
     }
   },
 
@@ -21,6 +27,15 @@
       // === Inline AI edit on selection (Zed Assistant) ===
       // Cmd+I is the default; explicit binding here documents intent.
       "cmd-i": "assistant::InlineAssist"
+    }
+  },
+
+  {
+    "context": "Terminal",
+    "bindings": {
+      // === New terminal tab from inside a terminal (VS Code muscle memory) ===
+      "cmd-shift-t":  "workspace::NewCenterTerminal",
+      "ctrl-shift-t": "workspace::NewCenterTerminal"
     }
   }
 ]
