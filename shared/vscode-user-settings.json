@@ -60,8 +60,22 @@
     "**/test-results": true,
     "**/pnpm-lock.yaml": true,
     "**/package-lock.json": true,
-    "**/yarn.lock": true
+    "**/yarn.lock": true,
+    // Same heavy trees as files.watcherExclude — keep Cmd+Shift+F fast.
+    "**/.steam": true,
+    "**/Steam": true,
+    "**/.nuget": true,
+    "**/.dotnet": true,
+    "**/.azure": true,
+    "**/.beads/embeddeddolt": true,
+    "**/openspec/changes/archive": true
   },
+  // Linux dev-host trees added 2026-05-06 for parity with Zed's expanded
+  // exclusion list (see shared/zed-settings.json file_scan_exclusions). Without
+  // these, opening ~ or following a symlink chain (e.g. ~/dev/cc/skills/* →
+  // ~/.agents/skills/*) into Steam, NuGet, .dotnet, .azure, Dolt git-remote-
+  // cache, or oo's openspec/changes/archive trees can pin the file watcher.
+  // Cursor hadn't blown up the way Zed did, but it's the same vulnerability.
   "files.watcherExclude": {
     "**/.git/objects/**": true,
     "**/.git/subtree-cache/**": true,
@@ -75,7 +89,14 @@
     "**/.cache/**": true,
     "**/.npm/**": true,
     "**/.bun/**": true,
-    "**/.pnpm-store/**": true
+    "**/.pnpm-store/**": true,
+    "**/.steam/**": true,
+    "**/Steam/**": true,
+    "**/.nuget/**": true,
+    "**/.dotnet/**": true,
+    "**/.azure/**": true,
+    "**/.beads/embeddeddolt/**": true,
+    "**/openspec/changes/archive/**": true
   },
 
   // === Universal language formatters (per-language to avoid clobber) ========
