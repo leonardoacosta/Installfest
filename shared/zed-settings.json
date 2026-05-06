@@ -142,6 +142,10 @@
     "typescript-language-server": {
       "initialization_options": {
         "maxTsServerMemory": 1536,
+        // Disable @types/* auto-fetch — irrelevant in TS-first monorepos and a
+        // measurable CPU cost on cold start. Project still resolves declared
+        // dependencies normally; this only stops the implicit ATA scan.
+        "disableAutomaticTypingAcquisition": true,
         "preferences": {
           "includePackageJsonAutoImports": "off"
         }
@@ -151,6 +155,15 @@
 
   // === File scan / search excludes ===
   // Mirrors the Cursor watcher/search excludes — keeps file tree fast on T3 monorepos.
+  //
+  // Linux dev-host trees added 2026-05-06 after fs_watcher rescan-loop diagnosis
+  // (514% CPU + 16GB rescan logs). Without these, opening any workspace whose
+  // file_scan reaches into $HOME causes the watcher to walk Steam runtimes,
+  // NuGet/.dotnet caches, and Dolt git-remote-cache pack dirs — saturating the
+  // inotify event queue and producing a "lost sync → rescan → re-arm → overflow"
+  // feedback loop. Excluding **/openspec/changes/archive trades project-search
+  // coverage of historical proposals for watcher stability; use ripgrep from a
+  // terminal if you ever need to grep archives.
   "file_scan_exclusions": [
     "**/.git",
     "**/.svn",
@@ -173,7 +186,17 @@
     "**/.pnpm-store",
     "**/dist",
     "**/build",
-    "**/.expo"
+    "**/.expo",
+    // Linux dev-host trees — see header comment above.
+    "**/.steam",
+    "**/Steam",
+    "**/.nuget",
+    "**/.dotnet",
+    "**/.azure",
+    // Dolt git-remote-cache (pack-shaped object dirs in beads-managed repos).
+    "**/.beads/embeddeddolt",
+    // OpenSpec archives — hundreds of historical proposals per project.
+    "**/openspec/changes/archive"
   ],
 
   // === Terminal (integrated) ===
