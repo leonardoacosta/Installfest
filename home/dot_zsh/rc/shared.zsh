@@ -40,6 +40,9 @@ setopt NO_CASE_GLOB            # Case insensitive globbing
 # Prompt
 setopt PROMPT_SUBST            # Enable prompt substitution
 
+# Input mode — lock emacs so ESC prefix (Option+Left) never activates vi-cmd keymap
+bindkey -e
+
 # ============================================================
 # Common Aliases
 # ============================================================

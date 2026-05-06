@@ -29,6 +29,9 @@ if command -v fzf &>/dev/null; then
     source <(fzf --zsh) 2>/dev/null || true
   fi
 
+  # Restore atuin Ctrl+R — fzf key-bindings.zsh overwrites it, reclaim here
+  bindkey '^R' atuin-search
+
   # fzf configuration
   export FZF_DEFAULT_OPTS="--height 40% --layout=reverse --border --info=inline"
   export FZF_CTRL_T_OPTS="--preview 'bat -n --color=always {} 2>/dev/null || cat {}'"
