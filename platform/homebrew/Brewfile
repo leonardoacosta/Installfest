@@ -10,6 +10,7 @@ tap "steipete/tap"
 tap "stripe/stripe-cli"
 tap "ungive/media-control"
 tap "yakitrak/yakitrak"
+tap "resend/cli"
 
 # ============================================================
 # CLI Tools
@@ -129,6 +130,9 @@ brew "stripe/stripe-cli/stripe"
 brew "postgresql@17"
 # Protocol buffers (Google's data interchange format)
 brew "protobuf"
+
+# Email API CLI (send emails, manage domains, API keys, webhooks)
+brew "resend/cli/resend"
 
 # ============================================================
 # AI & Media
