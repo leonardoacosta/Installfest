@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# Re-runs whenever the EXTENSIONS list below changes.
+# Force-installs Chrome / Chromium extensions across Mac and Arch via the
+# "External Extensions" enrollment mechanism. Each ID gets a stub JSON
+# pointing the browser at the Chrome Web Store update URL; the browser
+# fetches the .crx on next launch and prompts the user to enable it once.
+# Subsequent launches keep it installed.
+#
+# Idempotent — overwriting with identical content is a no-op.
+#
+# Hash of extensions for chezmoi change detection:
+#   Claude (Anthropic):  fcoeoabgfenejglbffodgkkbkcdhcgfn
+
+set -euo pipefail
+
+# name | extension-id
+EXTENSIONS=(
+  "claude:fcoeoabgfenejglbffodgkkbkcdhcgfn"
+)
+
+# Browsers to enroll into, per OS.
+# Format: name | binary-or-app-bundle-path | External-Extensions-target-dir
+{{ if eq .chezmoi.os "darwin" -}}
+BROWSERS=(
+  "google-chrome|/Applications/Google Chrome.app|$HOME/Library/Application Support/Google/Chrome/External Extensions"
+  "chromium|/Applications/Chromium.app|$HOME/Library/Application Support/Chromium/External Extensions"
+)
+{{ else if eq .chezmoi.os "linux" -}}
+BROWSERS=(
+  "google-chrome-stable|google-chrome-stable|$HOME/.config/google-chrome/External Extensions"
+  "chromium|chromium|$HOME/.config/chromium/External Extensions"
+)
+{{ else -}}
+echo "[chrome-ext] Unsupported OS {{ .chezmoi.os }} — skipping enrollment" >&2
+exit 0
+{{ end -}}
+
+enrolled_total=0
+for entry in "${BROWSERS[@]}"; do
+  IFS='|' read -r name bin ext_dir <<<"$entry"
+
+  # Detect: binary on PATH, absolute binary/app exists, or config dir exists from prior launch.
+  parent="${ext_dir%/External Extensions}"
+  if ! { command -v "$bin" >/dev/null 2>&1 || [ -e "$bin" ] || [ -d "$parent" ]; }; then
+    continue
+  fi
+
+  mkdir -p "$ext_dir"
+  for ext_entry in "${EXTENSIONS[@]}"; do
+    ext_name="${ext_entry%%:*}"
+    ext_id="${ext_entry##*:}"
+    cat >"$ext_dir/$ext_id.json" <<JSON
+{
+  "external_update_url": "https://clients2.google.com/service/update2/crx"
+}
+JSON
+    enrolled_total=$((enrolled_total + 1))
+    # Replace $HOME with ~ for readable logs.
+    pretty="${ext_dir/#$HOME/~}"
+    echo "[chrome-ext] $name → enrolled $ext_name ($ext_id) at $pretty"
+  done
+done
+
+if [ "$enrolled_total" -eq 0 ]; then
+  echo "[chrome-ext] no Chrome-family browser detected — nothing enrolled (install Chrome or Chromium and re-run)"
+else
+  echo "[chrome-ext] enrolled $enrolled_total stub(s); fully quit and relaunch the browser, then approve the toolbar prompt"
+fi
